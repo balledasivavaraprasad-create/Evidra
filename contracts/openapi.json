@@ -2351,7 +2351,7 @@
     },
     "/api/v1/jobs/{job_id}": {
       "get": {
-        "description": "Poll status, stage, progress, and errors for a background job (Implemented in D02).",
+        "description": "Poll status, stage, progress, and errors for a background job.",
         "operationId": "get_job_status_api_v1_jobs__job_id__get",
         "parameters": [
           {
@@ -2392,9 +2392,52 @@
         ]
       }
     },
+    "/api/v1/jobs/{job_id}/cancel": {
+      "post": {
+        "description": "Cancel background job execution safely.",
+        "operationId": "cancel_job_endpoint_api_v1_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel running or queued background job",
+        "tags": [
+          "Jobs"
+        ]
+      }
+    },
     "/api/v1/queries/{query_id}/searches": {
       "post": {
-        "description": "Trigger count-only query acquisition from literature provider (Implemented in D02).",
+        "description": "Trigger count-only query acquisition from literature provider.",
         "operationId": "execute_search_count_api_v1_queries__query_id__searches_post",
         "parameters": [
           {
@@ -2730,7 +2773,7 @@
     },
     "/api/v1/workspaces/{workspace_id}/criteria": {
       "post": {
-        "description": "Save immutable review question and inclusion/exclusion criteria version (Implemented in D02/B02).",
+        "description": "Save immutable review question and inclusion/exclusion criteria version.",
         "operationId": "create_criteria_version_api_v1_workspaces__workspace_id__criteria_post",
         "parameters": [
           {
@@ -2836,7 +2879,7 @@
     },
     "/api/v1/workspaces/{workspace_id}/imports": {
       "post": {
-        "description": "Queue durable literature import job for approved search executions (Implemented in D02).",
+        "description": "Queue durable literature import job for approved search executions.",
         "operationId": "trigger_import_job_api_v1_workspaces__workspace_id__imports_post",
         "parameters": [
           {
@@ -2889,7 +2932,7 @@
     },
     "/api/v1/workspaces/{workspace_id}/queries": {
       "post": {
-        "description": "Save an immutable structured search query version (Implemented in D02).",
+        "description": "Save an immutable structured search query version.",
         "operationId": "create_query_version_api_v1_workspaces__workspace_id__queries_post",
         "parameters": [
           {

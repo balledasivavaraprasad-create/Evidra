@@ -1,13 +1,25 @@
-"""Pytest configuration and shared fixtures for Evidra backend test suite."""
+import os
 import socket
 import sys
 from collections.abc import Generator
 from pathlib import Path
 
+# Ensure test flags are set immediately
+os.environ["APP_ENV"] = "test"
+os.environ["CI_OFFLINE"] = "true"
+os.environ["SOURCE_MODE"] = "fixture"
+
 # Ensure backend root is on sys.path
 backend_root = Path(__file__).resolve().parents[1]
 if str(backend_root) not in sys.path:
     sys.path.insert(0, str(backend_root))
+
+from app.settings import settings
+
+settings.app_env = "test"
+settings.ci_offline = True
+settings.source_mode = "fixture"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
