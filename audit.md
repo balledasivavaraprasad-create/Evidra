@@ -42,6 +42,7 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | C01: Exact-span PICO baseline | Merged | Commit `2bb9a84`; pure rule-based PICO extractor conforming to `PicoPort`, exact Unicode code-point offsets `[start_cp, end_cp)` with UTF-16 browser projection, comparator negation handling, span validator, and 16 unit tests passing; see [C01 handoff](prompts/handoffs/C01.md) |
 | B01: Deterministic deduplication engine | Merged | Commit `2581811`; pure deduplication engine with DOI/PMID/title normalization, study vs paper separation, cannot-link constraint enforcement, deterministic representative selection, benchmark evals and 9 unit tests passing; see [B01 handoff](prompts/handoffs/B01.md) |
 | D02: Live literature adapters and durable import jobs | Merged | Commit `1a1132e`; PubMed ESearch/EFetch and Europe PMC REST adapters, Boolean AST query translation, durable background jobs, worker daemon, and non-destructive record revision persistence, 22 tests passing; see [D02 handoff](prompts/handoffs/D02.md) |
+| B02: Explainable screening criteria and rules | Merged | Commit `92c3480`; pure metadata-first screening engine conforming to `ScreeningPort`, 7 default review criteria, context/negation awareness for preclinical and cohort studies, honest Maybe state, 10-case benchmark (100% accuracy), and 12 unit tests passing; see [B02 handoff](prompts/handoffs/B02.md) |
 
 ## Actual dependency defects found during preparation
 
@@ -58,6 +59,7 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Exact-span PICO baseline and Unicode code-point validator (C01: `2bb9a84`).
 - [x] Deterministic deduplication engine and cannot-link graph partitioning (B01: `2581811`).
 - [x] PubMed and Europe PMC adapters, AST query translator, and durable import jobs (D02: `1a1132e`).
+- [x] Explainable screening criteria, context-aware rules, and honest Maybe state (B02: `92c3480`).
 - [ ] Remaining domain endpoints (review events, diffs, exports, snapshots) and auth.
 - [ ] PubMed/Europe PMC quotas, registrations and disclaimer presentation.
 - [ ] Query builder and import UI approval workflow.
