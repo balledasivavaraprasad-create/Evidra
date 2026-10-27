@@ -44,6 +44,7 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | D02: Live literature adapters and durable import jobs | Merged | Commit `1a1132e`; PubMed ESearch/EFetch and Europe PMC REST adapters, Boolean AST query translation, durable background jobs, worker daemon, and non-destructive record revision persistence, 22 tests passing; see [D02 handoff](prompts/handoffs/D02.md) |
 | B02: Explainable screening criteria and rules | Merged | Commit `92c3480`; pure metadata-first screening engine conforming to `ScreeningPort`, 7 default review criteria, context/negation awareness for preclinical and cohort studies, honest Maybe state, 10-case benchmark (100% accuracy), and 12 unit tests passing; see [B02 handoff](prompts/handoffs/B02.md) |
 | A02: Query builder and approved import experience | Merged | Commit `03a7acc`; grouped Boolean query builder, AST compilation, criteria editor, search count runner across PubMed and Europe PMC, approved ingestion workflow, durable job polling with exponential backoff and cancel, 13 frontend tests passing; see [A02 handoff](prompts/handoffs/A02.md) |
+| C-ML01: Review prioritization model and artifact security | Merged | Commit `68e4715`; offline TF-IDF ranking pipeline, strict SHA-256 artifact verification, train/test evaluation split, calibration and unit tests; see [C-ML01 handoff](prompts/handoffs/C-ML01.md) |
 
 ## Actual dependency defects found during preparation
 
