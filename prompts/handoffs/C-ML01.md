@@ -8,7 +8,7 @@ Status: ready for review
 - Assigned prompt path: `prompts/dev-C/07-ml-foundation.md`
 - Requirement IDs and selected features: ML Foundation (Bounded review prioritization model, leakage-free group splits, tamper-protected artifact, queue ranking)
 - Branch and PR: `feat/dev-c-ml01-foundation`
-- Tested commit SHA: Local HEAD on `feat/dev-c-ml01-foundation`
+- Tested commit SHA: `ee0d070`
 - Merge SHA (captain fills after merge): Pending captain merge
 - Actual start/end, timezone: 2026-10-27 12:35 to 12:47 Asia/Kolkata
 
