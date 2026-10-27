@@ -1,0 +1,31 @@
+[project]
+name = "mini-rayyan-dependency-baseline"
+version = "0.0.0"
+description = "Dependency validation only; not the implemented application"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi==0.162.0",
+  "uvicorn==0.54.0",
+  "pydantic==2.14.1",
+  "pydantic-settings==2.16.1",
+  "sqlalchemy==2.1.6",
+  "alembic==1.20.1",
+  "httpx==0.28.1",
+  "defusedxml==0.7.1",
+  "rapidfuzz==3.14.6",
+  "langgraph==1.2.17",
+  "langgraph-checkpoint-sqlite==3.1.2",
+  "scikit-learn==1.9.1",
+]
+
+[dependency-groups]
+dev = [
+  "pytest==9.1.1",
+  "pytest-cov==7.1.0",
+  "respx==0.23.1",
+  "ruff==0.17.2",
+  "pip-audit==2.10.1",
+]
+
+[tool.uv]
+package = false

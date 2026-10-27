@@ -1,0 +1,19 @@
++ uv pip check --python /Users/siva/Documents/Epoch Hackathon/planning/dependencies/backend/.venv/bin/python
+Using Python 3.12.14 environment at: planning/dependencies/backend/.venv
+Checked 90 packages in 12ms
+All installed packages are compatible
++ uv run --locked python dependency_smoke.py
+{
+  "python": "3.12.14",
+  "platform": "macOS-26.6.1-arm64-arm-64bit",
+  "sqlite": "3.53.1",
+  "checks": [
+    "FastAPI + Pydantic + HTTPX validation",
+    "SQLAlchemy + SQLite transaction",
+    "LangGraph interrupt + SQLite checkpoint reopen + resume",
+    "scikit-learn TF-IDF + logistic regression fit/predict",
+    "RapidFuzz native extension",
+    "defusedxml rejects entity expansion"
+  ],
+  "scope": "Dependency smoke only; not application implementation or quality evaluation"
+}

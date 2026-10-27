@@ -1,0 +1,60 @@
+{
+  "checked_local_date": "2026-10-27",
+  "timezone": "Asia/Kolkata",
+  "scope": "Planning/prompt/CI harness and dependency probes only; no application implementation or GitHub-hosted run",
+  "python": "3.12.14",
+  "platform": "macOS-26.6.1-arm64-arm-64bit",
+  "stage": {
+    "backend": "planning",
+    "frontend": "planning",
+    "integration": false,
+    "level2": false,
+    "ai": false,
+    "backend_root": "planning/dependencies/backend",
+    "frontend_root": "planning/dependencies/frontend"
+  },
+  "checks": {
+    "planning_links_pins": "passed; ci-planning-validation.json",
+    "prompt_graph_and_counts": "passed; prompt-validation.json",
+    "ci_harness_regressions": {
+      "passed": 25,
+      "failed": 0,
+      "evidence": "ci-harness-tests.txt"
+    },
+    "actionlint": {
+      "version": "1.7.12",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "checksum_verified_download": true
+    },
+    "backend_runner": {
+      "exit_code": 0,
+      "evidence": "ci-backend-local.txt",
+      "scope": "installed dependency consistency and 6 smoke checks"
+    },
+    "frontend_runner": {
+      "exit_code": 0,
+      "evidence": "ci-frontend-local.txt",
+      "scope": "dependency tree, strict TypeScript and Vite probe build",
+      "known_warnings": [
+        "client directives in third-party libraries",
+        "large probe bundle; not a product performance pass"
+      ]
+    }
+  },
+  "not_run": [
+    "GitHub-hosted Ubuntu jobs",
+    "application API/domain tests",
+    "Playwright/WebGL product tests",
+    "deployment",
+    "live literature/model requests"
+  ],
+  "artifact_sha256": {
+    ".github/workflows/ci.yml": "d3b7784122976764e767882399c880d77a947d914a9466ba30a8a22eef4ac633",
+    ".ci/stages.json": "415b2f73d60bd31ffc05ec0a2e2712f0a6963e55d76a183ad0f006a667e67de9",
+    ".ci/actionlint.json": "d5ddd09b871352ee3ff0019ee6ad511c3a97e3ce15720d0eb38dcacd3bd99708",
+    "prompts/tasks.json": "8b3d3c630a399b5668c45e9f1a49e033529fb637150061bda7b55d5d2cf194fa",
+    "prompts/EXECUTION-AND-MERGE-ORDER.md": "983bc63e8d33309491cbf7a28f561dd6c1fb3018c72e521a93f9c623b3ef7f06"
+  }
+}

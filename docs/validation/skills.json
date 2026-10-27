@@ -1,0 +1,32 @@
+[
+  {
+    "skill": "bounded-research-agent",
+    "exit_code": 0,
+    "output": "Skill is valid!",
+    "stderr": ""
+  },
+  {
+    "skill": "integration-release",
+    "exit_code": 0,
+    "output": "Skill is valid!",
+    "stderr": ""
+  },
+  {
+    "skill": "literature-pipeline",
+    "exit_code": 0,
+    "output": "Skill is valid!",
+    "stderr": ""
+  },
+  {
+    "skill": "premium-research-ui",
+    "exit_code": 0,
+    "output": "Skill is valid!",
+    "stderr": ""
+  },
+  {
+    "skill": "review-data-integrity",
+    "exit_code": 0,
+    "output": "Skill is valid!",
+    "stderr": ""
+  }
+]

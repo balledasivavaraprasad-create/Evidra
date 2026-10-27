@@ -1,0 +1,7 @@
+{
+  "backend": "planning",
+  "frontend": "planning",
+  "integration": false,
+  "level2": false,
+  "ai": false
+}

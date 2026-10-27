@@ -1,0 +1,37 @@
+{
+  "name": "mini-rayyan-frontend-dependency-baseline",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dependency validation only; not a working website",
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
+  "dependencies": {
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
+    "@tanstack/react-query": "5.105.0",
+    "lucide-react": "1.61.0",
+    "motion": "14.6.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router-dom": "7.18.4",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.180.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "@webgpu/types": "0.1.74",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  },
+  "scripts": {
+    "check:dependencies": "tsc -p probe/tsconfig.json && vite build probe"
+  },
+  "packageManager": "npm@11.14.1"
+}

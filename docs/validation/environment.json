@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-26",
+  "python": "3.12.14",
+  "sqlite": "3.53.1",
+  "fts5_probe": "passed",
+  "node": "24.22.1",
+  "npm": "11.14.1",
+  "uv": "0.11.19",
+  "platform": "macOS-26.6.1-arm64-arm-64bit",
+  "sha256": {
+    "planning/dependencies/backend/pyproject.toml": "189269165cf10d9c737105b00a3491816d27782c75ef039b92791264fa110166",
+    "planning/dependencies/backend/uv.lock": "8a5c492eebe2e88cf5d7813536bc5b3c060e48c9fa51f83980eca65dad1a514f",
+    "planning/dependencies/frontend/package.json": "ee31ad756c3f82ad19fb44a05d9b2fbd13b0e512340b9a315d9f0cd1328bc992",
+    "planning/dependencies/frontend/package-lock.json": "a96bcca03b4050694e549745e37f32692fc213b774f43e9460cb5a44618ab637",
+    "docs/source/Track1_PS.pdf": "83564632f93edd2632f663fc7e93e70579a187eebf7cc1c9229d8d15725ed9a1",
+    "output/pdf/level-2-loop-design.pdf": "395b4d132c0f696d864d7cb9e8c4c8f3b00c21cc230b1ab765ddab4cb04f643e"
+  }
+}

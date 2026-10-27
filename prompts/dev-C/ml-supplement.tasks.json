@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "base_manifest": "prompts/tasks.json",
+  "authority": "Latest user instruction: additive files only; ML and Agentic RAG required; all ML implementation belongs to dev-C.",
+  "base_files_modified": false,
+  "scope_overrides": {
+    "C05": "required",
+    "C06": "required"
+  },
+  "unselected_original_tasks": {
+    "B05": "Do not run a duplicate ML experiment; C-ML01/02/03 own the ML delivery."
+  },
+  "additional_dependencies": {
+    "D06": [
+      "C06"
+    ],
+    "B06": [
+      "C-ML03"
+    ],
+    "A06": [
+      "C-ML03"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "C-ML01",
+      "developer": "dev-C",
+      "scope": "required",
+      "file": "prompts/dev-C/07-ml-foundation.md",
+      "branch": "feat/dev-c-ml01-foundation",
+      "depends_on": [
+        "D01",
+        "C01",
+        "B02"
+      ],
+      "after_example": "A02",
+      "before_example": "D03",
+      "estimated_focused_hours": "3-5"
+    },
+    {
+      "id": "C-ML02",
+      "developer": "dev-C",
+      "scope": "required",
+      "file": "prompts/dev-C/08-ml-full-stack-integration.md",
+      "branch": "feat/dev-c-ml02-full-stack",
+      "depends_on": [
+        "C-ML01",
+        "D04",
+        "B03",
+        "C03",
+        "A04"
+      ],
+      "after_example": "A04",
+      "before_example": "D05",
+      "estimated_focused_hours": "3-5"
+    },
+    {
+      "id": "C-ML03",
+      "developer": "dev-C",
+      "scope": "required",
+      "file": "prompts/dev-C/09-ml-release-verification.md",
+      "branch": "feat/dev-c-ml03-release-proof",
+      "depends_on": [
+        "C-ML02",
+        "C05",
+        "C06",
+        "D06"
+      ],
+      "after_example": "D06",
+      "before_example": "B06",
+      "estimated_focused_hours": "2-4"
+    }
+  ],
+  "example_merge_order": [
+    "D01",
+    "A01",
+    "B01",
+    "C01",
+    "D02",
+    "B02",
+    "A02",
+    "C-ML01",
+    "D03",
+    "C02",
+    "A03",
+    "D04",
+    "B03",
+    "C03",
+    "A04",
+    "C-ML02",
+    "D05",
+    "B04",
+    "C04",
+    "A05",
+    "C05",
+    "C06",
+    "D06",
+    "C-ML03",
+    "B06",
+    "A06"
+  ],
+  "release_requires": [
+    "C-ML01",
+    "C-ML02",
+    "C-ML03",
+    "C05",
+    "C06",
+    "D06",
+    "B06",
+    "A06"
+  ],
+  "final_follow_through": "C checks and fixes ML against the final A06 package before release sign-off; not another developer coding assignment."
+}

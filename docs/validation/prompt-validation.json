@@ -1,0 +1,13 @@
+{
+  "prompts": 24,
+  "developers": [
+    "dev-A",
+    "dev-B",
+    "dev-C",
+    "dev-D"
+  ],
+  "required": 17,
+  "bonus": 4,
+  "optional": 3,
+  "dag": "acyclic"
+}

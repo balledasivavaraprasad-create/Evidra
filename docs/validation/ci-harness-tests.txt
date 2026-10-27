@@ -1,0 +1,30 @@
+test_integrated_stage_requires_e2e_success (test_ci_contract.GateTests.test_integrated_stage_requires_e2e_success) ... ok
+test_missing_job_fails_gate (test_ci_contract.GateTests.test_missing_job_fails_gate) ... ok
+test_planning_may_skip_only_e2e (test_ci_contract.GateTests.test_planning_may_skip_only_e2e) ... ok
+test_required_failure_cancel_and_skip_each_fail_gate (test_ci_contract.GateTests.test_required_failure_cancel_and_skip_each_fail_gate) ... ok
+test_unexpected_e2e_failure_is_not_hidden (test_ci_contract.GateTests.test_unexpected_e2e_failure_is_not_hidden) ... ok
+test_current_package_has_six_prompts_per_developer (test_ci_contract.PromptGraphTests.test_current_package_has_six_prompts_per_developer) ... ok
+test_cycle_or_forward_dependency_fails (test_ci_contract.PromptGraphTests.test_cycle_or_forward_dependency_fails) ... ok
+test_duplicate_ids_fail (test_ci_contract.PromptGraphTests.test_duplicate_ids_fail) ... ok
+test_duplicate_merge_position_fails (test_ci_contract.PromptGraphTests.test_duplicate_merge_position_fails) ... ok
+test_master_queue_and_prompt_metadata_agree (test_ci_contract.PromptGraphTests.test_master_queue_and_prompt_metadata_agree) ... ok
+test_required_task_cannot_inherit_optional_work (test_ci_contract.PromptGraphTests.test_required_task_cannot_inherit_optional_work) ... ok
+test_workflow_action_refs_are_full_recorded_commit_pins (test_ci_contract.PromptGraphTests.test_workflow_action_refs_are_full_recorded_commit_pins) ... ok
+test_bonus_stage_requires_integration (test_ci_contract.StageTests.test_bonus_stage_requires_integration) ... ok
+test_first_ci_pr_can_add_stage_file_to_real_base (test_ci_contract.StageTests.test_first_ci_pr_can_add_stage_file_to_real_base) ... ok
+test_integration_cannot_skip_applications (test_ci_contract.StageTests.test_integration_cannot_skip_applications) ... ok
+test_invalid_base_cannot_be_interpreted_as_shell (test_ci_contract.StageTests.test_invalid_base_cannot_be_interpreted_as_shell) ... ok
+test_missing_base_object_fails_closed (test_ci_contract.StageTests.test_missing_base_object_fails_closed) ... ok
+test_missing_lock_fails (test_ci_contract.StageTests.test_missing_lock_fails) ... ok
+test_planning_stage_is_valid (test_ci_contract.StageTests.test_planning_stage_is_valid) ... ok
+test_pr_cannot_disable_bonus_tests (test_ci_contract.StageTests.test_pr_cannot_disable_bonus_tests) ... ok
+test_pr_cannot_downgrade_activated_coverage (test_ci_contract.StageTests.test_pr_cannot_downgrade_activated_coverage) ... ok
+test_promoting_backend_requires_application_files (test_ci_contract.StageTests.test_promoting_backend_requires_application_files) ... ok
+test_promoting_frontend_requires_test_scripts (test_ci_contract.StageTests.test_promoting_frontend_requires_test_scripts) ... ok
+test_second_active_manifest_fails (test_ci_contract.StageTests.test_second_active_manifest_fails) ... ok
+test_string_false_is_not_boolean (test_ci_contract.StageTests.test_string_false_is_not_boolean) ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.710s
+
+OK

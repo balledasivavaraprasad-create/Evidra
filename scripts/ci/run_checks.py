@@ -1,0 +1,56 @@
+"""Run baseline or application checks under explicit stage control."""
+from pathlib import Path
+import os
+import subprocess
+import sys
+import tempfile
+from validate_stage import validate
+
+ROOT = Path(__file__).resolve().parents[2]
+RESULTS = ROOT / '.ci-results'
+
+
+def run(args, cwd, env):
+    print('+ ' + ' '.join(args), flush=True)
+    subprocess.run(args, cwd=cwd, env=env, check=True)
+
+
+def main():
+    state = validate()
+    RESULTS.mkdir(exist_ok=True)
+    mode = sys.argv[1]
+    backend = ROOT / ('backend' if state['backend'] == 'application' else 'planning/dependencies/backend')
+    frontend = ROOT / ('frontend' if state['frontend'] == 'application' else 'planning/dependencies/frontend')
+    env = {**os.environ, 'CI': 'true', 'APP_ENV': 'test', 'AUTH_MODE': 'local', 'CI_OFFLINE': '1',
+           'SOURCE_MODE': 'fixture', 'LLM_ENABLED': 'false', 'RAG_ENABLED': 'false', 'LANGSMITH_TRACING': 'false'}
+    with tempfile.TemporaryDirectory(prefix='mini-rayyan-ci-') as data:
+        env.update(DATA_DIR=data, DATABASE_URL=f'sqlite:///{data}/review.sqlite',
+                   CHECKPOINT_DATABASE=f'{data}/checkpoints.sqlite')
+        if mode == 'backend':
+            run(['uv', 'pip', 'check', '--python', str(backend / '.venv/bin/python')], ROOT, env)
+            run(['uv', 'run', '--locked', 'python', 'dependency_smoke.py'], backend, env)
+            if state['backend'] == 'application':
+                run(['uv', 'run', '--locked', 'ruff', 'check', 'app', 'tests', 'scripts'], backend, env)
+                heads = subprocess.check_output(['uv', 'run', '--locked', 'alembic', 'heads'], cwd=backend, env=env, text=True)
+                if len([line for line in heads.splitlines() if line.strip()]) != 1:
+                    raise RuntimeError('Exactly one Alembic head is required')
+                run(['uv', 'run', '--locked', 'alembic', 'upgrade', 'head'], backend, env)
+                run(['uv', 'run', '--locked', 'python', 'scripts/export_openapi.py', '--check'], backend, env)
+                run(['uv', 'run', '--locked', 'pytest', '-q', f'--junitxml={RESULTS / "backend.xml"}'], backend, env)
+        elif mode == 'frontend':
+            run(['npm', 'ls', '--all'], frontend, env)
+            run(['npm', 'run', 'check:dependencies'], frontend, env)
+            if state['frontend'] == 'application':
+                for command in ('api:check', 'typecheck', 'test:unit', 'build'):
+                    run(['npm', 'run', command], frontend, env)
+        elif mode == 'e2e':
+            if not state['integration']:
+                raise RuntimeError('e2e must not be invoked before integration activation')
+            run(['npm', 'run', 'build'], frontend, env)
+            run(['npm', 'run', 'test:e2e'], frontend, env)
+        else:
+            raise ValueError(f'Unsupported check group: {mode}')
+
+
+if __name__ == '__main__':
+    main()

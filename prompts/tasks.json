@@ -1,0 +1,536 @@
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "id": "D01",
+      "developer": "dev-D",
+      "title": "Backend foundation and frozen contracts",
+      "file": "prompts/dev-D/01-foundation-contracts.md",
+      "branch": "feat/dev-d-01-foundation-contracts",
+      "depends_on": [],
+      "scope": "required",
+      "target_hours": "0-4",
+      "merge_order": 1,
+      "allowed_paths": [
+        "backend/app/contracts/",
+        "backend/app/db/",
+        "backend/app/main.py",
+        "backend/tests/contracts/",
+        "backend/migrations/",
+        "contracts/",
+        "backend/scripts/",
+        ".ci/stages.json",
+        "scripts/ci/",
+        "backend/pyproject.toml",
+        "backend/uv.lock",
+        "planning/dependencies/backend/",
+        "backend/app/settings.py",
+        "backend/alembic.ini",
+        "backend/dependency_smoke.py",
+        "backend/.python-version",
+        "backend/tests/conftest.py",
+        "backend/tests/fixtures/"
+      ]
+    },
+    {
+      "id": "A01",
+      "developer": "dev-A",
+      "title": "React foundation and premium design system",
+      "file": "prompts/dev-A/01-react-foundation.md",
+      "branch": "feat/dev-a-01-react-foundation",
+      "depends_on": [
+        "D01"
+      ],
+      "scope": "required",
+      "target_hours": "4-8",
+      "merge_order": 2,
+      "allowed_paths": [
+        "frontend/",
+        "planning/dependencies/frontend/",
+        ".ci/stages.json"
+      ]
+    },
+    {
+      "id": "B01",
+      "developer": "dev-B",
+      "title": "Deterministic deduplication engine",
+      "file": "prompts/dev-B/01-deduplication.md",
+      "branch": "feat/dev-b-01-deduplication",
+      "depends_on": [
+        "D01"
+      ],
+      "scope": "required",
+      "target_hours": "4-12",
+      "merge_order": 3,
+      "allowed_paths": [
+        "backend/app/dedup/",
+        "backend/tests/algorithms/dedup/",
+        "evals/dedup/"
+      ]
+    },
+    {
+      "id": "C01",
+      "developer": "dev-C",
+      "title": "Exact-span PICO baseline",
+      "file": "prompts/dev-C/01-pico-baseline.md",
+      "branch": "feat/dev-c-01-pico-baseline",
+      "depends_on": [
+        "D01"
+      ],
+      "scope": "required",
+      "target_hours": "4-12",
+      "merge_order": 4,
+      "allowed_paths": [
+        "backend/app/pico/",
+        "backend/tests/pico/",
+        "evals/pico/"
+      ]
+    },
+    {
+      "id": "D02",
+      "developer": "dev-D",
+      "title": "Live literature adapters and durable import jobs",
+      "file": "prompts/dev-D/02-source-import.md",
+      "branch": "feat/dev-d-02-source-import",
+      "depends_on": [
+        "D01"
+      ],
+      "scope": "required",
+      "target_hours": "4-12",
+      "merge_order": 5,
+      "allowed_paths": [
+        "backend/app/sources/",
+        "backend/app/services/imports.py",
+        "backend/app/services/jobs.py",
+        "backend/app/api/",
+        "backend/app/worker.py",
+        "backend/app/db/",
+        "backend/migrations/",
+        "backend/tests/sources/",
+        "backend/tests/integration/",
+        "contracts/"
+      ]
+    },
+    {
+      "id": "B02",
+      "developer": "dev-B",
+      "title": "Explainable screening criteria and rules",
+      "file": "prompts/dev-B/02-screening-rules.md",
+      "branch": "feat/dev-b-02-screening-rules",
+      "depends_on": [
+        "B01"
+      ],
+      "scope": "required",
+      "target_hours": "8-18",
+      "merge_order": 6,
+      "allowed_paths": [
+        "backend/app/screening/",
+        "backend/tests/algorithms/screening/",
+        "evals/screening/",
+        "docs/review-question.md"
+      ]
+    },
+    {
+      "id": "A02",
+      "developer": "dev-A",
+      "title": "Query builder and approved import experience",
+      "file": "prompts/dev-A/02-query-import-ui.md",
+      "branch": "feat/dev-a-02-query-import-ui",
+      "depends_on": [
+        "A01",
+        "D02"
+      ],
+      "scope": "required",
+      "target_hours": "8-12",
+      "merge_order": 7,
+      "allowed_paths": [
+        "frontend/src/features/review-setup/",
+        "frontend/src/features/search/",
+        "frontend/src/features/runs/",
+        "frontend/src/api/",
+        "frontend/tests/"
+      ]
+    },
+    {
+      "id": "D03",
+      "developer": "dev-D",
+      "title": "Reviewer services and deterministic pipeline integration",
+      "file": "prompts/dev-D/03-review-services.md",
+      "branch": "feat/dev-d-03-review-services",
+      "depends_on": [
+        "D02",
+        "B02",
+        "C01"
+      ],
+      "scope": "required",
+      "target_hours": "12-24",
+      "merge_order": 8,
+      "allowed_paths": [
+        "backend/app/services/",
+        "backend/app/api/",
+        "backend/app/db/",
+        "backend/app/contracts/",
+        "backend/migrations/",
+        "backend/tests/integration/",
+        "contracts/"
+      ]
+    },
+    {
+      "id": "C02",
+      "developer": "dev-C",
+      "title": "Durable LangGraph pipeline and human review subgraph",
+      "file": "prompts/dev-C/02-langgraph-pipeline.md",
+      "branch": "feat/dev-c-02-langgraph-pipeline",
+      "depends_on": [
+        "C01",
+        "D03"
+      ],
+      "scope": "required",
+      "target_hours": "18-26",
+      "merge_order": 9,
+      "allowed_paths": [
+        "backend/app/workflows/",
+        "backend/tests/workflows/"
+      ]
+    },
+    {
+      "id": "A03",
+      "developer": "dev-A",
+      "title": "Review workbench, duplicate controls and PICO editor",
+      "file": "prompts/dev-A/03-review-workbench.md",
+      "branch": "feat/dev-a-03-review-workbench",
+      "depends_on": [
+        "A02",
+        "D03"
+      ],
+      "scope": "required",
+      "target_hours": "16-28",
+      "merge_order": 10,
+      "allowed_paths": [
+        "frontend/src/features/review-queue/",
+        "frontend/src/features/duplicates/",
+        "frontend/src/features/pico/",
+        "frontend/src/api/",
+        "frontend/tests/",
+        "frontend/playwright.config.ts",
+        "frontend/package.json",
+        "frontend/package-lock.json"
+      ]
+    },
+    {
+      "id": "D04",
+      "developer": "dev-D",
+      "title": "Level 1 wiring, authorization and integrated CI activation",
+      "file": "prompts/dev-D/04-level1-integration.md",
+      "branch": "feat/dev-d-04-level1-integration",
+      "depends_on": [
+        "D03",
+        "C02",
+        "A03"
+      ],
+      "scope": "required",
+      "target_hours": "24-30",
+      "merge_order": 11,
+      "allowed_paths": [
+        "backend/app/services/",
+        "backend/app/api/",
+        "backend/app/worker.py",
+        "backend/app/testing/",
+        "backend/tests/integration/",
+        "backend/tests/security/",
+        "contracts/",
+        ".ci/stages.json",
+        "scripts/ci/",
+        ".github/workflows/ci.yml",
+        "audit.md"
+      ]
+    },
+    {
+      "id": "B03",
+      "developer": "dev-B",
+      "title": "Baseline evaluation and adversarial algorithm regression",
+      "file": "prompts/dev-B/03-baseline-evaluation.md",
+      "branch": "feat/dev-b-03-baseline-evaluation",
+      "depends_on": [
+        "B02",
+        "D04"
+      ],
+      "scope": "required",
+      "target_hours": "28-36",
+      "merge_order": 12,
+      "allowed_paths": [
+        "evals/",
+        "backend/tests/algorithms/",
+        "backend/app/dedup/",
+        "backend/app/screening/"
+      ]
+    },
+    {
+      "id": "C03",
+      "developer": "dev-C",
+      "title": "Agent boundaries, replay safety and baseline security",
+      "file": "prompts/dev-C/03-agent-security.md",
+      "branch": "feat/dev-c-03-agent-security",
+      "depends_on": [
+        "C02",
+        "D04"
+      ],
+      "scope": "required",
+      "target_hours": "28-36",
+      "merge_order": 13,
+      "allowed_paths": [
+        "backend/app/workflows/",
+        "backend/app/gateway/",
+        "backend/tests/workflows/",
+        "backend/tests/agent_security/",
+        "docs/agent-security-results.md"
+      ]
+    },
+    {
+      "id": "A04",
+      "developer": "dev-A",
+      "title": "Premium 3D experience and Level 1 usability gate",
+      "file": "prompts/dev-A/04-premium-3d.md",
+      "branch": "feat/dev-a-04-premium-3d",
+      "depends_on": [
+        "A03",
+        "D04"
+      ],
+      "scope": "required",
+      "target_hours": "28-36",
+      "merge_order": 14,
+      "allowed_paths": [
+        "frontend/src/features/landing/",
+        "frontend/src/components/",
+        "frontend/src/styles/",
+        "frontend/src/accessibility/",
+        "frontend/tests/",
+        "frontend/public/",
+        "docs/frontend-results.md"
+      ]
+    },
+    {
+      "id": "D05",
+      "developer": "dev-D",
+      "title": "Version snapshots, decision lineage and exact restoration",
+      "file": "prompts/dev-D/05-snapshot-services.md",
+      "branch": "feat/dev-d-05-snapshot-services",
+      "depends_on": [
+        "D04",
+        "B03",
+        "C03",
+        "A04"
+      ],
+      "scope": "bonus",
+      "target_hours": "36-46",
+      "merge_order": 15,
+      "allowed_paths": [
+        "backend/app/services/",
+        "backend/app/db/",
+        "backend/app/api/",
+        "backend/app/contracts/",
+        "backend/migrations/",
+        "backend/tests/level2/",
+        "contracts/"
+      ]
+    },
+    {
+      "id": "B04",
+      "developer": "dev-B",
+      "title": "Group merge/split and cross-version regression suite",
+      "file": "prompts/dev-B/04-group-regression.md",
+      "branch": "feat/dev-b-04-group-regression",
+      "depends_on": [
+        "B03",
+        "D05"
+      ],
+      "scope": "bonus",
+      "target_hours": "42-48",
+      "merge_order": 16,
+      "allowed_paths": [
+        "backend/app/dedup/",
+        "backend/tests/algorithms/dedup/",
+        "backend/tests/level2/test_group_regression.py",
+        "evals/dedup/"
+      ]
+    },
+    {
+      "id": "C04",
+      "developer": "dev-C",
+      "title": "Incremental graph execution and snapshot-aware replay",
+      "file": "prompts/dev-C/04-incremental-graph.md",
+      "branch": "feat/dev-c-04-incremental-graph",
+      "depends_on": [
+        "C03",
+        "D05",
+        "B04"
+      ],
+      "scope": "bonus",
+      "target_hours": "44-52",
+      "merge_order": 17,
+      "allowed_paths": [
+        "backend/app/workflows/",
+        "backend/tests/workflows/",
+        "backend/tests/level2/test_incremental_graph.py"
+      ]
+    },
+    {
+      "id": "A05",
+      "developer": "dev-A",
+      "title": "Version history, conflicts, diff and restore UI",
+      "file": "prompts/dev-A/05-history-ui.md",
+      "branch": "feat/dev-a-05-history-ui",
+      "depends_on": [
+        "A04",
+        "D05",
+        "B04",
+        "C04"
+      ],
+      "scope": "bonus",
+      "target_hours": "48-56",
+      "merge_order": 18,
+      "allowed_paths": [
+        "frontend/src/features/history/",
+        "frontend/src/features/conflicts/",
+        "frontend/src/api/",
+        "frontend/tests/e2e/level2/"
+      ]
+    },
+    {
+      "id": "B05",
+      "developer": "dev-B",
+      "title": "Optional classical ML ranking with leakage-safe evaluation",
+      "file": "prompts/dev-B/05-ml-ranking.md",
+      "branch": "feat/dev-b-05-ml-ranking",
+      "depends_on": [
+        "B03",
+        "A04",
+        "C03"
+      ],
+      "scope": "optional",
+      "target_hours": "36-48",
+      "merge_order": 19,
+      "allowed_paths": [
+        "backend/app/screening/ml/",
+        "backend/tests/algorithms/ml/",
+        "evals/ml/"
+      ]
+    },
+    {
+      "id": "C05",
+      "developer": "dev-C",
+      "title": "Optional budgeted LLM gateway and validated extraction",
+      "file": "prompts/dev-C/05-llm-assistance.md",
+      "branch": "feat/dev-c-05-llm-assistance",
+      "depends_on": [
+        "C03",
+        "B03",
+        "A04"
+      ],
+      "scope": "optional",
+      "target_hours": "36-48",
+      "merge_order": 20,
+      "allowed_paths": [
+        "backend/app/gateway/",
+        "backend/app/pico/llm.py",
+        "backend/tests/gateway/",
+        "backend/tests/pico/test_llm.py",
+        "evals/llm/"
+      ]
+    },
+    {
+      "id": "C06",
+      "developer": "dev-C",
+      "title": "Optional bounded, cited corpus RAG assistant",
+      "file": "prompts/dev-C/06-bounded-rag.md",
+      "branch": "feat/dev-c-06-bounded-rag",
+      "depends_on": [
+        "C05"
+      ],
+      "scope": "optional",
+      "target_hours": "46-56",
+      "merge_order": 21,
+      "allowed_paths": [
+        "backend/app/retrieval/",
+        "backend/app/workflows/assistant.py",
+        "backend/tests/retrieval/",
+        "backend/tests/ai/",
+        "evals/rag/"
+      ]
+    },
+    {
+      "id": "D06",
+      "developer": "dev-D",
+      "title": "Operational hardening and release configuration",
+      "file": "prompts/dev-D/06-operations-release.md",
+      "branch": "feat/dev-d-06-operations-release",
+      "depends_on": [
+        "D04",
+        "B03",
+        "C03",
+        "A04"
+      ],
+      "scope": "required",
+      "target_hours": "52-62",
+      "merge_order": 22,
+      "allowed_paths": [
+        "backend/app/api/",
+        "backend/app/services/",
+        "backend/app/settings.py",
+        "backend/scripts/",
+        "backend/tests/operations/",
+        "backend/tests/security/",
+        ".ci/stages.json",
+        "scripts/ci/",
+        "docs/operations.md",
+        ".github/workflows/ci.yml",
+        "audit.md"
+      ]
+    },
+    {
+      "id": "B06",
+      "developer": "dev-B",
+      "title": "Final evaluation evidence and report contribution",
+      "file": "prompts/dev-B/06-final-evaluation.md",
+      "branch": "feat/dev-b-06-final-evaluation",
+      "depends_on": [
+        "B03",
+        "D06"
+      ],
+      "scope": "required",
+      "target_hours": "60-66",
+      "merge_order": 23,
+      "allowed_paths": [
+        "evals/",
+        "docs/report-evaluation.md",
+        "backend/tests/algorithms/"
+      ]
+    },
+    {
+      "id": "A06",
+      "developer": "dev-A",
+      "title": "Deployment packaging, browser acceptance and final handoff",
+      "file": "prompts/dev-A/06-release-handoff.md",
+      "branch": "feat/dev-a-06-release-handoff",
+      "depends_on": [
+        "A04",
+        "D06",
+        "B06",
+        "C03"
+      ],
+      "scope": "required",
+      "target_hours": "62-72",
+      "merge_order": 24,
+      "allowed_paths": [
+        "frontend/",
+        "infra/",
+        "README.md",
+        "docs/report.md",
+        "docs/demo-script.md",
+        "docs/release-checklist.md",
+        "docs/frontend-results.md",
+        "audit.md"
+      ]
+    }
+  ]
+}
