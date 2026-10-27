@@ -1,15 +1,17 @@
 import hashlib
 import json
+import os
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.contracts.enums import (
+    CorpusRevisionState,
     EffectiveDecisionState,
     SourceNamespace,
 )
@@ -42,14 +44,28 @@ from app.contracts.models import (
     WorkspaceResponse,
 )
 from app.db.models import (
+    CorpusRevisionModel,
     CriteriaVersionModel,
+    ExportModel,
     QueryVersionModel,
     SearchExecutionModel,
     WorkspaceModel,
 )
 from app.db.session import get_db
+from app.services.corpus import (
+    get_paper_group_detail,
+    list_paper_groups_in_revision,
+    process_corpus,
+)
+from app.services.exports import export_corpus_studies
 from app.services.imports import trigger_import
 from app.services.jobs import cancel_job, get_job_by_id, to_job_response
+from app.services.review_decisions import (
+    record_dedup_override,
+    record_screening_decision,
+    resolve_group_conflict,
+    save_pico_annotations,
+)
 from app.settings import settings
 from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
@@ -425,10 +441,41 @@ def cancel_job_endpoint(job_id: str, db: Session = Depends(get_db)) -> JobRespon
     summary="List published corpus revisions",
     response_model=list[CorpusRevisionResponse],
 )
-def list_corpus_revisions(workspace_id: str) -> list[CorpusRevisionResponse]:
-    """List historical immutable corpus snapshots (Implemented in D04/D05)."""
-    stub_not_implemented("list_corpus_revisions")
-    raise NotImplementedError
+def list_corpus_revisions(workspace_id: str, db: Session = Depends(get_db)) -> list[CorpusRevisionResponse]:  # noqa: B008
+    """List historical immutable corpus snapshots."""
+    revs = (
+        db.query(CorpusRevisionModel)
+        .filter_by(workspace_id=workspace_id)
+        .order_by(CorpusRevisionModel.created_at.desc())
+        .all()
+    )
+    return [
+        CorpusRevisionResponse(
+            id=r.id,
+            workspace_id=r.workspace_id,
+            parent_id=r.parent_id,
+            criteria_version_id=r.criteria_version_id,
+            dedup_version=r.dedup_version,
+            state=CorpusRevisionState(r.state),
+            published_at=r.published_at,
+            decision_seq_cutoff=r.decision_seq_cutoff,
+            fingerprint=r.fingerprint,
+            group_count=r.group_count,
+            record_count=r.record_count,
+        )
+        for r in revs
+    ]
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/process-corpus",
+    tags=["Corpus"],
+    summary="Trigger deterministic deduplication, screening, and PICO extraction",
+    response_model=CorpusRevisionResponse,
+)
+def run_process_corpus(workspace_id: str, db: Session = Depends(get_db)) -> CorpusRevisionResponse:  # noqa: B008
+    """Run full deterministic review pipeline on imported workspace records."""
+    return process_corpus(db=db, workspace_id=workspace_id)
 
 
 @app.get(
@@ -442,10 +489,16 @@ def list_paper_groups(
     status_filter: EffectiveDecisionState | None = None,
     limit: int = 50,
     offset: int = 0,
+    db: Session = Depends(get_db),  # noqa: B008
 ) -> list[PaperGroupSummary]:
     """List paginated deduplicated paper groups for screening workbench (Implemented in D03)."""
-    stub_not_implemented("list_paper_groups")
-    raise NotImplementedError
+    return list_paper_groups_in_revision(
+        db=db,
+        revision_id=revision_id,
+        status_filter=status_filter,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @app.get(
@@ -454,10 +507,13 @@ def list_paper_groups(
     summary="Get paper group detail with members and evidence",
     response_model=PaperGroupDetail,
 )
-def get_paper_group(group_id: str, revision_id: str | None = None) -> PaperGroupDetail:
+def get_paper_group(
+    group_id: str,
+    revision_id: str | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> PaperGroupDetail:
     """Retrieve full group detail, member revisions, screening evidence, and PICO spans (Implemented in D03)."""
-    stub_not_implemented("get_paper_group")
-    raise NotImplementedError
+    return get_paper_group_detail(db=db, group_id=group_id, revision_id=revision_id)
 
 
 @app.post(
@@ -466,10 +522,13 @@ def get_paper_group(group_id: str, revision_id: str | None = None) -> PaperGroup
     summary="Record reviewer eligibility decision",
     response_model=ReviewEventResponse,
 )
-def record_screening_decision(group_id: str, payload: DecisionCommand) -> ReviewEventResponse:
+def record_screening_decision_route(
+    group_id: str,
+    payload: DecisionCommand,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ReviewEventResponse:
     """Append a human include/exclude/maybe decision event with optimistic concurrency (Implemented in D03)."""
-    stub_not_implemented("record_screening_decision")
-    raise NotImplementedError
+    return record_screening_decision(db=db, group_id=group_id, command=payload)
 
 
 @app.post(
@@ -478,10 +537,13 @@ def record_screening_decision(group_id: str, payload: DecisionCommand) -> Review
     summary="Override or save verified PICO spans",
     response_model=ReviewEventResponse,
 )
-def save_pico_annotations(group_id: str, payload: PicoOverrideRequest) -> ReviewEventResponse:
+def save_pico_annotations_route(
+    group_id: str,
+    payload: PicoOverrideRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ReviewEventResponse:
     """Save verified PICO offsets bound to immutable text revision (Implemented in D03)."""
-    stub_not_implemented("save_pico_annotations")
-    raise NotImplementedError
+    return save_pico_annotations(db=db, group_id=group_id, request=payload)
 
 
 @app.post(
@@ -490,10 +552,13 @@ def save_pico_annotations(group_id: str, payload: PicoOverrideRequest) -> Review
     summary="Confirm or reject deduplication candidate pair",
     response_model=ReviewEventResponse,
 )
-def record_dedup_override(workspace_id: str, payload: DedupOverrideRequest) -> ReviewEventResponse:
+def record_dedup_override_route(
+    workspace_id: str,
+    payload: DedupOverrideRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ReviewEventResponse:
     """Confirm duplicate group merge or record cannot-link constraint (Implemented in D03)."""
-    stub_not_implemented("record_dedup_override")
-    raise NotImplementedError
+    return record_dedup_override(db=db, workspace_id=workspace_id, request=payload)
 
 
 @app.post(
@@ -502,10 +567,13 @@ def record_dedup_override(workspace_id: str, payload: DedupOverrideRequest) -> R
     summary="Resolve group merge conflict",
     response_model=ReviewEventResponse,
 )
-def resolve_group_conflict(conflict_id: str, payload: ConflictResolveRequest) -> ReviewEventResponse:
-    """Manually resolve an inherited screening divergence on merged groups (Implemented in D05)."""
-    stub_not_implemented("resolve_group_conflict")
-    raise NotImplementedError
+def resolve_group_conflict_route(
+    conflict_id: str,
+    payload: ConflictResolveRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ReviewEventResponse:
+    """Manually resolve an inherited screening divergence on merged groups (Implemented in D03/D05)."""
+    return resolve_group_conflict(db=db, conflict_id=conflict_id, request=payload)
 
 
 @app.get(
@@ -538,10 +606,30 @@ def restore_corpus_snapshot(workspace_id: str, snapshot_id: str) -> CorpusRevisi
     summary="Export included studies",
     response_model=ExportResponse,
 )
-def export_included_studies(revision_id: str, payload: ExportRequest) -> ExportResponse:
-    """Generate sanitized CSV/RIS export of included studies with audit provenance (Implemented in D04)."""
-    stub_not_implemented("export_included_studies")
-    raise NotImplementedError
+def export_included_studies_route(
+    revision_id: str,
+    payload: ExportRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ExportResponse:
+    """Generate sanitized CSV/RIS export of included studies with audit provenance (Implemented in D03/D04)."""
+    return export_corpus_studies(db=db, revision_id=revision_id, export_format=payload.format)
+
+
+@app.get(
+    "/api/v1/exports/{export_id}/download",
+    tags=["Export"],
+    summary="Download sanitized export file",
+)
+def download_export_file(export_id: str, db: Session = Depends(get_db)):  # noqa: B008
+    """Download generated sanitized export CSV file."""
+    exp = db.query(ExportModel).filter_by(id=export_id).first()
+    if not exp or not os.path.exists(exp.file_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Export file not found")
+    return FileResponse(
+        path=exp.file_path,
+        media_type="text/csv",
+        filename=f"evidra_export_{export_id}.csv",
+    )
 
 
 @app.post(

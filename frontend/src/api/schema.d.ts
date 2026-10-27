@@ -15,9 +15,29 @@ export interface paths {
         put?: never;
         /**
          * Resolve group merge conflict
-         * @description Manually resolve an inherited screening divergence on merged groups (Implemented in D05).
+         * @description Manually resolve an inherited screening divergence on merged groups (Implemented in D03/D05).
          */
-        post: operations["resolve_group_conflict_api_v1_conflicts__conflict_id__resolve_post"];
+        post: operations["resolve_group_conflict_route_api_v1_conflicts__conflict_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exports/{export_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download sanitized export file
+         * @description Download generated sanitized export CSV file.
+         */
+        get: operations["download_export_file_api_v1_exports__export_id__download_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -57,7 +77,7 @@ export interface paths {
          * Record reviewer eligibility decision
          * @description Append a human include/exclude/maybe decision event with optimistic concurrency (Implemented in D03).
          */
-        post: operations["record_screening_decision_api_v1_groups__group_id__decisions_post"];
+        post: operations["record_screening_decision_route_api_v1_groups__group_id__decisions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -77,7 +97,7 @@ export interface paths {
          * Override or save verified PICO spans
          * @description Save verified PICO offsets bound to immutable text revision (Implemented in D03).
          */
-        post: operations["save_pico_annotations_api_v1_groups__group_id__pico_post"];
+        post: operations["save_pico_annotations_route_api_v1_groups__group_id__pico_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -175,9 +195,9 @@ export interface paths {
         put?: never;
         /**
          * Export included studies
-         * @description Generate sanitized CSV/RIS export of included studies with audit provenance (Implemented in D04).
+         * @description Generate sanitized CSV/RIS export of included studies with audit provenance (Implemented in D03/D04).
          */
-        post: operations["export_included_studies_api_v1_revisions__revision_id__exports_post"];
+        post: operations["export_included_studies_route_api_v1_revisions__revision_id__exports_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -277,7 +297,7 @@ export interface paths {
          * Confirm or reject deduplication candidate pair
          * @description Confirm duplicate group merge or record cannot-link constraint (Implemented in D03).
          */
-        post: operations["record_dedup_override_api_v1_workspaces__workspace_id__dedup_decisions_post"];
+        post: operations["record_dedup_override_route_api_v1_workspaces__workspace_id__dedup_decisions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -298,6 +318,26 @@ export interface paths {
          * @description Queue durable literature import job for approved search executions.
          */
         post: operations["trigger_import_job_api_v1_workspaces__workspace_id__imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/process-corpus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger deterministic deduplication, screening, and PICO extraction
+         * @description Run full deterministic review pipeline on imported workspace records.
+         */
+        post: operations["run_process_corpus_api_v1_workspaces__workspace_id__process_corpus_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -353,7 +393,7 @@ export interface paths {
         };
         /**
          * List published corpus revisions
-         * @description List historical immutable corpus snapshots (Implemented in D04/D05).
+         * @description List historical immutable corpus snapshots.
          */
         get: operations["list_corpus_revisions_api_v1_workspaces__workspace_id__revisions_get"];
         put?: never;
@@ -1496,7 +1536,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    resolve_group_conflict_api_v1_conflicts__conflict_id__resolve_post: {
+    resolve_group_conflict_route_api_v1_conflicts__conflict_id__resolve_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1518,6 +1558,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewEventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_export_file_api_v1_exports__export_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -1564,7 +1635,7 @@ export interface operations {
             };
         };
     };
-    record_screening_decision_api_v1_groups__group_id__decisions_post: {
+    record_screening_decision_route_api_v1_groups__group_id__decisions_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1599,7 +1670,7 @@ export interface operations {
             };
         };
     };
-    save_pico_annotations_api_v1_groups__group_id__pico_post: {
+    save_pico_annotations_route_api_v1_groups__group_id__pico_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1764,7 +1835,7 @@ export interface operations {
             };
         };
     };
-    export_included_studies_api_v1_revisions__revision_id__exports_post: {
+    export_included_studies_route_api_v1_revisions__revision_id__exports_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1937,7 +2008,7 @@ export interface operations {
             };
         };
     };
-    record_dedup_override_api_v1_workspaces__workspace_id__dedup_decisions_post: {
+    record_dedup_override_route_api_v1_workspaces__workspace_id__dedup_decisions_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1994,6 +2065,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_process_corpus_api_v1_workspaces__workspace_id__process_corpus_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorpusRevisionResponse"];
                 };
             };
             /** @description Validation Error */
