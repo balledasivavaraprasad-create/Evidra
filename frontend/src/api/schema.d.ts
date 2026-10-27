@@ -93,11 +93,31 @@ export interface paths {
         };
         /**
          * Get background job status
-         * @description Poll status, stage, progress, and errors for a background job (Implemented in D02).
+         * @description Poll status, stage, progress, and errors for a background job.
          */
         get: operations["get_job_status_api_v1_jobs__job_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel running or queued background job
+         * @description Cancel background job execution safely.
+         */
+        post: operations["cancel_job_endpoint_api_v1_jobs__job_id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -115,7 +135,7 @@ export interface paths {
         put?: never;
         /**
          * Execute search count acquisition
-         * @description Trigger count-only query acquisition from literature provider (Implemented in D02).
+         * @description Trigger count-only query acquisition from literature provider.
          */
         post: operations["execute_search_count_api_v1_queries__query_id__searches_post"];
         delete?: never;
@@ -235,7 +255,7 @@ export interface paths {
         put?: never;
         /**
          * Save a new criteria version
-         * @description Save immutable review question and inclusion/exclusion criteria version (Implemented in D02/B02).
+         * @description Save immutable review question and inclusion/exclusion criteria version.
          */
         post: operations["create_criteria_version_api_v1_workspaces__workspace_id__criteria_post"];
         delete?: never;
@@ -275,7 +295,7 @@ export interface paths {
         put?: never;
         /**
          * Trigger approved record import job
-         * @description Queue durable literature import job for approved search executions (Implemented in D02).
+         * @description Queue durable literature import job for approved search executions.
          */
         post: operations["trigger_import_job_api_v1_workspaces__workspace_id__imports_post"];
         delete?: never;
@@ -295,7 +315,7 @@ export interface paths {
         put?: never;
         /**
          * Save a new query version
-         * @description Save an immutable structured search query version (Implemented in D02).
+         * @description Save an immutable structured search query version.
          */
         post: operations["create_query_version_api_v1_workspaces__workspace_id__queries_post"];
         delete?: never;
@@ -1615,6 +1635,37 @@ export interface operations {
         };
     };
     get_job_status_api_v1_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_endpoint_api_v1_jobs__job_id__cancel_post: {
         parameters: {
             query?: never;
             header?: never;
