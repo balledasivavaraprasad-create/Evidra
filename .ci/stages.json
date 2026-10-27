@@ -1,6 +1,6 @@
 {
   "backend": "application",
-  "frontend": "planning",
+  "frontend": "application",
   "integration": false,
   "level2": false,
   "ai": false
