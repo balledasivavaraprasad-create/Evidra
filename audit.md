@@ -65,6 +65,7 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Explainable screening criteria, context-aware rules, and honest Maybe state (B02: `92c3480`).
 - [x] Query builder and import UI approval workflow (A02: `03a7acc`).
 - [x] Reviewer services, decision persistence, optimistic locking, and export (D03: `78a8d01`).
+- [x] Durable LangGraph pipeline and review subgraph with persistent SQLite checkpointing (C02: `6e106aa`).
 - [ ] Remaining domain endpoints (diffs, snapshots) and auth.
 - [ ] PubMed/Europe PMC quotas, registrations and disclaimer presentation.
 - [ ] Query builder and import UI approval workflow.
