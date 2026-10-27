@@ -1,0 +1,48 @@
+{
+  "evaluation_name": "ML Review Prioritization Evaluation",
+  "scope": "In adults with type 2 diabetes, how does metformin, compared with placebo or another glucose-lowering intervention, affect HbA1c?",
+  "artifact_version": "ml_ranker:v1.0.0",
+  "total_test_records": 8,
+  "relevant_count": 4,
+  "excluded_count": 4,
+  "metrics": {
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "wss_at_95": 0.45,
+    "precision_at_5": 0.8,
+    "inference_total_ms": 12.353,
+    "inference_per_record_ms": 1.544
+  },
+  "top_5_prioritized_records": [
+    {
+      "rank": 1,
+      "record_id": "rec-ml-016",
+      "score": 0.6721,
+      "true_label": 1
+    },
+    {
+      "rank": 2,
+      "record_id": "rec-ml-011",
+      "score": 0.6575,
+      "true_label": 1
+    },
+    {
+      "rank": 3,
+      "record_id": "rec-ml-006",
+      "score": 0.656,
+      "true_label": 1
+    },
+    {
+      "rank": 4,
+      "record_id": "rec-ml-015",
+      "score": 0.6334,
+      "true_label": 1
+    },
+    {
+      "rank": 5,
+      "record_id": "rec-ml-036",
+      "score": 0.5095,
+      "true_label": 0
+    }
+  ]
+}
