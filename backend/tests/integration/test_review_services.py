@@ -240,12 +240,12 @@ def test_exclusion_requires_reason(db_session: Session, client: TestClient):
         "expected_version": 1,
     }
     res = client.post(f"/api/v1/groups/{target_group.id}/decisions", json=cmd)
-    assert res.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert res.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Whitespace only reason
     cmd["reason"] = "    "
     res = client.post(f"/api/v1/groups/{target_group.id}/decisions", json=cmd)
-    assert res.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert res.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Valid reason succeeds
     cmd["reason"] = "Preclinical animal model without human participants"
@@ -332,7 +332,7 @@ def test_pico_annotation_validation_and_overlap(db_session: Session, client: Tes
         ],
     )
     res_bad = client.post(f"/api/v1/groups/{target_group.id}/pico", json=invalid_request.model_dump())
-    assert res_bad.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert res_bad.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_dedup_override_cannot_link_constraint(db_session: Session, client: TestClient):
