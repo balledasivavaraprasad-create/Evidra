@@ -1,0 +1,288 @@
+{
+  "dataset_name": "evidra_t2d_metformin_ml_priority_benchmark_v1",
+  "review_question": "In adults with type 2 diabetes, how does metformin, compared with placebo or another glucose-lowering intervention, affect HbA1c?",
+  "created_at": "2026-10-27",
+  "provenance": "Constructed from synthetic clinical fixtures conforming to docs/review-question.md and evals/screening/fixtures.json.",
+  "records": [
+    {
+      "id": "rec-ml-001",
+      "group_id": "grp-001",
+      "title": "Efficacy of metformin versus placebo in type 2 diabetes: a randomized controlled trial",
+      "abstract_text": "Background: In adults with type 2 diabetes, metformin is commonly used as first-line therapy. Methods: A randomized double-blind placebo-controlled trial evaluated metformin versus placebo over 24 weeks in 350 adult patients. Results: Patients receiving metformin achieved a statistically significant reduction in HbA1c of 1.1%. Conclusion: Metformin monotherapy significantly improves glycemic control compared with placebo.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-002",
+      "group_id": "grp-001",
+      "title": "Metformin versus placebo in type 2 diabetes: 2-year glycemic durability extension",
+      "abstract_text": "Follow-up extension of double-blind randomized clinical trial in adult type 2 diabetes patients comparing metformin against placebo. Durability of HbA1c lowering was maintained at 24 months without excess hypoglycemia.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-003",
+      "group_id": "grp-002",
+      "title": "Comparative clinical trial of oral metformin versus sulfonylurea monotherapy in adult diabetics",
+      "abstract_text": "Objective: To compare glycemic control between metformin and glimepiride in adults with type 2 diabetes. Methods: A multicenter comparative trial enrolled 420 diabetic patients randomized to oral metformin or sulfonylurea for 52 weeks. Outcome: Mean change in HbA1c was -1.2% in the metformin arm vs -0.8% with sulfonylurea.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-004",
+      "group_id": "grp-003",
+      "title": "Metformin extended-release versus immediate-release in poorly controlled type 2 diabetes: randomized study",
+      "abstract_text": "Randomized comparative study comparing extended-release metformin with immediate-release formulation in 280 adult diabetic patients. Both arms showed significant reduction in hemoglobin A1c from baseline (p < 0.001) with improved gastrointestinal tolerability in the extended-release cohort.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-005",
+      "group_id": "grp-004",
+      "title": "Metformin combined with lifestyle intervention versus lifestyle alone in adults with newly diagnosed T2D",
+      "abstract_text": "A prospective comparative clinical trial evaluated metformin plus lifestyle intervention against lifestyle intervention alone in 190 adults with type 2 diabetes. Patients receiving metformin achieved greater HbA1c reductions at 6 months (-1.4% vs -0.6%).",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-006",
+      "group_id": "grp-005",
+      "title": "Triple therapy with metformin, SGLT2 inhibitor, and DPP-4 inhibitor in type 2 diabetes: randomized trial",
+      "abstract_text": "In adults with uncontrolled type 2 diabetes mellitus on background metformin, the addition of dapagliflozin versus placebo was assessed in a double-blind randomized controlled trial. Primary outcome: placebo-corrected reduction in HbA1c was -0.78% at week 24.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-007",
+      "group_id": "grp-006",
+      "title": "Comparative efficacy of metformin versus pioglitazone in overweight adult patients with type 2 diabetes",
+      "abstract_text": "Design: A 12-month randomized open-label comparative trial in 210 adult diabetic patients. Patients were allocated to metformin 1000 mg twice daily or pioglitazone 30 mg daily. Results: Both treatments produced significant HbA1c lowering (-1.1% vs -1.0%).",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-008",
+      "group_id": "grp-007",
+      "title": "Early intensive insulin therapy versus oral metformin in newly diagnosed adult type 2 diabetes",
+      "abstract_text": "Methods: A randomized controlled trial compared temporary intensive insulin with oral metformin therapy in 260 adult patients with severe hyperglycemia. Both interventions substantially lowered HbA1c and restored beta-cell preservation over 1 year.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-009",
+      "group_id": "grp-008",
+      "title": "Metformin versus DPP-4 inhibitor as add-on therapy in type 2 diabetes: randomized clinical investigation",
+      "abstract_text": "A comparative clinical study evaluated oral metformin versus sitagliptin in adults with type 2 diabetes failing dietary management. Metformin achieved superior glycemic durability and lower HbA1c at 36 weeks.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-010",
+      "group_id": "grp-009",
+      "title": "Dose-escalation randomized evaluation of metformin in elderly adult patients with type 2 diabetes",
+      "abstract_text": "A randomized trial examined metformin 500 mg, 1000 mg, and 2000 mg daily versus placebo in 180 elderly adult patients with type 2 diabetes. Glycated hemoglobin HbA1c decreased in a dose-dependent manner.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-011",
+      "group_id": "grp-010",
+      "title": "Glycemic response to metformin monotherapy in adults with impaired fasting glucose and early type 2 diabetes",
+      "abstract_text": "Double-blind placebo-controlled study assessing metformin 850 mg twice daily versus placebo in 310 adult individuals with early type 2 diabetes. Significant reduction in mean HbA1c observed over 48 weeks.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-012",
+      "group_id": "grp-011",
+      "title": "Evaluation of metformin versus acarbose in Asian adult patients with type 2 diabetes",
+      "abstract_text": "A randomized active-comparator trial compared metformin to acarbose in 240 adult patients with type 2 diabetes. Primary endpoint: mean change in HbA1c at 24 weeks was -1.15% with metformin compared with -0.85% with acarbose.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-013",
+      "group_id": "grp-012",
+      "title": "Metformin action on beta-cell function and glycemic durability in type 2 diabetes",
+      "abstract_text": "Clinical prospective trial in adult diabetic patients receiving oral biguanide metformin. Metformin lowered HbA1c and improved HOMA-B index compared to baseline controls.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-014",
+      "group_id": "grp-013",
+      "title": "Comparative cohort study of metformin versus sulfonylurea on cardiovascular risk and HbA1c in T2D",
+      "abstract_text": "A prospective comparative cohort study in 1200 adults with type 2 diabetes comparing long-term metformin versus sulfonylurea. Metformin cohort exhibited lower HbA1c (-0.9% difference) and decreased cardiovascular events.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-015",
+      "group_id": "grp-014",
+      "title": "Efficacy of metformin versus placebo in prediabetic adults with metabolic syndrome: 3-year trial",
+      "abstract_text": "Randomized placebo-controlled trial evaluating metformin 850 mg twice daily versus placebo in 500 adults with metabolic syndrome and elevated HbA1c. Metformin significantly reduced HbA1c progression to overt diabetes.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-016",
+      "group_id": "grp-015",
+      "title": "Randomized comparison of metformin and vildagliptin in drug-naive adult type 2 diabetes",
+      "abstract_text": "Clinical trial in 260 adult patients with type 2 diabetes randomized to metformin monotherapy or vildagliptin. Both arms achieved significant reduction in HbA1c from baseline (-1.3% vs -1.1%).",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-017",
+      "group_id": "grp-016",
+      "title": "Metformin versus lifestyle intervention in morbidly obese adults with type 2 diabetes",
+      "abstract_text": "Comparative clinical trial in 150 adults with BMI > 35 and type 2 diabetes. Patients were randomized to metformin plus lifestyle or lifestyle alone. Metformin group achieved superior glycemic control with HbA1c decline of 1.2%.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-018",
+      "group_id": "grp-017",
+      "title": "Twice-daily versus once-daily metformin formulations in type 2 diabetes: randomized crossover trial",
+      "abstract_text": "A randomized crossover study in 90 adult diabetic patients comparing glycemic control between twice-daily immediate-release and once-daily extended-release metformin. HbA1c levels were equivalent across both treatment phases.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-019",
+      "group_id": "grp-018",
+      "title": "Metformin versus placebo for prevention of glycemic deterioration in adult diabetic patients",
+      "abstract_text": "A double-blind placebo-controlled investigation of metformin therapy in adult type 2 diabetes. HbA1c decreased by 0.95% in the active treatment arm compared with placebo (p < 0.001).",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-020",
+      "group_id": "grp-019",
+      "title": "Comparative study of metformin and empagliflozin monotherapy in adult type 2 diabetes",
+      "abstract_text": "Multicenter trial evaluating metformin versus SGLT2 inhibitor empagliflozin in 320 drug-naive adults with type 2 diabetes. Both monotherapies demonstrated sustained reduction in HbA1c over 52 weeks.",
+      "label": 1
+    },
+    {
+      "id": "rec-ml-021",
+      "group_id": "grp-020",
+      "title": "Metformin regulates hepatic gluconeogenic enzyme expression in streptozotocin-induced diabetic rats",
+      "abstract_text": "Preclinical animal model: male Sprague-Dawley rats were rendered diabetic with streptozotocin and treated with oral metformin 250 mg/kg daily. Metformin suppressed PEPCK and glucose-6-phosphatase mRNA in treated rodents. Preclinical rat study only, no human subjects.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-022",
+      "group_id": "grp-020",
+      "title": "Metformin prevents nephropathy progression in diabetic Wistar rats",
+      "abstract_text": "Animal experiment: adult male Wistar rats with streptozotocin-induced diabetes received metformin or vehicle control. Renal histopathology and glomerular filtration in rodents were assessed. Preclinical animal research.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-023",
+      "group_id": "grp-021",
+      "title": "Hepatic AMPK phosphorylation by biguanides in C57BL/6J mice",
+      "abstract_text": "Murine animal model: male C57BL/6J mice fed a high-fat diet were administered metformin intraperitoneally. Liver tissue phosphorylation kinetics and mitochondrial respiration were measured in animal cohorts.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-024",
+      "group_id": "grp-022",
+      "title": "Effects of biguanides on lipid peroxidation in diabetic rabbit retinas",
+      "abstract_text": "Laboratory animal study: New Zealand white rabbits were induced with alloxan diabetes and treated with biguanides. Retinal oxidative stress markers were quantified in euthanized animals.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-025",
+      "group_id": "grp-023",
+      "title": "Metformin modulation of intestinal tight junctions in Sprague-Dawley rodents",
+      "abstract_text": "Preclinical investigation in male Sprague-Dawley rats. Intestinal permeability and mucosal inflammation were evaluated in rats receiving metformin. Pure animal model research.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-026",
+      "group_id": "grp-024",
+      "title": "In silico molecular modeling of biguanide binding kinetics to human AMPK complex",
+      "abstract_text": "A computational docking and molecular dynamics simulation explored metformin interaction with human AMPK. In silico binding energy was calculated at -7.8 kcal/mol. Pure computational modeling without human patients or living tissues.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-027",
+      "group_id": "grp-025",
+      "title": "Molecular dynamics simulation of organic cation transporter OCT1 binding to metformin",
+      "abstract_text": "In silico structural simulation: 100-nanosecond atomistic molecular dynamics simulated binding cavity trajectories of OCT1 with biguanides. Theoretical computational calculations without empirical clinical trial.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-028",
+      "group_id": "grp-026",
+      "title": "Density functional theory calculations of metformin tautomerism and metal chelation",
+      "abstract_text": "Quantum chemical simulation: density functional theory (DFT) at the B3LYP/6-31G level investigated copper and zinc chelation geometries with metformin. Theoretical physics and in silico modeling only.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-029",
+      "group_id": "grp-027",
+      "title": "Computational pharmacokinetic modeling of hepatic metformin clearance",
+      "abstract_text": "Physiologically based pharmacokinetic (PBPK) computer simulation model simulating hepatic transport of biguanides. Differential equation mathematical model without clinical patient cohort.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-030",
+      "group_id": "grp-028",
+      "title": "In silico screening of biguanide derivatives against mitochondrial complex I",
+      "abstract_text": "Virtual ligand screening and quantitative structure-activity relationship (QSAR) simulation predicting complex I inhibition for novel biguanides. Computer simulation without biological testing.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-031",
+      "group_id": "grp-029",
+      "title": "Metformin-induced severe lactic acidosis in an 82-year-old female: a case report",
+      "abstract_text": "We report a single case report of an 82-year-old female presenting with severe lactic acidosis (pH 6.9, lactate 18 mmol/L) during acute kidney injury while taking metformin. Hemodialysis led to recovery. Individual patient case description without comparative design.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-032",
+      "group_id": "grp-030",
+      "title": "Metformin intoxication with profound hypothermia in a solitary patient: case report",
+      "abstract_text": "Single case report describing a 74-year-old man who developed deep accidental hypothermia and metabolic acidosis following biguanide accumulation. Single patient observational presentation.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-033",
+      "group_id": "grp-031",
+      "title": "Refractory metformin-associated lactic acidosis successfully treated with CVVHDF: a case report",
+      "abstract_text": "Case report of a 68-year-old male presenting with acute on chronic renal failure and metformin accumulation. Continuous venovenous hemodiafiltration was initiated. Narrative single case report.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-034",
+      "group_id": "grp-032",
+      "title": "Metformin-induced pancreatitis in an elderly diabetic woman: case report",
+      "abstract_text": "We describe a rare single case report of acute necrotizing pancreatitis attributed to metformin initiation in an elderly woman with normal renal function. Isolated case report lacking control group.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-035",
+      "group_id": "grp-033",
+      "title": "Efficacy of metformin in pediatric and adolescent patients with type 1 diabetes mellitus",
+      "abstract_text": "A clinical study evaluating insulin requirements in children and adolescents aged 8-16 years with autoimmune type 1 diabetes receiving adjunct metformin. Off-target pediatric non-type 2 diabetes population.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-036",
+      "group_id": "grp-034",
+      "title": "Metformin treatment in pregnant women with gestational diabetes: neonatal outcomes",
+      "abstract_text": "Clinical trial evaluating metformin in pregnant women diagnosed with gestational diabetes during the third trimester. Off-target gestational diabetes population; not non-pregnant adults with type 2 diabetes.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-037",
+      "group_id": "grp-035",
+      "title": "Pharmacokinetics of oral metformin in healthy adult volunteers under fasting conditions",
+      "abstract_text": "Phase 1 open-label pharmacokinetic study of metformin absorption and bioavailability in 24 healthy non-diabetic volunteers without type 2 diabetes. Healthy volunteer trial lacking clinical efficacy outcomes.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-038",
+      "group_id": "grp-036",
+      "title": "Historical perspective on the discovery and clinical adoption of biguanides: review",
+      "abstract_text": "A narrative historical review detailing the extraction of guanidines from Galega officinalis and the synthesis of phenformin and metformin in the 20th century. Narrative literature overview without primary empirical comparative data.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-039",
+      "group_id": "grp-037",
+      "title": "In vitro suppression of cellular proliferation by metformin in human breast cancer cell lines",
+      "abstract_text": "In vitro laboratory study: MCF-7 and MDA-MB-231 malignant cell cultures were treated with metformin concentrations. Cell cycle arrest and apoptosis were assessed in vitro. Oncology cell study without diabetes clinical evaluation.",
+      "label": 0
+    },
+    {
+      "id": "rec-ml-040",
+      "group_id": "grp-038",
+      "title": "Editorial: New therapeutic horizons for metformin in longevity and geroscience",
+      "abstract_text": "Editorial commentary discussing potential future clinical applications of biguanides in aging and healthspan. Opinion piece without original clinical trial data or comparative patient outcomes.",
+      "label": 0
+    }
+  ]
+}

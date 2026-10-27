@@ -1,0 +1,29 @@
+{
+  "artifact_version": "ml_ranker:v1.0.0",
+  "model_type": "Tfidf_LogisticRegression",
+  "sklearn_version": "1.9.1",
+  "joblib_version": "1.6.0",
+  "created_at": "2026-10-27T07:15:22.094504+00:00",
+  "scope": "In adults with type 2 diabetes, how does metformin, compared with placebo or another glucose-lowering intervention, affect HbA1c?",
+  "feature_count": 500,
+  "train_records_count": 24,
+  "train_hash": "a1c23429c116c54c297bc9790800d7437d79395c5e6654f1b28d787495fcc3ec",
+  "val_hash": "18c147e05c2523442e2d77dc969cff2a14c2fcf27251dd53fffecba536fe0561",
+  "test_hash": "099d23db62c9ba150afa7d61395ce0db740d5b160281256fb98998959256157f",
+  "model_file_sha256": "e19b7a4763a8a658f9a9f60d9c32b2b26b25de062312599f73012005e9c6a8ab",
+  "config": {
+    "max_features": 500,
+    "ngram_min": 1,
+    "ngram_max": 2,
+    "c_param": 1.5,
+    "class_weight": "balanced",
+    "seed": 42,
+    "val_ratio": 0.2,
+    "test_ratio": 0.2
+  },
+  "metrics": {
+    "val_accuracy": 1.0,
+    "val_mean_pos_score": 0.6563,
+    "val_mean_neg_score": 0.3761
+  }
+}
