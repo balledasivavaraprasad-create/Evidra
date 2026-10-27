@@ -31,6 +31,12 @@
     "vitest": "5.0.5"
   },
   "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "api:generate": "openapi-typescript ../contracts/openapi.json -o src/api/schema.d.ts",
+    "api:check": "node scripts/check-api-drift.js",
     "check:dependencies": "tsc -p probe/tsconfig.json && vite build probe"
   },
   "packageManager": "npm@11.14.1"
