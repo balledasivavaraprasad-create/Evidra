@@ -47,6 +47,9 @@ class WorkspaceModel(Base):
     query_versions = relationship("QueryVersionModel", back_populates="workspace", cascade="all, delete-orphan")
     source_records = relationship("SourceRecordModel", back_populates="workspace", cascade="all, delete-orphan")
     jobs = relationship("JobModel", back_populates="workspace", cascade="all, delete-orphan")
+    corpus_revisions = relationship("CorpusRevisionModel", back_populates="workspace", cascade="all, delete-orphan")
+    paper_groups = relationship("PaperGroupModel", back_populates="workspace", cascade="all, delete-orphan")
+    review_events = relationship("ReviewEventModel", back_populates="workspace", cascade="all, delete-orphan")
 
 
 class CriteriaVersionModel(Base):
@@ -243,4 +246,218 @@ class IdempotencyRecordModel(Base):
     request_hash = Column(String(64), nullable=False)
     response_code = Column(Integer, nullable=False)
     response_json = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+
+class CorpusRevisionModel(Base):
+    """Immutable snapshot of literature corpus state."""
+
+    __tablename__ = "corpus_revisions"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    workspace_id = Column(String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    parent_id = Column(String(64), ForeignKey("corpus_revisions.id"), nullable=True)
+    criteria_version_id = Column(String(64), ForeignKey("criteria_versions.id"), nullable=False)
+    dedup_version = Column(String(32), nullable=False)
+    state = Column(String(32), nullable=False)
+    published_at = Column(DateTime, nullable=True)
+    decision_seq_cutoff = Column(Integer, nullable=True)
+    fingerprint = Column(String(64), nullable=False)
+    group_count = Column(Integer, default=0, nullable=False)
+    record_count = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    workspace = relationship("WorkspaceModel", back_populates="corpus_revisions")
+
+
+class CorpusQueryModel(Base):
+    """Search executions included in a corpus revision."""
+
+    __tablename__ = "corpus_queries"
+
+    corpus_revision_id = Column(String(64), ForeignKey("corpus_revisions.id", ondelete="CASCADE"), nullable=False)
+    search_execution_id = Column(String(64), ForeignKey("search_executions.id", ondelete="CASCADE"), nullable=False)
+
+    __table_args__ = (
+        PrimaryKeyConstraint("corpus_revision_id", "search_execution_id", name="pk_corpus_queries"),
+    )
+
+
+class CorpusMemberModel(Base):
+    """Record revisions included in a corpus revision snapshot."""
+
+    __tablename__ = "corpus_members"
+
+    corpus_revision_id = Column(String(64), ForeignKey("corpus_revisions.id", ondelete="CASCADE"), nullable=False)
+    source_record_id = Column(String(64), ForeignKey("source_records.id", ondelete="CASCADE"), nullable=False)
+    record_revision_id = Column(String(64), ForeignKey("record_revisions.id", ondelete="CASCADE"), nullable=False)
+
+    __table_args__ = (
+        PrimaryKeyConstraint("corpus_revision_id", "source_record_id", name="pk_corpus_members"),
+    )
+
+
+class PaperGroupModel(Base):
+    """Deduplicated paper group identity. ID is never recycled."""
+
+    __tablename__ = "paper_groups"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    workspace_id = Column(String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    membership_fingerprint = Column(String(64), nullable=False)
+    row_version = Column(Integer, default=1, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    workspace = relationship("WorkspaceModel", back_populates="paper_groups")
+
+
+class GroupMemberModel(Base):
+    """Members of a paper group."""
+
+    __tablename__ = "group_members"
+
+    group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=False)
+    source_record_id = Column(String(64), ForeignKey("source_records.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    __table_args__ = (
+        PrimaryKeyConstraint("group_id", "source_record_id", name="pk_group_members"),
+    )
+
+
+class GroupSnapshotModel(Base):
+    """Snapshot mapping of paper group to representative revision in a corpus revision."""
+
+    __tablename__ = "group_snapshots"
+
+    corpus_revision_id = Column(String(64), ForeignKey("corpus_revisions.id", ondelete="CASCADE"), nullable=False)
+    group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=False)
+    representative_revision_id = Column(String(64), ForeignKey("record_revisions.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    __table_args__ = (
+        PrimaryKeyConstraint("corpus_revision_id", "group_id", name="pk_group_snapshots"),
+    )
+
+
+class GroupLineageModel(Base):
+    """Provenance tracking for paper group mergers, splits, and extensions."""
+
+    __tablename__ = "group_lineage"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    corpus_revision_id = Column(String(64), ForeignKey("corpus_revisions.id", ondelete="CASCADE"), nullable=False)
+    parent_group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=False)
+    child_group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=False)
+    operation = Column(String(32), nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+
+class DedupEdgeModel(Base):
+    """Deduplication pairwise candidate edge and evidence."""
+
+    __tablename__ = "dedup_edges"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    workspace_id = Column(String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    record_id_a = Column(String(64), nullable=False)
+    record_id_b = Column(String(64), nullable=False)
+    score = Column(Float, nullable=False)
+    method_version = Column(String(32), nullable=False)
+    evidence_json = Column(Text, nullable=False)
+    status = Column(String(32), nullable=False)
+    reviewer_event_id = Column(String(64), nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "record_id_a", "record_id_b", name="uq_dedup_edges_pair"),
+    )
+
+
+class MachineResultModel(Base):
+    """Cached machine/rule output for a stage on a record revision."""
+
+    __tablename__ = "machine_results"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    corpus_revision_id = Column(String(64), ForeignKey("corpus_revisions.id", ondelete="CASCADE"), nullable=False, index=True)
+    group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    record_revision_id = Column(String(64), ForeignKey("record_revisions.id", ondelete="CASCADE"), nullable=False)
+    stage = Column(String(32), nullable=False)
+    input_fingerprint = Column(String(64), nullable=False)
+    method_version = Column(String(32), nullable=False)
+    output_json = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("stage", "input_fingerprint", "corpus_revision_id", name="uq_machine_results_fingerprint"),
+    )
+
+
+class ReviewEventModel(Base):
+    """Append-only reviewer decision event."""
+
+    __tablename__ = "review_events"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    workspace_id = Column(String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    sequence = Column(Integer, nullable=False)
+    event_type = Column(String(32), nullable=False)
+    payload_json = Column(Text, nullable=False)
+    actor_id = Column(String(128), nullable=False)
+    reason = Column(Text, nullable=True)
+    supersedes_event_id = Column(String(64), nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    workspace = relationship("WorkspaceModel", back_populates="review_events")
+
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "sequence", name="uq_review_events_workspace_seq"),
+    )
+
+
+class PicoAnnotationModel(Base):
+    """Persistent PICO annotation offset spans bound to record revision text."""
+
+    __tablename__ = "pico_annotations"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    event_id = Column(String(64), nullable=True)
+    record_revision_id = Column(String(64), ForeignKey("record_revisions.id", ondelete="CASCADE"), nullable=False, index=True)
+    label = Column(String(16), nullable=False)
+    start_cp = Column(Integer, nullable=False)
+    end_cp = Column(Integer, nullable=False)
+    quote = Column(Text, nullable=False)
+    provenance = Column(String(64), nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+
+class ReviewConflictModel(Base):
+    """Explicit review decision conflict awaiting resolution."""
+
+    __tablename__ = "review_conflicts"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    corpus_revision_id = Column(String(64), ForeignKey("corpus_revisions.id", ondelete="CASCADE"), nullable=False, index=True)
+    group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind = Column(String(32), nullable=False)
+    conflicting_event_ids_json = Column(Text, nullable=False)
+    resolution_event_id = Column(String(64), nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+
+class ExportModel(Base):
+    """Export metadata and file record."""
+
+    __tablename__ = "exports"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    workspace_id = Column(String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    corpus_revision_id = Column(String(64), ForeignKey("corpus_revisions.id", ondelete="CASCADE"), nullable=False, index=True)
+    format = Column(String(16), nullable=False)
+    record_count = Column(Integer, nullable=False)
+    sha256_checksum = Column(String(64), nullable=False)
+    file_path = Column(Text, nullable=False)
+    created_by = Column(String(128), nullable=False)
     created_at = Column(DateTime, default=utc_now, nullable=False)

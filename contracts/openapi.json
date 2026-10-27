@@ -2133,8 +2133,8 @@
   "paths": {
     "/api/v1/conflicts/{conflict_id}/resolve": {
       "post": {
-        "description": "Manually resolve an inherited screening divergence on merged groups (Implemented in D05).",
-        "operationId": "resolve_group_conflict_api_v1_conflicts__conflict_id__resolve_post",
+        "description": "Manually resolve an inherited screening divergence on merged groups (Implemented in D03/D05).",
+        "operationId": "resolve_group_conflict_route_api_v1_conflicts__conflict_id__resolve_post",
         "parameters": [
           {
             "in": "path",
@@ -2181,6 +2181,47 @@
         "summary": "Resolve group merge conflict",
         "tags": [
           "Review"
+        ]
+      }
+    },
+    "/api/v1/exports/{export_id}/download": {
+      "get": {
+        "description": "Download generated sanitized export CSV file.",
+        "operationId": "download_export_file_api_v1_exports__export_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "title": "Export Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download sanitized export file",
+        "tags": [
+          "Export"
         ]
       }
     },
@@ -2246,7 +2287,7 @@
     "/api/v1/groups/{group_id}/decisions": {
       "post": {
         "description": "Append a human include/exclude/maybe decision event with optimistic concurrency (Implemented in D03).",
-        "operationId": "record_screening_decision_api_v1_groups__group_id__decisions_post",
+        "operationId": "record_screening_decision_route_api_v1_groups__group_id__decisions_post",
         "parameters": [
           {
             "in": "path",
@@ -2299,7 +2340,7 @@
     "/api/v1/groups/{group_id}/pico": {
       "post": {
         "description": "Save verified PICO offsets bound to immutable text revision (Implemented in D03).",
-        "operationId": "save_pico_annotations_api_v1_groups__group_id__pico_post",
+        "operationId": "save_pico_annotations_route_api_v1_groups__group_id__pico_post",
         "parameters": [
           {
             "in": "path",
@@ -2542,8 +2583,8 @@
     },
     "/api/v1/revisions/{revision_id}/exports": {
       "post": {
-        "description": "Generate sanitized CSV/RIS export of included studies with audit provenance (Implemented in D04).",
-        "operationId": "export_included_studies_api_v1_revisions__revision_id__exports_post",
+        "description": "Generate sanitized CSV/RIS export of included studies with audit provenance (Implemented in D03/D04).",
+        "operationId": "export_included_studies_route_api_v1_revisions__revision_id__exports_post",
         "parameters": [
           {
             "in": "path",
@@ -2827,7 +2868,7 @@
     "/api/v1/workspaces/{workspace_id}/dedup-decisions": {
       "post": {
         "description": "Confirm duplicate group merge or record cannot-link constraint (Implemented in D03).",
-        "operationId": "record_dedup_override_api_v1_workspaces__workspace_id__dedup_decisions_post",
+        "operationId": "record_dedup_override_route_api_v1_workspaces__workspace_id__dedup_decisions_post",
         "parameters": [
           {
             "in": "path",
@@ -2927,6 +2968,49 @@
         "summary": "Trigger approved record import job",
         "tags": [
           "Ingestion"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/process-corpus": {
+      "post": {
+        "description": "Run full deterministic review pipeline on imported workspace records.",
+        "operationId": "run_process_corpus_api_v1_workspaces__workspace_id__process_corpus_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorpusRevisionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trigger deterministic deduplication, screening, and PICO extraction",
+        "tags": [
+          "Corpus"
         ]
       }
     },
@@ -3037,7 +3121,7 @@
     },
     "/api/v1/workspaces/{workspace_id}/revisions": {
       "get": {
-        "description": "List historical immutable corpus snapshots (Implemented in D04/D05).",
+        "description": "List historical immutable corpus snapshots.",
         "operationId": "list_corpus_revisions_api_v1_workspaces__workspace_id__revisions_get",
         "parameters": [
           {
