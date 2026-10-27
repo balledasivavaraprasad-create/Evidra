@@ -39,7 +39,8 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | Stage-aware backend/frontend check runner | Passed locally in planning stage | [Backend](docs/validation/ci-backend-local.txt) and [frontend](docs/validation/ci-frontend-local.txt); dependency checks/probes, not application tests; existing frontend warnings remain |
 | D01: Backend foundation and frozen contracts | Merged | Commit `a6f78e9`; promoted backend to application stage, initial SQLite schema and Alembic migration `001_initial_schema`, frozen Pydantic contracts and `contracts/openapi.json`, health and workspace persistence, 10 contract tests passing; see [D01 handoff](prompts/handoffs/D01.md) |
 | A01: React foundation and premium design system | Merged | Commit `7a19548`; promoted frontend to application stage, Evidence Observatory design system, typed API client and OpenAPI drift check, route shells for landing/workspaces/search/records/duplicates/history, 3 unit tests passing; see [A01 handoff](prompts/handoffs/A01.md) |
-| B01: Deterministic deduplication engine | Merged | Commit `470c575`; pure deduplication engine with DOI/PMID/title normalization, study vs paper separation, cannot-link constraint enforcement, deterministic representative selection, benchmark evals and 9 unit tests passing; see [B01 handoff](prompts/handoffs/B01.md) |
+| C01: Exact-span PICO baseline | Merged | Commit `2bb9a84`; pure rule-based PICO extractor conforming to `PicoPort`, exact Unicode code-point offsets `[start_cp, end_cp)` with UTF-16 browser projection, comparator negation handling, span validator, and 16 unit tests passing; see [C01 handoff](prompts/handoffs/C01.md) |
+| B01: Deterministic deduplication engine | Merged | Commit `2581811`; pure deduplication engine with DOI/PMID/title normalization, study vs paper separation, cannot-link constraint enforcement, deterministic representative selection, benchmark evals and 9 unit tests passing; see [B01 handoff](prompts/handoffs/B01.md) |
 
 ## Actual dependency defects found during preparation
 
@@ -53,7 +54,8 @@ The frontend build emits client-directive warnings from libraries in this client
 
 - [x] Backend foundation, initial schema/migrations, and frozen contracts (D01: `a6f78e9`).
 - [x] React premium website foundation, design system, route shells, and mock workbench (A01: `7a19548`).
-- [x] Deterministic deduplication engine and cannot-link graph partitioning (B01: `470c575`).
+- [x] Exact-span PICO baseline and Unicode code-point validator (C01: `2bb9a84`).
+- [x] Deterministic deduplication engine and cannot-link graph partitioning (B01: `2581811`).
 - [ ] Remaining domain endpoints (criteria, queries, review events, snapshots) and auth.
 - [ ] PubMed/Europe PMC live integration, quotas, registrations and disclaimer presentation.
 - [ ] Query builder, approvals, imports and complete data persistence.
