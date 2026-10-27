@@ -1,6 +1,6 @@
 # C-ML01 — Required ML foundation, training and inference
 
-Status: ready for review
+Status: merged
 
 ## Identity and scope
 
@@ -9,7 +9,7 @@ Status: ready for review
 - Requirement IDs and selected features: ML Foundation (Bounded review prioritization model, leakage-free group splits, tamper-protected artifact, queue ranking)
 - Branch and PR: `feat/dev-c-ml01-foundation`
 - Tested commit SHA: `ee0d070`
-- Merge SHA (captain fills after merge): Pending captain merge
+- Merge SHA (captain fills after merge): `68e4715`
 - Actual start/end, timezone: 2026-10-27 12:35 to 12:47 Asia/Kolkata
 
 ## Prerequisite evidence
