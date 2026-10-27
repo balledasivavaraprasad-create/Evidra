@@ -1,0 +1,53 @@
+{
+  "benchmark_name": "evidra_deduplication_gold_standard_v1",
+  "evaluation_date": "2026-10-27",
+  "author": "dev-B",
+  "description": "Gold standard pairwise deduplication labels evaluating exact copies, near duplicates, and study vs paper negatives.",
+  "pairs": [
+    {
+      "pair_id": "pair-001",
+      "record_a": "rec-synth-0001",
+      "record_b": "rec-synth-0002",
+      "is_duplicate_paper": true,
+      "is_same_study": true,
+      "category": "exact_cross_source_doi_match",
+      "description": "Same RCT published in NEJM, indexed in both PubMed and Europe PMC with identical DOI."
+    },
+    {
+      "pair_id": "pair-002",
+      "record_a": "rec-synth-0003",
+      "record_b": "rec-synth-0004",
+      "is_duplicate_paper": true,
+      "is_same_study": true,
+      "category": "author_variant_no_doi",
+      "description": "Prospective cohort in Diabetes Care with slight author name spelling variation and punctuation difference."
+    },
+    {
+      "pair_id": "pair-003",
+      "record_a": "rec-synth-0007",
+      "record_b": "rec-synth-0008",
+      "is_duplicate_paper": false,
+      "is_same_study": true,
+      "category": "same_study_protocol_vs_results",
+      "description": "NEGATIVE: Trial protocol vs Primary trial results for the same RCT (NCT01234567). Distinct publications."
+    },
+    {
+      "pair_id": "pair-004",
+      "record_a": "rec-synth-0008",
+      "record_b": "rec-synth-0009",
+      "is_duplicate_paper": false,
+      "is_same_study": true,
+      "category": "same_study_primary_vs_followup",
+      "description": "NEGATIVE: Primary 24-week results vs 5-year extended follow-up analysis. Distinct publications."
+    },
+    {
+      "pair_id": "pair-005",
+      "record_a": "rec-synth-0001",
+      "record_b": "rec-synth-0005",
+      "is_duplicate_paper": false,
+      "is_same_study": false,
+      "category": "human_vs_animal_distinct",
+      "description": "NEGATIVE: Human clinical trial vs Wistar rat preclinical experiment. Contradictory DOIs."
+    }
+  ]
+}
