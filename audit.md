@@ -37,6 +37,7 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | Workflow syntax, expressions and action pins | Passed locally | actionlint 1.7.12 with verified download checksum; full action commit pins in [revision evidence](docs/validation/github-action-pins.json); [local result](docs/validation/ci-local-validation.json) |
 | Latest planning links and pins | Passed | [Updated validation](docs/validation/ci-planning-validation.json): includes prompt/readme/handoff documents, 17 Python pins, 19 frontend pins and five skills |
 | Stage-aware backend/frontend check runner | Passed locally in planning stage | [Backend](docs/validation/ci-backend-local.txt) and [frontend](docs/validation/ci-frontend-local.txt); dependency checks/probes, not application tests; existing frontend warnings remain |
+| D01: Backend foundation and frozen contracts | Merged | Commit `a6f78e9`; promoted backend to application stage, initial SQLite schema and Alembic migration `001_initial_schema`, frozen Pydantic contracts and `contracts/openapi.json`, health and workspace persistence, 10 contract tests passing; see [D01 handoff](prompts/handoffs/D01.md) |
 
 ## Actual dependency defects found during preparation
 
@@ -48,7 +49,8 @@ The frontend build emits client-directive warnings from libraries in this client
 
 ## Planned, not implemented
 
-- [ ] Actual FastAPI application, migrations, domain repositories and authentication.
+- [x] Backend foundation, initial schema/migrations, and frozen contracts (D01: `a6f78e9`).
+- [ ] Remaining domain endpoints (criteria, queries, review events, snapshots) and auth.
 - [ ] PubMed/Europe PMC live integration, quotas, registrations and disclaimer presentation.
 - [ ] Query builder, approvals, imports and complete data persistence.
 - [ ] Deduplication, eligibility rules, PICO algorithms and reviewer correction services.
