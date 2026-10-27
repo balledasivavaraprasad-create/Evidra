@@ -41,6 +41,7 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | A01: React foundation and premium design system | Merged | Commit `7a19548`; promoted frontend to application stage, Evidence Observatory design system, typed API client and OpenAPI drift check, route shells for landing/workspaces/search/records/duplicates/history, 3 unit tests passing; see [A01 handoff](prompts/handoffs/A01.md) |
 | C01: Exact-span PICO baseline | Merged | Commit `2bb9a84`; pure rule-based PICO extractor conforming to `PicoPort`, exact Unicode code-point offsets `[start_cp, end_cp)` with UTF-16 browser projection, comparator negation handling, span validator, and 16 unit tests passing; see [C01 handoff](prompts/handoffs/C01.md) |
 | B01: Deterministic deduplication engine | Merged | Commit `2581811`; pure deduplication engine with DOI/PMID/title normalization, study vs paper separation, cannot-link constraint enforcement, deterministic representative selection, benchmark evals and 9 unit tests passing; see [B01 handoff](prompts/handoffs/B01.md) |
+| D02: Live literature adapters and durable import jobs | Merged | Commit `1a1132e`; PubMed ESearch/EFetch and Europe PMC REST adapters, Boolean AST query translation, durable background jobs, worker daemon, and non-destructive record revision persistence, 22 tests passing; see [D02 handoff](prompts/handoffs/D02.md) |
 
 ## Actual dependency defects found during preparation
 
@@ -56,9 +57,10 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] React premium website foundation, design system, route shells, and mock workbench (A01: `7a19548`).
 - [x] Exact-span PICO baseline and Unicode code-point validator (C01: `2bb9a84`).
 - [x] Deterministic deduplication engine and cannot-link graph partitioning (B01: `2581811`).
-- [ ] Remaining domain endpoints (criteria, queries, review events, snapshots) and auth.
-- [ ] PubMed/Europe PMC live integration, quotas, registrations and disclaimer presentation.
-- [ ] Query builder, approvals, imports and complete data persistence.
+- [x] PubMed and Europe PMC adapters, AST query translator, and durable import jobs (D02: `1a1132e`).
+- [ ] Remaining domain endpoints (review events, diffs, exports, snapshots) and auth.
+- [ ] PubMed/Europe PMC quotas, registrations and disclaimer presentation.
+- [ ] Query builder and import UI approval workflow.
 - [ ] Deduplication, eligibility rules, PICO algorithms and reviewer correction services.
 - [ ] Production LangGraph workflow, job recovery and authorization for resume.
 - [ ] React premium website, original 3D scene and real reviewer interface.
