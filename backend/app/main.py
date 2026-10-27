@@ -1,4 +1,5 @@
-"""FastAPI entrypoint declaring all health and /api/v1 contract endpoints."""
+import hashlib
+import json
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -10,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.contracts.enums import (
     EffectiveDecisionState,
+    SourceNamespace,
 )
 from app.contracts.models import (
     AssistantProposal,
@@ -30,6 +32,7 @@ from app.contracts.models import (
     PaperGroupDetail,
     PaperGroupSummary,
     PicoOverrideRequest,
+    QueryASTNode,
     QueryVersionCreate,
     QueryVersionResponse,
     ReviewEventResponse,
@@ -38,9 +41,19 @@ from app.contracts.models import (
     WorkspaceCreate,
     WorkspaceResponse,
 )
-from app.db.models import WorkspaceModel
+from app.db.models import (
+    CriteriaVersionModel,
+    QueryVersionModel,
+    SearchExecutionModel,
+    WorkspaceModel,
+)
 from app.db.session import get_db
+from app.services.imports import trigger_import
+from app.services.jobs import cancel_job, get_job_by_id, to_job_response
 from app.settings import settings
+from app.sources.europepmc import EuropePMCAdapter
+from app.sources.pubmed import PubMedAdapter
+from app.sources.translator import translate_query
 
 app = FastAPI(
     title=settings.app_title,
@@ -186,10 +199,53 @@ def create_workspace(payload: WorkspaceCreate, db: Session = Depends(get_db)) ->
     response_model=CriteriaVersionResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_criteria_version(workspace_id: str, payload: CriteriaVersionCreate) -> CriteriaVersionResponse:
-    """Save immutable review question and inclusion/exclusion criteria version (Implemented in D02/B02)."""
-    stub_not_implemented("create_criteria_version")
-    raise NotImplementedError
+def create_criteria_version(
+    workspace_id: str,
+    payload: CriteriaVersionCreate,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> CriteriaVersionResponse:
+    """Save immutable review question and inclusion/exclusion criteria version."""
+    ws = db.query(WorkspaceModel).filter_by(id=workspace_id).first()
+    if not ws:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workspace '{workspace_id}' not found",
+        )
+
+    last_crit = (
+        db.query(CriteriaVersionModel)
+        .filter_by(workspace_id=workspace_id)
+        .order_by(CriteriaVersionModel.sequence.desc())
+        .first()
+    )
+    seq = (last_crit.sequence + 1) if last_crit else 1
+
+    pico_json = json.dumps(payload.pico_description, sort_keys=True)
+    criteria_json = json.dumps([c.model_dump() for c in payload.criteria], sort_keys=True)
+    content_hash = hashlib.sha256(f"{payload.question}\n{pico_json}\n{criteria_json}".encode()).hexdigest()
+
+    crit_model = CriteriaVersionModel(
+        workspace_id=workspace_id,
+        sequence=seq,
+        question=payload.question,
+        pico_json=pico_json,
+        criteria_json=criteria_json,
+        content_hash=content_hash,
+    )
+    db.add(crit_model)
+    db.commit()
+    db.refresh(crit_model)
+
+    return CriteriaVersionResponse(
+        id=crit_model.id,
+        workspace_id=crit_model.workspace_id,
+        sequence=crit_model.sequence,
+        question=crit_model.question,
+        pico_description=payload.pico_description,
+        criteria=payload.criteria,
+        content_hash=crit_model.content_hash,
+        created_at=crit_model.created_at,
+    )
 
 
 @app.post(
@@ -199,10 +255,68 @@ def create_criteria_version(workspace_id: str, payload: CriteriaVersionCreate) -
     response_model=QueryVersionResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_query_version(workspace_id: str, payload: QueryVersionCreate) -> QueryVersionResponse:
-    """Save an immutable structured search query version (Implemented in D02)."""
-    stub_not_implemented("create_query_version")
-    raise NotImplementedError
+def create_query_version(
+    workspace_id: str,
+    payload: QueryVersionCreate,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> QueryVersionResponse:
+    """Save an immutable structured search query version."""
+    ws = db.query(WorkspaceModel).filter_by(id=workspace_id).first()
+    if not ws:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workspace '{workspace_id}' not found",
+        )
+
+    crit = db.query(CriteriaVersionModel).filter_by(id=payload.criteria_version_id, workspace_id=workspace_id).first()
+    if not crit:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Associated criteria version '{payload.criteria_version_id}' not found in workspace",
+        )
+
+    last_q = (
+        db.query(QueryVersionModel)
+        .filter_by(workspace_id=workspace_id)
+        .order_by(QueryVersionModel.sequence.desc())
+        .first()
+    )
+    seq = (last_q.sequence + 1) if last_q else 1
+
+    ast_json = json.dumps(payload.ast.model_dump(), sort_keys=True)
+    sources_json = json.dumps([s.value for s in payload.sources], sort_keys=True)
+    content_hash = hashlib.sha256(
+        f"{ast_json}\n{payload.start_date}\n{payload.end_date}\n{sources_json}".encode()
+    ).hexdigest()
+
+    query_model = QueryVersionModel(
+        workspace_id=workspace_id,
+        parent_id=payload.parent_id,
+        sequence=seq,
+        ast_json=ast_json,
+        start_date=payload.start_date,
+        end_date=payload.end_date,
+        sources_json=sources_json,
+        criteria_version_id=payload.criteria_version_id,
+        content_hash=content_hash,
+    )
+    db.add(query_model)
+    db.commit()
+    db.refresh(query_model)
+
+    return QueryVersionResponse(
+        id=query_model.id,
+        workspace_id=query_model.workspace_id,
+        parent_id=query_model.parent_id,
+        sequence=query_model.sequence,
+        ast=payload.ast,
+        start_date=query_model.start_date,
+        end_date=query_model.end_date,
+        sources=payload.sources,
+        criteria_version_id=query_model.criteria_version_id,
+        content_hash=query_model.content_hash,
+        created_at=query_model.created_at,
+    )
 
 
 @app.post(
@@ -212,10 +326,57 @@ def create_query_version(workspace_id: str, payload: QueryVersionCreate) -> Quer
     response_model=SearchExecutionResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
-def execute_search_count(query_id: str, payload: SearchExecutionCreate) -> SearchExecutionResponse:
-    """Trigger count-only query acquisition from literature provider (Implemented in D02)."""
-    stub_not_implemented("execute_search_count")
-    raise NotImplementedError
+def execute_search_count(
+    query_id: str,
+    payload: SearchExecutionCreate,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> SearchExecutionResponse:
+    """Trigger count-only query acquisition from literature provider."""
+    q_row = db.query(QueryVersionModel).filter_by(id=query_id).first()
+    if not q_row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Query version '{query_id}' not found",
+        )
+
+    ast_node = QueryASTNode.model_validate_json(q_row.ast_json)
+    exact_query = translate_query(
+        source=payload.source,
+        ast=ast_node,
+        start_date=q_row.start_date,
+        end_date=q_row.end_date,
+        synonym_expansion=payload.synonym_expansion,
+    )
+
+    if payload.source == SourceNamespace.PUBMED:
+        adapter = PubMedAdapter()
+        res = adapter.search_count(q_row.id, exact_query, payload.cap)
+    elif payload.source == SourceNamespace.EUROPEPMC:
+        adapter = EuropePMCAdapter()
+        res = adapter.search_count(q_row.id, exact_query, payload.synonym_expansion, payload.cap)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported source namespace '{payload.source}'",
+        )
+
+    exec_model = SearchExecutionModel(
+        id=res.id,
+        query_version_id=q_row.id,
+        source=res.source.value,
+        exact_query=res.exact_query,
+        synonym_setting=res.synonym_setting,
+        hit_count=res.hit_count,
+        counted_at=res.counted_at,
+        status=res.status.value,
+        partial=res.partial,
+        cap=res.cap,
+        raw_hash=res.raw_hash,
+    )
+    db.add(exec_model)
+    db.commit()
+    db.refresh(exec_model)
+    return res
 
 
 @app.post(
@@ -225,10 +386,13 @@ def execute_search_count(query_id: str, payload: SearchExecutionCreate) -> Searc
     response_model=JobResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
-def trigger_import_job(workspace_id: str, payload: ImportJobCreate) -> JobResponse:
-    """Queue durable literature import job for approved search executions (Implemented in D02)."""
-    stub_not_implemented("trigger_import_job")
-    raise NotImplementedError
+def trigger_import_job(
+    workspace_id: str,
+    payload: ImportJobCreate,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> JobResponse:
+    """Queue durable literature import job for approved search executions."""
+    return trigger_import(db, workspace_id, payload)
 
 
 @app.get(
@@ -237,10 +401,22 @@ def trigger_import_job(workspace_id: str, payload: ImportJobCreate) -> JobRespon
     summary="Get background job status",
     response_model=JobResponse,
 )
-def get_job_status(job_id: str) -> JobResponse:
-    """Poll status, stage, progress, and errors for a background job (Implemented in D02)."""
-    stub_not_implemented("get_job_status")
-    raise NotImplementedError
+def get_job_status(job_id: str, db: Session = Depends(get_db)) -> JobResponse:  # noqa: B008
+    """Poll status, stage, progress, and errors for a background job."""
+    job = get_job_by_id(db, job_id)
+    return to_job_response(job)
+
+
+@app.post(
+    "/api/v1/jobs/{job_id}/cancel",
+    tags=["Jobs"],
+    summary="Cancel running or queued background job",
+    response_model=JobResponse,
+)
+def cancel_job_endpoint(job_id: str, db: Session = Depends(get_db)) -> JobResponse:  # noqa: B008
+    """Cancel background job execution safely."""
+    job = cancel_job(db, job_id)
+    return to_job_response(job)
 
 
 @app.get(

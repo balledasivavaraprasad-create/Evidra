@@ -149,25 +149,17 @@ def test_workspace_creation_and_persistence(client: TestClient, db_session: Sess
 def test_declared_route_stubs_return_501(client: TestClient):
     """Unimplemented /api/v1 operations must return structured 501 instead of unhandled crashes."""
     response = client.post(
-        "/api/v1/workspaces/ws-test-1/criteria",
+        "/api/v1/groups/grp-test-1/decisions",
         json={
-            "question": "What is the effect of metformin?",
-            "pico_description": {"population": "Adults"},
-            "criteria": [
-                {
-                    "id": "c1",
-                    "name": "Human adults",
-                    "category": "population",
-                    "is_inclusion": True,
-                    "rationale": "Must be human",
-                }
-            ],
+            "status": "include",
+            "expected_version": 1,
+            "idempotency_key": "test-key-1",
         },
     )
     assert response.status_code == 501
     error = response.json()
     assert error["code"] == "NOT_IMPLEMENTED"
-    assert "create_criteria_version" in error["message"]
+    assert "record_screening_decision" in error["message"]
 
 
 def test_db_source_record_unique_constraint(db_session: Session):
