@@ -19,11 +19,22 @@ export type JobState = components["schemas"]["JobState"];
 export type JobKind = components["schemas"]["JobKind"];
 
 export type ErrorEnvelope = components["schemas"]["ErrorEnvelope"];
+export type CorpusRevisionResponse = components["schemas"]["CorpusRevisionResponse"];
 export type PaperGroupSummary = components["schemas"]["PaperGroupSummary"];
 export type PaperGroupDetail = components["schemas"]["PaperGroupDetail"];
+export type DecisionCommand = components["schemas"]["DecisionCommand"];
+export type PicoOverrideRequest = components["schemas"]["PicoOverrideRequest"];
+export type PicoSpan = components["schemas"]["PicoSpan"];
+export type PicoLabel = components["schemas"]["PicoLabel"];
 export type DedupOverrideRequest = components["schemas"]["DedupOverrideRequest"];
+export type ConflictResolveRequest = components["schemas"]["ConflictResolveRequest"];
+export type ExportRequest = components["schemas"]["ExportRequest"];
+export type ExportResponse = components["schemas"]["ExportResponse"];
+export type ReviewEventResponse = components["schemas"]["ReviewEventResponse"];
 export type ScreenResult = components["schemas"]["ScreenResult"];
 export type PicoResult = components["schemas"]["PicoResult"];
+export type EffectiveDecisionState = components["schemas"]["EffectiveDecisionState"];
+export type EligibilityStatus = components["schemas"]["EligibilityStatus"];
 
 export interface DedupProposal {
   record_id_a: string;
@@ -133,5 +144,60 @@ export const api = {
       request<JobResponse>(`/api/v1/jobs/${jobId}/cancel`, {
         method: "POST",
       }),
+  },
+  revisions: {
+    list: (workspaceId: string) =>
+      request<CorpusRevisionResponse[]>(`/api/v1/workspaces/${workspaceId}/revisions`),
+    processCorpus: (workspaceId: string, criteriaVersionId?: string) => {
+      const url = criteriaVersionId
+        ? `/api/v1/workspaces/${workspaceId}/process-corpus?criteria_version_id=${encodeURIComponent(criteriaVersionId)}`
+        : `/api/v1/workspaces/${workspaceId}/process-corpus`;
+      return request<CorpusRevisionResponse>(url, { method: "POST" });
+    },
+    listGroups: (revisionId: string, status?: string, limit = 50, offset = 0) => {
+      const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+      if (status) params.set("status", status);
+      return request<PaperGroupSummary[]>(`/api/v1/revisions/${revisionId}/groups?${params.toString()}`);
+    },
+  },
+  groups: {
+    getDetail: (groupId: string, revisionId?: string) => {
+      const url = revisionId
+        ? `/api/v1/groups/${groupId}?revision_id=${encodeURIComponent(revisionId)}`
+        : `/api/v1/groups/${groupId}`;
+      return request<PaperGroupDetail>(url);
+    },
+    recordDecision: (groupId: string, payload: DecisionCommand) =>
+      request<ReviewEventResponse>(`/api/v1/groups/${groupId}/decisions`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    savePico: (groupId: string, payload: PicoOverrideRequest) =>
+      request<ReviewEventResponse>(`/api/v1/groups/${groupId}/pico`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  },
+  dedup: {
+    recordDecision: (workspaceId: string, payload: DedupOverrideRequest) =>
+      request<ReviewEventResponse>(`/api/v1/workspaces/${workspaceId}/dedup-decisions`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  },
+  conflicts: {
+    resolve: (conflictId: string, payload: ConflictResolveRequest) =>
+      request<ReviewEventResponse>(`/api/v1/conflicts/${conflictId}/resolve`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  },
+  exports: {
+    create: (revisionId: string, payload: ExportRequest) =>
+      request<ExportResponse>(`/api/v1/revisions/${revisionId}/exports`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    downloadUrl: (exportId: string) => `/api/v1/exports/${exportId}/download`,
   },
 };
