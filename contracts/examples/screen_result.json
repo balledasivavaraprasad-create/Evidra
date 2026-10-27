@@ -1,0 +1,31 @@
+{
+  "group_id": "grp-00000000-0000-0000-0000-000000000001",
+  "record_revision_id": "rec-rev-00000000-0000-0000-0000-000000000001",
+  "status": "exclude",
+  "reasons": [
+    "ANIMAL_STUDY_EXCLUDED"
+  ],
+  "criteria_evidence": [
+    {
+      "criterion_id": "species_humans",
+      "name": "Human Subjects Only",
+      "verdict": "fail",
+      "reason_code": "ANIMAL_STUDY_EXCLUDED",
+      "explanation": "Abstract indicates in vivo study conducted exclusively on Sprague-Dawley rats with no human clinical trial cohort.",
+      "evidence_snippet": "Male Sprague-Dawley rats were treated with metformin (200 mg/kg) daily for 8 weeks.",
+      "source": "rule",
+      "method_version": "rules:screening:v1.0"
+    },
+    {
+      "criterion_id": "study_design_comparative",
+      "name": "Comparative Clinical Design",
+      "verdict": "pass",
+      "reason_code": "COMPARATIVE_ARMS_DETECTED",
+      "explanation": "Active and vehicle control arms identified.",
+      "evidence_snippet": "Animals were randomized to vehicle or metformin treatment groups.",
+      "source": "rule",
+      "method_version": "rules:screening:v1.0"
+    }
+  ],
+  "method_version": "screening_pipeline:v1.0"
+}

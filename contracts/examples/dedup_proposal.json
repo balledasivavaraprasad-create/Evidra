@@ -1,0 +1,15 @@
+{
+  "record_id_a": "rec-rev-00000000-0000-0000-0000-000000000001",
+  "record_id_b": "rec-rev-00000000-0000-0000-0000-000000000002",
+  "score": 0.96,
+  "method_version": "dedup:v1.0",
+  "evidence": {
+    "doi_match": true,
+    "doi": "10.1001/jama.2024.1234",
+    "title_token_similarity": 0.98,
+    "first_author_match": true,
+    "year_match": true,
+    "independent_fields_count": 4
+  },
+  "status": "proposed"
+}

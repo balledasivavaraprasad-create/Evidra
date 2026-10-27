@@ -1,0 +1,39 @@
+{
+  "record_revision_id": "rec-rev-00000000-0000-0000-0000-000000000002",
+  "content_hash": "c1d2e3f405162738495a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+  "spans": [
+    {
+      "label": "P",
+      "start_cp": 14,
+      "end_cp": 44,
+      "quote": "adults with type 2 diabetes",
+      "provenance": "rule:pico:v1.0"
+    },
+    {
+      "label": "I",
+      "start_cp": 55,
+      "end_cp": 64,
+      "quote": "metformin",
+      "provenance": "rule:pico:v1.0"
+    },
+    {
+      "label": "C",
+      "start_cp": 81,
+      "end_cp": 88,
+      "quote": "placebo",
+      "provenance": "rule:pico:v1.0"
+    },
+    {
+      "label": "O",
+      "start_cp": 115,
+      "end_cp": 133,
+      "quote": "reduction in HbA1c",
+      "provenance": "rule:pico:v1.0"
+    }
+  ],
+  "has_population": true,
+  "has_intervention": true,
+  "has_comparator": true,
+  "has_outcome": true,
+  "method_version": "pico_extractor:v1.0"
+}

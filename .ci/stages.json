@@ -1,5 +1,5 @@
 {
-  "backend": "planning",
+  "backend": "application",
   "frontend": "planning",
   "integration": false,
   "level2": false,

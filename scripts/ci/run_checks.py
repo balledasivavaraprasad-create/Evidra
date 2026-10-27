@@ -27,7 +27,8 @@ def main():
         env.update(DATA_DIR=data, DATABASE_URL=f'sqlite:///{data}/review.sqlite',
                    CHECKPOINT_DATABASE=f'{data}/checkpoints.sqlite')
         if mode == 'backend':
-            run(['uv', 'pip', 'check', '--python', str(backend / '.venv/bin/python')], ROOT, env)
+            py_bin = backend / ('.venv/Scripts/python.exe' if os.name == 'nt' else '.venv/bin/python')
+            run(['uv', 'pip', 'check', '--python', str(py_bin)], ROOT, env)
             run(['uv', 'run', '--locked', 'python', 'dependency_smoke.py'], backend, env)
             if state['backend'] == 'application':
                 run(['uv', 'run', '--locked', 'ruff', 'check', 'app', 'tests', 'scripts'], backend, env)
