@@ -118,37 +118,103 @@ Evidra is organized into 4 parallel work streams governed by [24 implementation 
 
 ## Getting Started & Local Verification
 
-### 1. Environment Setup
-Evidra uses `uv` for reproducible Python package management and `npm` with strict peer dependencies for frontend:
+### 1. Prerequisites
+- **Python:** `3.12+` with `uv` package manager (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- **Node.js:** `>= 24.22.1` with `npm`
+- **Docker & Docker Compose:** Optional for single-host container deployment
 
+### 2. Single-Host Docker Deployment (Fastest)
 ```bash
-# Verify Python 3.12+ and Node 20+ are available
-python3 --version
-node --version
+# Build and run the entire unified system (Backend API + Frontend SPA + SQLite WAL)
+docker compose -f infra/docker-compose.yml up --build
 
-# Set up local configuration
-cp .env.example .env
+# Verify readiness
+curl http://localhost:8000/health/ready
+# Open your browser at http://localhost:8000
 ```
 
-### 2. Run Local Validation & Checks
+### 3. Local Development Quickstart
+
+#### Backend (FastAPI + SQLite WAL)
 ```bash
-# Validate planning documents, link integrity, and dependency locks
-python3 scripts/validate_planning.py
-python3 scripts/validate_prompts.py
-python3 scripts/validate_ml_addendum.py
+cd backend
+# 1. Install locked dependencies
+uv sync --frozen
 
-# Run planning test suite (32 unit tests)
-python3 -m unittest discover -s tests/planning -p "test_*.py"
+# 2. Run linear database migrations
+uv run --locked alembic upgrade head
 
-# Run CI checks for the current stage
+# 3. Start development server on port 8000 (or 8800)
+uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+#### Frontend (React 19 + TypeScript + Vite + Three.js)
+```bash
+cd frontend
+# 1. Install dependencies
+npm ci
+
+# 2. Check contract drift
+npm run api:check
+
+# 3. Start Vite dev server on port 5173
+npm run dev
+# Open http://localhost:5173 in your browser
+```
+
+### 4. Running Verification Test Suites
+```bash
+# Backend test suite (167 tests covering contracts, operations, security, algorithms, level2, and AI)
+cd backend && uv run --locked pytest -q
+
+# Frontend test suite (21 unit tests, typecheck, production build)
+cd frontend && npm run test:unit && npm run typecheck && npm run build
+
+# CI Stage Validation
+python3 scripts/ci/validate_stage.py
 python3 scripts/ci/run_checks.py backend
 python3 scripts/ci/run_checks.py frontend
 ```
 
+### 5. Reproducing Algorithm Evaluations
+```bash
+# Runs full benchmark suite: Deduplication, Screening, Classical ML Ranking, PICO, LLM, RAG
+python evals/run_all_evals.py
+# Outputs: evals/manifest.json and evals/final_evaluation_results.json
+```
+
+### 6. Quiescent SQLite Backup & Restore Runbook
+```bash
+# Create point-in-time quiescent backup (WAL-safe with SHA-256 manifest)
+cd backend && uv run --locked python -c "
+from pathlib import Path
+from app.services.backup import create_backup
+m = create_backup(Path('backups/manual_snapshot'))
+print('Backup created:', m.databases['primary'].sha256)
+"
+
+# Test restore to a fresh target directory
+uv run --locked python -c "
+from pathlib import Path
+from app.services.backup import restore_backup
+r = restore_backup(Path('backups/manual_snapshot'), Path('restored_data'), overwrite=True)
+print('Restore successful:', r['status'])
+"
+```
+
+---
+
+## Operational Health Endpoints
+- **Liveness Probe:** `GET http://localhost:8000/health/live` (process responsiveness)
+- **Readiness Probe:** `GET http://localhost:8000/health/ready` (SQLite connection, Alembic head, and disk space > 10MB)
+- **Interactive OpenAPI Documentation:** `http://localhost:8000/docs`
+
 ---
 
 ## Project Invariants
-- **Offset Integrity:** PICO offsets are half-open Unicode code-point indices into immutable abstract text.
+- **Offset Integrity:** PICO offsets are half-open Unicode code-point indices `[start_cp, end_cp)` into immutable abstract text.
 - **Data Preservation:** Records are never deleted upon exclusion; review decisions are append-only events.
 - **Deterministic Baseline:** Level 1 runs with zero reliance on cloud LLMs or GPUs.
 - **No Hallucinated Evidence:** Lack of evidence produces a `Maybe` verdict, never an invented exclusion.
+- **Human Reviewer Sovereignty:** Machine models provide suggestions; reviewer actions are recorded with cryptographic and optimistic concurrency protection.
+

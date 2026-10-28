@@ -20,6 +20,7 @@ import {
 import { api, type PaperGroupSummary, type PaperGroupDetail, type PicoSpan, ApiError } from "../../api/client";
 import { MOCK_GROUPS } from "../../api/fixtures";
 import { PicoViewer } from "../pico/PicoViewer";
+import { AssistantPanel } from "./AssistantPanel";
 
 const EXCLUSION_REASONS = [
   "Preclinical animal model without human participants",
@@ -55,8 +56,8 @@ export const ReviewQueuePage: React.FC = () => {
   const [groupVersions, setGroupVersions] = useState<Record<string, number>>({});
   const getVersion = (id: string) => groupVersions[id] || 1;
 
-  // Active Tab: Reader vs Audit Timeline vs Member Copies
-  const [activeTab, setActiveTab] = useState<"reader" | "audit" | "members">("reader");
+  // Active Tab: Reader vs Audit Timeline vs Member Copies vs AI Assistant
+  const [activeTab, setActiveTab] = useState<"reader" | "audit" | "members" | "assistant">("reader");
 
   // Load Revisions & Groups
   useEffect(() => {
@@ -441,6 +442,14 @@ export const ReviewQueuePage: React.FC = () => {
                       <span>Copies ({selectedGroup.member_count})</span>
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("assistant")}
+                    className={`px-2.5 py-1 rounded transition flex items-center gap-1 ${activeTab === "assistant" ? "bg-slate-800 text-indigo-300 font-bold" : "text-slate-400"}`}
+                  >
+                    <Sparkles className="w-3 h-3 text-indigo-400" />
+                    <span>AI Assistant</span>
+                  </button>
                 </div>
               </div>
 
@@ -530,6 +539,15 @@ export const ReviewQueuePage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {activeTab === "assistant" && (
+              <div className="space-y-3">
+                <AssistantPanel
+                  workspaceId={workspaceId}
+                  targetGroupId={selectedGroup.id}
+                />
               </div>
             )}
 

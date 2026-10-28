@@ -759,3 +759,34 @@ def query_assistant(
         request=payload,
     )
 
+
+# ============================================================================
+# Single-Host Production SPA Static Files Mount (A06 Packaging)
+# ============================================================================
+
+frontend_dist = os.environ.get("FRONTEND_DIST")
+dist_path = (
+    Path(frontend_dist)
+    if frontend_dist
+    else (Path(__file__).resolve().parents[2] / "frontend" / "dist")
+)
+
+if dist_path.is_dir() and (dist_path / "index.html").is_file():
+    from starlette.staticfiles import StaticFiles
+
+    assets_dir = dist_path / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="spa_assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa_route(full_path: str):
+        # Do not swallow API, health, docs, or OpenAPI errors as SPA html
+        if (
+            full_path.startswith(("api/", "health/"))
+            or full_path in ("docs", "redoc", "openapi.json")
+        ):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Endpoint '{full_path}' not found")
+        index_file = dist_path / "index.html"
+        return FileResponse(index_file)
+
+
