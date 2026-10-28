@@ -25,12 +25,10 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: process.env.CI_INTEGRATION === "true" ? [
-    {
-      command: "npm run build && npm run preview -- --port 4173",
-      port: 4173,
-      reuseExistingServer: !process.env.CI,
-      timeout: 60000,
-    },
-  ] : undefined,
+  webServer: {
+    command: "npm run preview -- --host 127.0.0.1 --port 4173",
+    url: "http://127.0.0.1:4173",
+    reuseExistingServer: !process.env.CI,
+    timeout: 30000,
+  },
 });

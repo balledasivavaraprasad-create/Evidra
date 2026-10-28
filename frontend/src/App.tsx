@@ -36,6 +36,8 @@ export const App: React.FC = () => {
                 <Route path="/reviews/:id/records" element={<ReviewQueuePage />} />
                 <Route path="/reviews/:id/duplicates" element={<DuplicatesPage />} />
                 <Route path="/reviews/:id/history" element={<HistoryPage />} />
+                <Route path="/review-queue" element={<ReviewQueuePage />} />
+                <Route path="/duplicates" element={<DuplicatesPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </ErrorBoundary>
