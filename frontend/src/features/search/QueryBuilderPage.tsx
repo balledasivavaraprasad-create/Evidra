@@ -19,9 +19,6 @@ const STEPS: Array<{ key: StepKey; label: string; hint: string }> = [
   { key: "screen", label: "Screen", hint: "Decide on each paper" },
 ];
 
-/** A new review starts with a blank PICO; the editor would otherwise prefill its built-in example. */
-const BLANK_PICO = { population: "", intervention: "", comparator: "", outcome: "" };
-
 type LoadState =
   | { status: "loading" }
   | { status: "error"; error: unknown }
@@ -213,7 +210,6 @@ const SetupView: React.FC<{ workspaceId: string; data: SetupData }> = ({ workspa
           workspaceId={workspaceId}
           savedCriteria={data.criteria}
           defaultQuestion={workspace?.title}
-          defaultPico={BLANK_PICO}
           onCriteriaSaved={(crit) => {
             setCriteriaVersion(crit);
             window.setTimeout(() => goTo("search"), 450);

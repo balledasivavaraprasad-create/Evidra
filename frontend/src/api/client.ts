@@ -5,6 +5,8 @@ export type WorkspaceResponse = components["schemas"]["WorkspaceResponse"];
 export type CriteriaVersionCreate = components["schemas"]["CriteriaVersionCreate"];
 export type CriteriaVersionResponse = components["schemas"]["CriteriaVersionResponse"];
 export type CriterionDefinition = components["schemas"]["CriterionDefinition"];
+export type CriteriaSuggestRequest = components["schemas"]["CriteriaSuggestRequest"];
+export type CriteriaSuggestResponse = components["schemas"]["CriteriaSuggestResponse"];
 export type QueryVersionCreate = components["schemas"]["QueryVersionCreate"];
 export type QueryVersionResponse = components["schemas"]["QueryVersionResponse"];
 export type QueryASTNodeInput = components["schemas"]["QueryASTNode-Input"];
@@ -253,6 +255,12 @@ export const api = {
     /** Newest saved version; rejects with a 404 ApiError when nothing has been saved yet. */
     latest: (workspaceId: string) =>
       request<CriteriaVersionResponse>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/criteria`),
+    /** Screening rules built from the question and PICO. Nothing is saved. */
+    suggest: (workspaceId: string, payload: CriteriaSuggestRequest) =>
+      request<CriteriaSuggestResponse>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/criteria/suggest`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     create: (workspaceId: string, payload: CriteriaVersionCreate) =>
       request<CriteriaVersionResponse>(`/api/v1/workspaces/${workspaceId}/criteria`, {
         method: "POST",

@@ -5,7 +5,6 @@ import {
   isValidDateFormat,
   type QueryGroupClause,
 } from "../features/search/astCompiler";
-import { DEFAULT_FRONTEND_CRITERIA } from "../features/review-setup/CriteriaEditor";
 
 describe("astCompiler", () => {
   describe("isValidDateFormat", () => {
@@ -148,19 +147,5 @@ describe("astCompiler", () => {
       const readable = astToReadableString(ast);
       expect(readable).toBe('(metformin OR glucophage) AND ("type 2 diabetes" OR T2D)');
     });
-  });
-});
-
-describe("Review Setup Criteria", () => {
-  it("includes 7 canonical review criteria matching review-question.md", () => {
-    expect(DEFAULT_FRONTEND_CRITERIA).toHaveLength(7);
-    const ids = DEFAULT_FRONTEND_CRITERIA.map((c) => c.id);
-    expect(ids).toContain("population_adults_t2d");
-    expect(ids).toContain("comparative_clinical_design");
-    expect(ids).toContain("exclude_animal_only");
-    expect(ids).toContain("exclude_simulation_only");
-    expect(ids).toContain("exclude_case_reports");
-    expect(ids).toContain("english_language");
-    expect(ids).toContain("abstract_available");
   });
 });
