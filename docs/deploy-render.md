@@ -5,17 +5,22 @@ The repository's `render.yaml` describes that service, so Render can set it up f
 
 ## What you get
 
-- One web service built from `infra/Dockerfile`, in the Singapore region.
-- A 1 GB disk mounted at `/app/data` for the SQLite database. Reviews survive restarts and redeploys.
+- One web service on Render's **free plan**, built from `infra/Dockerfile`, in the Singapore region. No card is needed.
 - A private site: visitors must type the shared **site password** (`AUTH_MODE=password`).
-- The synthetic metformin demo review, loaded on the first start (`SEED_DEMO=true`). It is never
-  loaded twice, so reviewers' work is not overwritten.
+- The synthetic metformin demo review, loaded every time the service starts (`SEED_DEMO=true`).
 - An automatic redeploy on every push to `main`.
 
-Persistent disks need a paid instance (`0.5c-512mb` in `render.yaml`). See Render's pricing page
-for the current cost. The free plan has no disk. To use it, change `plan` to `free` and
-delete the `disk` block. The site still works, but anything people add is wiped on every restart,
-and the demo review is loaded again each time.
+Free-plan limits to know:
+
+- **Data resets.** The free filesystem is temporary. Anything people add is lost when the service restarts,
+  redeploys or wakes from sleep, and the site starts again with a fresh demo review.
+- **Sleep.** After 15 minutes without visitors the service sleeps. The next visit waits about a minute.
+- **Monthly hours.** 750 free instance hours per workspace each month. A sleeping service uses none.
+
+### Keeping data permanently (paid)
+
+Change `plan: free` to a paid plan (for example `0.5c-512mb`) in `render.yaml`. Then uncomment the `disk`
+block, which mounts 1 GB at `/app/data`. Render will ask for a card. See Render's pricing page for current cost.
 
 ## First deploy
 
