@@ -191,6 +191,28 @@
         "title": "BooleanOperator",
         "type": "string"
       },
+      "CapabilitiesResponse": {
+        "additionalProperties": false,
+        "description": "Runtime capabilities and feature flags.",
+        "properties": {
+          "llm_enabled": {
+            "description": "Whether LLM features are enabled in settings",
+            "title": "Llm Enabled",
+            "type": "boolean"
+          },
+          "rag_enabled": {
+            "description": "Whether RAG features are enabled in settings",
+            "title": "Rag Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "llm_enabled",
+          "rag_enabled"
+        ],
+        "title": "CapabilitiesResponse",
+        "type": "object"
+      },
       "ChallengeDisposition": {
         "description": "Human reviewer disposition response to a challenge.",
         "enum": [
@@ -5699,6 +5721,28 @@
         "summary": "Get Auth Session",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v1/capabilities": {
+      "get": {
+        "description": "Return runtime system capabilities (safe public boolean flags from settings).",
+        "operationId": "get_capabilities_api_v1_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilitiesResponse"
+                }
+              }
+            },
+            "description": "Runtime system capabilities"
+          }
+        },
+        "summary": "Get runtime system capabilities and feature flags",
+        "tags": [
+          "Capabilities"
         ]
       }
     },

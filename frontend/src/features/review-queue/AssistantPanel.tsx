@@ -1,26 +1,58 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Sparkles, AlertCircle, CheckCircle, Quote, Bot, ShieldAlert } from "lucide-react";
-import { api, type AssistantProposal, type AssistantRequest, ApiError } from "../../api/client";
+import { api, type AssistantProposal, type AssistantRequest, ApiError, type CapabilitiesResponse } from "../../api/client";
+
+export const CALM_ASSISTANT_DISABLED_NOTE =
+  "AI assistant is turned off in this demo. Rules-based screening and manual review work as normal.";
 
 interface AssistantPanelProps {
   workspaceId: string;
   targetGroupId: string;
   onApplyProposal?: (proposal: AssistantProposal) => void;
+  initialCapabilities?: CapabilitiesResponse | null;
 }
 
 export const AssistantPanel: React.FC<AssistantPanelProps> = ({
   workspaceId,
   targetGroupId,
+  initialCapabilities,
 }) => {
+  const [capabilities, setCapabilities] = useState<CapabilitiesResponse | null>(
+    initialCapabilities !== undefined ? initialCapabilities : null
+  );
   const [task, setTask] = useState<"explain_screening" | "propose_pico" | "suggest_query">("explain_screening");
-  const [userPrompt, setUserPrompt] = useState<string>("Explain why this paper was recommended for inclusion or exclusion based on the review criteria.");
+  const [userPrompt, setUserPrompt] = useState<string>(
+    "Explain why this paper was recommended for inclusion or exclusion based on the review criteria."
+  );
   const [loading, setLoading] = useState(false);
   const [proposal, setProposal] = useState<AssistantProposal | null>(null);
   const [disabledMessage, setDisabledMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
 
+  useEffect(() => {
+    let mounted = true;
+    if (initialCapabilities !== undefined) {
+      return;
+    }
+    api.capabilities
+      .get()
+      .then((caps) => {
+        if (mounted) setCapabilities(caps);
+      })
+      .catch(() => {
+        // Fallback: leave capabilities null; runtime 501/503 handler handles disabled state
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [initialCapabilities]);
+
+  const bothFlagsDisabled = capabilities !== null && !capabilities.llm_enabled && !capabilities.rag_enabled;
+  const isInputDisabled = bothFlagsDisabled || Boolean(disabledMessage);
+
   const handleQuery = async () => {
+    if (isInputDisabled) return;
     setLoading(true);
     setErrorMessage(null);
     setDisabledMessage(null);
@@ -35,9 +67,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
       setProposal(res);
     } catch (err: unknown) {
       if (err instanceof ApiError && (err.status === 501 || err.status === 503)) {
-        setDisabledMessage(
-          "AI Assistant is disabled by default runtime configuration. Standard deterministic Level 1 screening is active."
-        );
+        setDisabledMessage(CALM_ASSISTANT_DISABLED_NOTE);
       } else if (err instanceof Error) {
         setErrorMessage(err.message);
       } else {
@@ -65,6 +95,20 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
       </div>
 
       <div className="mt-4 space-y-4">
+        {/* Calm Note / Preemptive Disabled Banner */}
+        {bothFlagsDisabled && (
+          <div
+            data-testid="assistant-calm-note"
+            className="p-3.5 rounded-lg bg-slate-800/40 border border-slate-700/60 text-slate-300 text-xs flex items-start gap-2.5"
+          >
+            <AlertCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-slate-200">AI Assistant Offline</p>
+              <p className="text-slate-400 mt-0.5">{CALM_ASSISTANT_DISABLED_NOTE}</p>
+            </div>
+          </div>
+        )}
+
         {/* Task Selection */}
         <div>
           <label className="block text-xs font-medium text-slate-300 mb-1">Inquiry Task</label>
@@ -77,6 +121,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
               <button
                 key={t.id}
                 type="button"
+                disabled={isInputDisabled}
                 onClick={() => {
                   setTask(t.id as any);
                   if (t.id === "explain_screening") {
@@ -88,7 +133,9 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
                   }
                 }}
                 className={`py-1.5 px-2 rounded-lg text-xs font-medium border transition-colors ${
-                  task === t.id
+                  isInputDisabled
+                    ? "bg-slate-800/20 border-slate-800 text-slate-600 cursor-not-allowed"
+                    : task === t.id
                     ? "bg-indigo-600/20 border-indigo-500 text-indigo-300"
                     : "bg-slate-800/40 border-slate-700/60 text-slate-400 hover:text-slate-200"
                 }`}
@@ -105,9 +152,18 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
           <textarea
             value={userPrompt}
             onChange={(e) => setUserPrompt(e.target.value)}
+            disabled={isInputDisabled}
             rows={2}
-            className="w-full bg-slate-950/60 border border-slate-700/80 rounded-lg p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-            placeholder="Ask the bounded assistant about this paper..."
+            className={`w-full rounded-lg p-2.5 text-xs transition-colors focus:outline-none ${
+              isInputDisabled
+                ? "bg-slate-950/40 border border-slate-800 text-slate-500 placeholder-slate-600 cursor-not-allowed opacity-60"
+                : "bg-slate-950/60 border border-slate-700/80 text-slate-200 placeholder-slate-500 focus:border-indigo-500"
+            }`}
+            placeholder={
+              isInputDisabled
+                ? "AI assistant is disabled in this environment."
+                : "Ask the bounded assistant about this paper..."
+            }
           />
         </div>
 
@@ -116,20 +172,23 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
           <button
             type="button"
             onClick={handleQuery}
-            disabled={loading || !userPrompt.trim()}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 transition-colors shadow-lg shadow-indigo-600/20"
+            disabled={isInputDisabled || loading || !userPrompt.trim()}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 transition-colors shadow-lg shadow-indigo-600/20 disabled:cursor-not-allowed"
           >
             <Sparkles className="w-3.5 h-3.5" />
             {loading ? "Querying Assistant..." : "Ask Assistant"}
           </button>
         </div>
 
-        {/* Disabled State Banner */}
-        {disabledMessage && (
-          <div className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-start gap-2.5">
+        {/* Reactive 501 / Disabled Banner (shown if 501 occurs and calm note wasn't already shown) */}
+        {disabledMessage && !bothFlagsDisabled && (
+          <div
+            data-testid="assistant-501-banner"
+            className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-start gap-2.5"
+          >
             <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-amber-300">Assistant Feature Offline</p>
+              <p className="font-medium text-amber-300">AI Assistant Offline</p>
               <p className="text-amber-200/80 mt-0.5">{disabledMessage}</p>
             </div>
           </div>

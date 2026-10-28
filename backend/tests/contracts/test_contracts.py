@@ -234,6 +234,7 @@ def test_openapi_json_is_up_to_date():
     assert "/api/v1/workspaces/{workspace_id}/criteria" in current_spec["paths"]
     assert "/api/v1/workspaces/{workspace_id}/queries" in current_spec["paths"]
     assert "/health/ready" in current_spec["paths"]
+    assert "/api/v1/capabilities" in current_spec["paths"]
 
 
 def test_paper_group_summary_contract_has_row_version():
@@ -287,3 +288,17 @@ def test_group_row_version_increments_after_decision(db_session: Session, client
     groups_after = client.get(f"/api/v1/revisions/{rev.id}/groups").json()
     target_summary = next(g for g in groups_after if g["id"] == group_0["id"])
     assert target_summary["row_version"] == 2
+
+
+def test_capabilities_response_contract():
+    """Verify CapabilitiesResponse strictly enforces schema and forbids undeclared keys."""
+    from app.contracts.models import CapabilitiesResponse
+
+    # Valid contract
+    cap = CapabilitiesResponse(llm_enabled=False, rag_enabled=False)
+    assert cap.llm_enabled is False
+    assert cap.rag_enabled is False
+
+    # Forbid extra fields (prevents accidental secret or provider leakage)
+    with pytest.raises(ValidationError):
+        CapabilitiesResponse.model_validate({"llm_enabled": False, "rag_enabled": False, "api_key": "secret"})

@@ -24,6 +24,7 @@ from app.contracts.models import (
     ArticleRadarResponse,
     AssistantProposal,
     AssistantRequest,
+    CapabilitiesResponse,
     ConflictResolveRequest,
     CorpusDiffResponse,
     CorpusRevisionResponse,
@@ -361,6 +362,24 @@ def health_ready(db: Session = Depends(get_db)) -> JSONResponse:  # noqa: B008
 # ============================================================================
 # API v1 Endpoints (Declared Contracts & Stubs)
 # ============================================================================
+
+
+@app.get(
+    "/api/v1/capabilities",
+    tags=["Capabilities"],
+    summary="Get runtime system capabilities and feature flags",
+    response_model=CapabilitiesResponse,
+    responses={
+        200: {"model": CapabilitiesResponse, "description": "Runtime system capabilities"},
+    },
+)
+def get_capabilities() -> CapabilitiesResponse:
+    """Return runtime system capabilities (safe public boolean flags from settings)."""
+    return CapabilitiesResponse(
+        llm_enabled=bool(settings.llm_enabled),
+        rag_enabled=bool(settings.rag_enabled),
+    )
+
 
 def stub_not_implemented(operation_name: str) -> None:
     """Raise structured 501 for endpoints planned in future developer tasks."""
