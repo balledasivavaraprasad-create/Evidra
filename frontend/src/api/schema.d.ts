@@ -989,10 +989,11 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Trigger deterministic deduplication, screening, and PICO extraction
-         * @description Run full deterministic review pipeline on imported workspace records.
+         * Queue deduplication, screening, and PICO extraction
+         * @description Queue processing of the imported records and return the job to poll (GET /jobs/{id}).
          *
          *     Screens with ``criteria_version_id`` when given, else the newest saved criteria version.
+         *     The job's stage reads "queued", "processing", then "done".
          */
         post: operations["run_process_corpus_api_v1_workspaces__workspace_id__process_corpus_post"];
         delete?: never;
@@ -5816,12 +5817,12 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CorpusRevisionResponse"];
+                    "application/json": components["schemas"]["JobResponse"];
                 };
             };
             /** @description Validation Error */

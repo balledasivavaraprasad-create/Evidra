@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { isActiveJob, isProcessingFailed, processingLine } from "../runs/processing";
+import { useProcessingJob } from "../runs/useProcessingJob";
 import { Scale } from "lucide-react";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -51,6 +53,9 @@ export const ReviewQueuePage: React.FC = () => {
   const [usingSampleData, setUsingSampleData] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const loadData = () => setReloadKey((k) => k + 1);
+  // Processing runs in the background: follow it, and load the papers when it finishes
+  const processing = useProcessingJob(workspaceId, loadData);
+  const processingActive = isActiveJob(processing.job);
   const [groupDetail, setGroupDetail] = useState<PaperGroupDetail | null>(null);
   const [filter, setFilter] = useState<"all" | "include" | "exclude" | "maybe" | "conflict">("all");
   const [loading, setLoading] = useState(false);
@@ -306,19 +311,13 @@ export const ReviewQueuePage: React.FC = () => {
 
   const handleProcessCorpus = async () => {
     try {
-      setLoading(true);
-      setStatusMessage("Executing deterministic deduplication, screening rules, and PICO pipeline...");
-      const rev = await api.revisions.processCorpus(workspaceId);
-      setRevisionId(rev.id);
-      const groupList = await api.revisions.listGroups(rev.id);
-      setGroups(groupList);
-      if (groupList.length > 0) setSelectedGroupId(groupList[0].id);
-      setStatusMessage(`Corpus processed successfully! Generated revision ${rev.id} with ${rev.group_count} paper groups.`);
+      setErrorBanner(null);
+      const job = await api.revisions.processCorpus(workspaceId);
+      processing.track(job); // polled from here; the papers load when it finishes
+      setStatusMessage("Processing started: removing duplicates, screening papers and finding PICO evidence.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to process corpus";
       setErrorBanner(msg);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -346,11 +345,11 @@ export const ReviewQueuePage: React.FC = () => {
           <button
             type="button"
             onClick={handleProcessCorpus}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
+            disabled={loading || processingActive}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition disabled:opacity-60"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            <span>Process Corpus</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${loading || processingActive ? "animate-spin" : ""}`} />
+            <span>{processingActive ? "Processing..." : "Process Corpus"}</span>
           </button>
 
           <Link
@@ -442,6 +441,13 @@ export const ReviewQueuePage: React.FC = () => {
 
       {usingSampleData && <SampleDataNotice onRetry={loadData} />}
 
+      {processingActive && groups.length > 0 && (
+        <div role="status" className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-sm text-[var(--text-secondary)]">
+          <RefreshCw className="h-4 w-4 animate-spin text-amber-400" aria-hidden="true" />
+          <span>Processing newly imported papers. This list updates when it finishes.</span>
+        </div>
+      )}
+
       {/* 3-Panel Review Workbench */}
       {initialLoading ? (
         <LoadingRegion label="Loading records to screen">
@@ -449,11 +455,27 @@ export const ReviewQueuePage: React.FC = () => {
         </LoadingRegion>
       ) : loadError != null ? (
         <ErrorState error={loadError} onRetry={loadData} what="The screening queue" />
+      ) : groups.length === 0 && processingActive && processing.job ? (
+        <div role="status" aria-live="polite" className="glass-panel px-6 py-12 text-center space-y-4">
+          <RefreshCw className="mx-auto h-6 w-6 animate-spin text-[var(--accent-gold)]" aria-hidden="true" />
+          <h2 className="font-serif text-2xl text-[var(--text-primary)]">Processing your papers</h2>
+          <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto">
+            {processingLine(processing.job)}. They appear here as soon as this finishes, so you can leave this page open.
+          </p>
+          <div className="mx-auto h-2 w-full max-w-sm overflow-hidden rounded-full bg-slate-800">
+            <div className="h-full w-1/3 animate-pulse rounded-full bg-[var(--accent-gold)]" />
+          </div>
+        </div>
       ) : groups.length === 0 ? (
         <div className="glass-panel px-6 py-12 text-center space-y-3">
           <h2 className="font-serif text-2xl text-[var(--text-primary)]">No records to screen yet</h2>
+          {isProcessingFailed(processing.job) && (
+            <p role="alert" className="text-sm text-rose-400 max-w-md mx-auto">
+              The last processing run stopped: {processingLine(processing.job!)}
+            </p>
+          )}
           <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto">
-            Run a search and import the results, then process the corpus. Each paper will appear here ready for a decision.
+            Run a search and import the results. Importing starts processing by itself, and each paper appears here ready for a decision.
           </p>
           <div className="flex flex-wrap justify-center gap-3 pt-1">
             <Link to={`/reviews/${workspaceId}/search`} className="btn-ghost">

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderToString } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
 import { api } from "../api/client";
 import type {
   CriteriaVersionResponse,
@@ -23,6 +24,7 @@ import {
 } from "../features/search/executions";
 import { splitPicoTerms, termsFromPico } from "../features/search/searchTerms";
 import { loadSetupData, newestJob } from "../features/search/setupData";
+import { importPhase, isProcessingDone, processingLine } from "../features/runs/processing";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -297,7 +299,11 @@ const job = (over: Partial<JobResponse>): JobResponse =>
 
 describe("the import workflow resumes the latest job", () => {
   const render = (initialJob: JobResponse | null) =>
-    renderToString(<ImportWorkflow workspaceId="ws-1" selectedExecutionIds={[]} initialJob={initialJob} />);
+    renderToString(
+      <MemoryRouter>
+        <ImportWorkflow workspaceId="ws-1" selectedExecutionIds={[]} initialJob={initialJob} />
+      </MemoryRouter>,
+    );
 
   it("shows a running import with its progress and a cancel button", () => {
     const markup = render(job({ state: "running", progress: 0.5, processed_items: 200 }));
@@ -437,5 +443,59 @@ describe("a source that does not answer", () => {
     const err = await api.queries.executeSearch("qv-1", { source: "europepmc", synonym_expansion: false }).catch((e) => e);
     expect(err.message).toBe("Europe PMC didn't respond: the request timed out");
     expect(err.code).toBe("SOURCE_UNAVAILABLE");
+  });
+});
+
+describe("import flows into processing", () => {
+  const imp = (over: Partial<JobResponse> = {}) => job({ id: "imp", created_at: "2026-10-29T10:00:00Z", ...over });
+  const proc = (over: Partial<JobResponse> = {}) =>
+    job({ id: "proc", kind: "screen", created_at: "2026-10-29T10:01:00Z", state: "queued", ...over });
+
+  it("reads Importing -> Processing -> Ready", () => {
+    expect(importPhase(imp({ state: "running" }), null)).toBe("importing");
+    expect(importPhase(imp({ state: "queued" }), null)).toBe("importing");
+    expect(importPhase(imp({ state: "succeeded" }), proc({ state: "queued" }))).toBe("processing");
+    expect(importPhase(imp({ state: "succeeded" }), proc({ state: "running" }))).toBe("processing");
+    expect(importPhase(imp({ state: "succeeded" }), proc({ state: "succeeded" }))).toBe("ready");
+  });
+
+  it("treats processing that paused for the reviewer as ready: the papers are there", () => {
+    const paused = proc({ state: "waiting_human" });
+    expect(isProcessingDone(paused)).toBe(true);
+    expect(importPhase(imp({ state: "succeeded" }), paused)).toBe("ready");
+  });
+
+  it("reports a stopped import or stopped processing, not Ready", () => {
+    expect(importPhase(imp({ state: "failed" }), null)).toBe("import-failed");
+    expect(importPhase(imp({ state: "partial" }), null)).toBe("import-failed");
+    expect(importPhase(imp({ state: "succeeded" }), proc({ state: "failed" }))).toBe("processing-failed");
+  });
+
+  it("ignores a processing job that is older than the import", () => {
+    const older = proc({ created_at: "2026-10-28T10:00:00Z", state: "running" });
+    expect(importPhase(imp({ state: "succeeded" }), older)).toBe("ready");
+  });
+
+  it("describes what processing is doing", () => {
+    expect(processingLine(proc({ state: "queued" }))).toBe("Waiting to start");
+    expect(processingLine(proc({ state: "running" }))).toMatch(/duplicates.*screening.*PICO/i);
+  });
+
+  it("the import panel shows the steps, and Go to screening only when ready", () => {
+    const panel = (state: JobResponse["state"]) =>
+      renderToString(
+        <MemoryRouter>
+          <ImportWorkflow workspaceId="ws-1" selectedExecutionIds={[]} initialJob={imp({ state })} />
+        </MemoryRouter>,
+      ).replace(/<!-- -->/g, "");
+    const running = panel("running");
+    expect(running).toContain("Importing");
+    expect(running).toContain("Processing");
+    expect(running).toContain("Ready");
+    expect(running).not.toContain("Go to screening");
+    const ready = panel("succeeded"); // no processing job known yet for this import: nothing left to wait for
+    expect(ready).toContain("Go to screening");
+    expect(ready).toContain('href="/reviews/ws-1/records"');
+    expect(panel("failed")).not.toContain("Go to screening");
   });
 });

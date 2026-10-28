@@ -8764,7 +8764,7 @@
     },
     "/api/v1/workspaces/{workspace_id}/process-corpus": {
       "post": {
-        "description": "Run full deterministic review pipeline on imported workspace records.\n\nScreens with ``criteria_version_id`` when given, else the newest saved criteria version.",
+        "description": "Queue processing of the imported records and return the job to poll (GET /jobs/{id}).\n\nScreens with ``criteria_version_id`` when given, else the newest saved criteria version.\nThe job's stage reads \"queued\", \"processing\", then \"done\".",
         "operationId": "run_process_corpus_api_v1_workspaces__workspace_id__process_corpus_post",
         "parameters": [
           {
@@ -8794,11 +8794,11 @@
           }
         ],
         "responses": {
-          "200": {
+          "202": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorpusRevisionResponse"
+                  "$ref": "#/components/schemas/JobResponse"
                 }
               }
             },
@@ -8815,7 +8815,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Trigger deterministic deduplication, screening, and PICO extraction",
+        "summary": "Queue deduplication, screening, and PICO extraction",
         "tags": [
           "Corpus"
         ]

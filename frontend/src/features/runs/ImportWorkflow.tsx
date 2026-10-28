@@ -1,9 +1,52 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Download, CheckCircle2, AlertTriangle, XCircle, RotateCcw, Clock, Ban } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Download, CheckCircle2, AlertTriangle, XCircle, RotateCcw, Clock, Ban, ArrowRight, Loader2 } from "lucide-react";
 import { api, type JobResponse } from "../../api/client";
 import { loadLatestImportJob } from "../search/setupData";
+import { importPhase, PHASE_LABELS, processingLine, type ImportPhase } from "./processing";
+import { useProcessingJob } from "./useProcessingJob";
 
 const TERMINAL_STATES = ["succeeded", "partial", "failed", "cancelled"];
+
+/** Importing -> Processing -> Ready, one step lit at a time. */
+const PhaseSteps: React.FC<{ phase: ImportPhase }> = ({ phase }) => {
+  const steps: Array<{ key: "importing" | "processing" | "ready"; label: string }> = [
+    { key: "importing", label: PHASE_LABELS.importing },
+    { key: "processing", label: PHASE_LABELS.processing },
+    { key: "ready", label: PHASE_LABELS.ready },
+  ];
+  const at = phase === "importing" ? 0 : phase === "processing" || phase === "processing-failed" ? 1 : phase === "ready" ? 2 : -1;
+  return (
+    <ol aria-label="Import progress" className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+      {steps.map((step, i) => {
+        const done = i < at || (phase === "ready" && i === 2);
+        const current = i === at && phase !== "ready";
+        return (
+          <li
+            key={step.key}
+            aria-current={current ? "step" : undefined}
+            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
+              done
+                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
+                : current
+                  ? "border-indigo-500/60 bg-indigo-500/10 text-indigo-200"
+                  : "border-slate-700 text-slate-500"
+            }`}
+          >
+            {done ? (
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+            ) : current ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+            <span>{step.label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+};
 
 interface ImportWorkflowProps {
   workspaceId: string;
@@ -32,6 +75,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const processing = useProcessingJob(workspaceId);
 
   const pollTimerRef = useRef<number | null>(null);
   const backoffDelayRef = useRef<number>(1000);
@@ -61,6 +105,21 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
   useEffect(() => {
     if (activeJob) onJobChange?.(activeJob);
   }, [activeJob]);
+
+  // The moment an import succeeds it has queued processing: pick that job up so it can be followed
+  const importState = activeJob?.state;
+  useEffect(() => {
+    if (importState === "succeeded") void processing.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importState]);
+
+  const retryProcessing = async () => {
+    try {
+      processing.track(await api.revisions.processCorpus(workspaceId));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Couldn't restart processing");
+    }
+  };
 
   // Polling loop with backoff
   useEffect(() => {
@@ -279,6 +338,29 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
             </span>
             <span>{Math.round(activeJob.progress * 100)}%</span>
           </div>
+
+          <PhaseSteps phase={importPhase(activeJob, processing.job)} />
+          {importPhase(activeJob, processing.job) === "processing" && processing.job && (
+            <p role="status" className="mt-2 text-xs text-slate-300">
+              {processingLine(processing.job)}. You can open the screening page now; papers appear as soon as this finishes.
+            </p>
+          )}
+          {importPhase(activeJob, processing.job) === "processing-failed" && processing.job && (
+            <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded border border-red-800/60 bg-red-950/50 p-2.5 text-xs text-red-300">
+              <span>Processing stopped: {processingLine(processing.job)}</span>
+              <button type="button" onClick={retryProcessing} className="rounded bg-slate-800 px-3 py-1 text-slate-100 hover:bg-slate-700">
+                Try processing again
+              </button>
+            </div>
+          )}
+          {importPhase(activeJob, processing.job) === "ready" && (
+            <div className="mt-3">
+              <Link to={`/reviews/${workspaceId}/records`} className="btn-gold inline-flex items-center gap-2">
+                Go to screening
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
 
           {activeJob.error && (
             <div className="mt-3 p-2.5 bg-red-950/50 border border-red-800/60 rounded text-xs text-red-300">

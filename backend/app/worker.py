@@ -34,7 +34,7 @@ def run_corpus_pipeline_job(db: Session, job) -> None:
     from app.workflows.pipeline import run_review_pipeline
 
     try:
-        update_job_progress(db, job.id, processed_items=0, total_items=1, stage="running_review_graph")
+        update_job_progress(db, job.id, processed_items=0, total_items=1, stage="processing")
         payload = {}
         if getattr(job, "payload_json", None):
             payload = json.loads(job.payload_json)
@@ -52,7 +52,7 @@ def run_corpus_pipeline_job(db: Session, job) -> None:
             job.stage = "waiting_human_review"
             db.commit()
         else:
-            update_job_progress(db, job.id, processed_items=1, total_items=1, stage="completed", state=JobState.SUCCEEDED)
+            update_job_progress(db, job.id, processed_items=1, total_items=1, stage="done", state=JobState.SUCCEEDED)
     except Exception as e:
         logger.exception("Failed to execute corpus review graph for job %s", job.id)
         fail_job(db, job.id, ErrorEnvelope(code="EXECUTION_ERROR", message=str(e)))

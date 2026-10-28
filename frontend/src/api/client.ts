@@ -317,7 +317,8 @@ export const api = {
       const url = criteriaVersionId
         ? `/api/v1/workspaces/${workspaceId}/process-corpus?criteria_version_id=${encodeURIComponent(criteriaVersionId)}`
         : `/api/v1/workspaces/${workspaceId}/process-corpus`;
-      return request<CorpusRevisionResponse>(url, { method: "POST" });
+      // Processing runs as a job: this returns it (202) and the caller polls api.jobs.get
+      return request<JobResponse>(url, { method: "POST" });
     },
     listGroups: (revisionId: string, status?: string, limit = 50, offset = 0) => {
       const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });

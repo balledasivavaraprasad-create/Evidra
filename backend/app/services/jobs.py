@@ -61,6 +61,42 @@ def create_job(
     return job
 
 
+def queue_corpus_processing(
+    db: Session,
+    workspace_id: str,
+    criteria_version_id: str | None = None,
+    trigger: str = "manual",
+    request_key: str | None = None,
+) -> JobModel:
+    """Queue deduplication, screening and PICO extraction for a workspace's imported records.
+
+    If one is already waiting in the queue for this workspace it is returned instead of adding a
+    second, so a double click never queues the corpus twice. A job that is already running is not
+    reused: it may have read the records before the newest import landed, so a new one follows it.
+    The job's stage reads "queued", then "processing", then "done".
+    """
+    active = (
+        db.query(JobModel)
+        .filter(
+            JobModel.workspace_id == workspace_id,
+            JobModel.kind == JobKind.SCREEN.value,
+            JobModel.state == JobState.QUEUED.value,
+        )
+        .order_by(JobModel.created_at.desc())
+        .first()
+    )
+    if active is not None:
+        return active
+    return create_job(
+        db,
+        workspace_id=workspace_id,
+        kind=JobKind.SCREEN,
+        request_key=request_key or f"process-corpus:{uuid4()}",
+        payload={"criteria_version_id": criteria_version_id, "trigger": trigger},
+        total_items=1,
+    )
+
+
 def get_job_by_id(db: Session, job_id: str) -> JobModel:
     """Retrieve job by UUID or raise 404."""
     job = db.query(JobModel).filter_by(id=job_id).first()

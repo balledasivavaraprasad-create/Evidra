@@ -105,7 +105,6 @@ from app.services.workspace_state import (
 from app.services.corpus import (
     get_paper_group_detail,
     list_paper_groups_in_revision,
-    process_corpus,
 )
 from app.services.evidence_passport import (
     apply_reviewer_correction,
@@ -117,7 +116,13 @@ from app.services.evidence_passport import (
 )
 from app.services.exports import export_corpus_studies
 from app.services.imports import trigger_import
-from app.services.jobs import cancel_job, get_job_by_id, recover_stuck_jobs, to_job_response
+from app.services.jobs import (
+    cancel_job,
+    get_job_by_id,
+    queue_corpus_processing,
+    recover_stuck_jobs,
+    to_job_response,
+)
 from app.worker import _get_worker_session, run_worker_daemon
 from app.services.genealogy import (
     get_duplicate_group_genealogy,
@@ -887,19 +892,31 @@ def list_corpus_revisions(workspace_id: str, db: Session = Depends(get_db)) -> l
 @app.post(
     "/api/v1/workspaces/{workspace_id}/process-corpus",
     tags=["Corpus"],
-    summary="Trigger deterministic deduplication, screening, and PICO extraction",
-    response_model=CorpusRevisionResponse,
+    summary="Queue deduplication, screening, and PICO extraction",
+    response_model=JobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
 )
 def run_process_corpus(
     workspace_id: str,
     criteria_version_id: str | None = None,
     db: Session = Depends(get_db),  # noqa: B008
-) -> CorpusRevisionResponse:
-    """Run full deterministic review pipeline on imported workspace records.
+) -> JobResponse:
+    """Queue processing of the imported records and return the job to poll (GET /jobs/{id}).
 
     Screens with ``criteria_version_id`` when given, else the newest saved criteria version.
+    The job's stage reads "queued", "processing", then "done".
     """
-    return process_corpus(db=db, workspace_id=workspace_id, criteria_version_id=criteria_version_id)
+    if not db.query(WorkspaceModel.id).filter_by(id=workspace_id).first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Workspace '{workspace_id}' not found")
+    if criteria_version_id and not db.query(CriteriaVersionModel.id).filter_by(
+        id=criteria_version_id, workspace_id=workspace_id
+    ).first():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Criteria version '{criteria_version_id}' not found",
+        )
+    job = queue_corpus_processing(db, workspace_id, criteria_version_id=criteria_version_id, trigger="manual")
+    return to_job_response(job)
 
 
 @app.get(
