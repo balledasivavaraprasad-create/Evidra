@@ -34,21 +34,25 @@
 | **C06** | dev-C | Optional bounded, cited corpus SQLite FTS5 RAG assistant | `d08b87c` | **VERIFIED** |
 | **D06** | dev-D | Operational hardening, SQLite WAL-safe backup, readiness probes, CI promotion | `93ab93a` | **VERIFIED** |
 | **B06** | dev-B | Final reproducible algorithm evaluation evidence (`evals/run_all_evals.py`) | `99f3ad2` | **VERIFIED** |
-| **A06** | dev-A | Deployment packaging, Docker single-host setup, demo script, release handoff | `[CURRENT]` | **VERIFIED** |
+| **A06** | dev-A | Deployment packaging, Docker single-host setup, demo script, release handoff | `762cbd6` | **VERIFIED** |
+| **C-ML01** | dev-C | Review prioritization model, dataset pipeline, and artifact security | `68e4715` | **VERIFIED** |
+| **C-ML02** | dev-C | Full-stack ML review prioritization, UI, and E2E browser tests | `91c8a29` | **VERIFIED** |
+| **C-ML03** | dev-C | ML release verification, sub-250ms CPU benchmark, and evidence documentation | `7a648f5` | **VERIFIED** |
 
 ---
 
 ## 2. Release Gate Verification Summary
 
-- [x] **Backend Test Suite:** 167 tests passed (0 failures, 0 errors, duration: 3.60s).
-- [x] **Frontend Test Suite:** 21 unit tests passed (0 failures, duration: 373ms).
+- [x] **Backend Test Suite:** 178 tests passed (0 failures, 0 errors, duration: 3.98s).
+- [x] **Frontend Test Suite:** 27 unit tests passed (0 failures, duration: 459ms).
 - [x] **TypeScript Typecheck:** 0 type errors (`tsc --noEmit`).
 - [x] **OpenAPI Contract Drift Check:** 0 drift (`npm run api:check` and `export_openapi.py --check` both pass).
-- [x] **Frontend Production Build:** Successful minified client bundle with code-splitting.
+- [x] **Frontend Production Build:** Successful minified client bundle with code-splitting (`dist/index.html`, `dist/assets/`).
 - [x] **CI Stage Promotions:** `.ci/stages.json` promoted with `level2: true` and `ai: true`.
 - [x] **Linear Database Migration:** Exactly one Alembic head (`002_review_services_schema`).
 - [x] **Zero Secrets in Client:** No API keys, model passwords, or session tokens exposed to the browser.
 - [x] **Offline Level 1 Independence:** Baseline operates completely offline without live LLM or external provider keys.
+- [x] **ML Inference Efficiency:** Pure CPU inference running in 0.352 ms/record with zero GPU requirement and zero token spend.
 - [x] **Quiescent Backup Verification:** SQLite backup API tested with active WAL pages and verified against SHA-256 manifest.
 - [x] **Health & Readiness Probe:** `/health/ready` verified under active database, migration, and disk space conditions.
 
