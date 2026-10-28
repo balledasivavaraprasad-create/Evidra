@@ -1,4 +1,4 @@
-# Render Blueprint for Evidra: one Docker web service with a persistent disk for SQLite.
+# Render Blueprint for Evidra: one Docker web service on the free plan (SQLite, demo data reloaded on start).
 # Create it from the Render dashboard: New > Blueprint > pick this repository.
 # You will be asked for SITE_PASSWORD (the password people type to open the site).
 services:
@@ -7,15 +7,18 @@ services:
     runtime: docker
     dockerfilePath: ./infra/Dockerfile
     dockerContext: .
-    # Smallest paid instance: persistent disks are not available on the free plan.
-    plan: 0.5c-512mb
+    # Free plan: no card needed. The filesystem is temporary, so the database resets whenever the
+    # service restarts, redeploys or wakes from sleep, and SEED_DEMO reloads the demo review.
+    # For data that must persist, switch to a paid plan (e.g. 0.5c-512mb) and add the disk below.
+    plan: free
     region: singapore
     healthCheckPath: /health/ready
     autoDeployTrigger: commit
-    disk:
-      name: evidra-data
-      mountPath: /app/data
-      sizeGB: 1
+    # Persistent disk (paid plans only):
+    # disk:
+    #   name: evidra-data
+    #   mountPath: /app/data
+    #   sizeGB: 1
     envVars:
       - key: APP_ENV
         value: production
