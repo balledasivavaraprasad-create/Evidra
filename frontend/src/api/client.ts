@@ -75,6 +75,29 @@ export type RadarConfirmRequest = components["schemas"]["RadarConfirmRequest"];
 export type RadarCorrectRequest = components["schemas"]["RadarCorrectRequest"];
 export type RadarFlagUncertainRequest = components["schemas"]["RadarFlagUncertainRequest"];
 export type RadarFlagConflictRequest = components["schemas"]["RadarFlagConflictRequest"];
+export type DevilsAdvocateChallengeResponse = components["schemas"]["DevilsAdvocateChallengeResponse"];
+export type DevilsAdvocateDashboardResponse = components["schemas"]["DevilsAdvocateDashboardResponse"];
+export type DevilsAdvocateDashboardItem = components["schemas"]["DevilsAdvocateDashboardItem"];
+export type DevilsAdvocateDispositionRequest = components["schemas"]["DevilsAdvocateDispositionRequest"];
+export type DevilsAdvocateGenerateRequest = components["schemas"]["DevilsAdvocateGenerateRequest"];
+export type CounterArgumentItem = components["schemas"]["CounterArgumentItem"];
+export type ChallengeRecommendation = components["schemas"]["ChallengeRecommendation"];
+export type ChallengeDisposition = components["schemas"]["ChallengeDisposition"];
+export type VulnerabilityFlag = components["schemas"]["VulnerabilityFlag"];
+export type DuplicateGroupGenealogyResponse = components["schemas"]["DuplicateGroupGenealogyResponse"];
+export type DuplicateWorkspaceSummaryResponse = components["schemas"]["DuplicateWorkspaceSummaryResponse"];
+export type DuplicateWorkspaceSummaryItem = components["schemas"]["DuplicateWorkspaceSummaryItem"];
+export type DuplicateRecordMemberDetail = components["schemas"]["DuplicateRecordMemberDetail"];
+export type DuplicateMatchSignalDetail = components["schemas"]["DuplicateMatchSignalDetail"];
+export type DecisionConflictDetail = components["schemas"]["DecisionConflictDetail"];
+export type FieldProvenanceItem = components["schemas"]["FieldProvenanceItem"];
+export type DuplicateMergeHistoryItem = components["schemas"]["DuplicateMergeHistoryItem"];
+export type DuplicateReconcileRequest = components["schemas"]["DuplicateReconcileRequest"];
+export type DuplicateSplitRequest = components["schemas"]["DuplicateSplitRequest"];
+export type DuplicateReverseMergeRequest = components["schemas"]["DuplicateReverseMergeRequest"];
+export type DuplicateRelationshipStatus = components["schemas"]["DuplicateRelationshipStatus"];
+export type DuplicateConflictClassification = components["schemas"]["DuplicateConflictClassification"];
+export type DuplicateMergeOperation = components["schemas"]["DuplicateMergeOperation"];
 export type RestoreMode = "exact_snapshot" | "latest_decisions";
 
 export interface SnapshotRestoreRequest {
@@ -410,6 +433,94 @@ export const api = {
         `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/pico-radar/${encodeURIComponent(fieldType)}/revalidate`,
         {
           method: "POST",
+        }
+      ),
+  },
+  devilsAdvocate: {
+    getChallenge: (workspaceId: string, groupId: string) =>
+      request<DevilsAdvocateChallengeResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/devils-advocate`
+      ),
+    generateChallenge: (workspaceId: string, groupId: string, payload: DevilsAdvocateGenerateRequest) =>
+      request<DevilsAdvocateChallengeResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/devils-advocate/generate`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    recordDisposition: (workspaceId: string, groupId: string, payload: DevilsAdvocateDispositionRequest) =>
+      request<DevilsAdvocateChallengeResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/devils-advocate/disposition`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    getDashboard: (
+      workspaceId: string,
+      params?: {
+        disposition?: string;
+        high_vulnerability_only?: boolean;
+        limit?: number;
+        offset?: number;
+      }
+    ) => {
+      const q = new URLSearchParams();
+      if (params?.disposition) q.set("disposition", params.disposition);
+      if (params?.high_vulnerability_only) q.set("high_vulnerability_only", "true");
+      if (params?.limit) q.set("limit", String(params.limit));
+      if (params?.offset) q.set("offset", String(params.offset));
+      const qs = q.toString() ? `?${q.toString()}` : "";
+      return request<DevilsAdvocateDashboardResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/devils-advocate${qs}`
+      );
+    },
+  },
+  genealogy: {
+    getOverview: (
+      workspaceId: string,
+      params?: {
+        conflict_only?: boolean;
+        limit?: number;
+        offset?: number;
+      }
+    ) => {
+      const q = new URLSearchParams();
+      if (params?.conflict_only) q.set("conflict_only", "true");
+      if (params?.limit) q.set("limit", String(params.limit));
+      if (params?.offset) q.set("offset", String(params.offset));
+      const qs = q.toString() ? `?${q.toString()}` : "";
+      return request<DuplicateWorkspaceSummaryResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/duplicates${qs}`
+      );
+    },
+    getGroupGenealogy: (workspaceId: string, groupId: string) =>
+      request<DuplicateGroupGenealogyResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/genealogy`
+      ),
+    reconcileConflict: (workspaceId: string, groupId: string, payload: DuplicateReconcileRequest) =>
+      request<DuplicateGroupGenealogyResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/reconcile`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    splitGroup: (workspaceId: string, groupId: string, payload: DuplicateSplitRequest) =>
+      request<DuplicateGroupGenealogyResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/split`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    reverseMerge: (workspaceId: string, groupId: string, payload: DuplicateReverseMergeRequest) =>
+      request<DuplicateGroupGenealogyResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/reverse-merge`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
         }
       ),
   },

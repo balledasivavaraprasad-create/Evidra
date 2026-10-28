@@ -304,6 +304,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspace_id}/devils-advocate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workspace Devils Advocate Dashboard
+         * @description Retrieve review-level Devil's Advocate dashboard metrics and challenged exclusions ledger.
+         */
+        get: operations["get_workspace_devils_advocate_dashboard_api_v1_workspaces__workspace_id__devils_advocate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workspace Duplicates Overview
+         * @description Retrieve workspace-wide overview of duplicate groups, conflicts, and candidate pairs.
+         */
+        get: operations["get_workspace_duplicates_overview_api_v1_workspaces__workspace_id__duplicates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspace_id}/evidence/export": {
         parameters: {
             query?: never;
@@ -364,6 +404,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Group Devils Advocate Challenge
+         * @description Retrieve or compute Devil's Advocate adversarial challenge for a paper group.
+         */
+        get: operations["get_group_devils_advocate_challenge_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate/disposition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Group Challenge Disposition
+         * @description Record human reviewer response to a Devil's Advocate challenge (conceded, upheld, dismissed).
+         */
+        post: operations["record_group_challenge_disposition_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_disposition_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Group Devils Advocate Challenge
+         * @description Request or force a fresh Devil's Advocate challenge assessment.
+         */
+        post: operations["generate_group_devils_advocate_challenge_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspace_id}/groups/{group_id}/evidence": {
         parameters: {
             query?: never;
@@ -402,6 +502,26 @@ export interface paths {
          * @description Revalidate quotations and offsets against current source text revision.
          */
         post: operations["revalidate_paper_evidence_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_revalidate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/genealogy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Duplicate Group Genealogy Endpoint
+         * @description Retrieve comprehensive genealogy, pairwise match evidence, conflicts, and field provenance.
+         */
+        get: operations["get_duplicate_group_genealogy_endpoint_api_v1_workspaces__workspace_id__groups__group_id__genealogy_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -522,6 +642,66 @@ export interface paths {
          * @description Check supporting quote and fingerprint against current stored text.
          */
         post: operations["revalidate_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__revalidate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile Duplicate Group Conflict
+         * @description Reconcile conflicting screening decisions across duplicate records with audited attribution.
+         */
+        post: operations["reconcile_duplicate_group_conflict_api_v1_workspaces__workspace_id__groups__group_id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/reverse-merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reverse Merge Event Endpoint
+         * @description Safely reverse an earlier merge operation without erasing historical audit records.
+         */
+        post: operations["reverse_merge_event_endpoint_api_v1_workspaces__workspace_id__groups__group_id__reverse_merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/split": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Split Duplicate Group Endpoint
+         * @description Safely split one or more records out of a duplicate group into an independent group.
+         */
+        post: operations["split_duplicate_group_endpoint_api_v1_workspaces__workspace_id__groups__group_id__split_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -892,6 +1072,18 @@ export interface components {
          */
         BooleanOperator: "AND" | "OR" | "NOT";
         /**
+         * ChallengeDisposition
+         * @description Human reviewer disposition response to a challenge.
+         * @enum {string}
+         */
+        ChallengeDisposition: "pending" | "conceded" | "upheld" | "dismissed";
+        /**
+         * ChallengeRecommendation
+         * @description Devil's advocate challenge recommendation outcome.
+         * @enum {string}
+         */
+        ChallengeRecommendation: "uphold_exclusion" | "reconsider_exclusion" | "needs_human_review";
+        /**
          * ConflictKind
          * @description Classification of review conflicts requiring manual resolution.
          * @enum {string}
@@ -1019,6 +1211,38 @@ export interface components {
          * @enum {string}
          */
         CorpusRevisionState: "building" | "published" | "failed";
+        /**
+         * CounterArgumentItem
+         * @description Structured counter-argument supporting potential eligibility.
+         */
+        CounterArgumentItem: {
+            /**
+             * Argument
+             * @description Summary of why paper might be eligible
+             */
+            argument: string;
+            /**
+             * Confidence
+             * @default 1
+             */
+            confidence: number;
+            /**
+             * Relevance Aspect
+             * @description PICO or study design aspect supported by quote
+             */
+            relevance_aspect: string;
+            /**
+             * Source Field
+             * @description Field where quote was located
+             * @default abstract
+             */
+            source_field: string;
+            /**
+             * Supporting Quote
+             * @description Verbatim quote from source text supporting counter-argument
+             */
+            supporting_quote: string;
+        };
         /**
          * CriteriaVersionCreate
          * @description Request payload to create a new immutable review criteria version.
@@ -1179,11 +1403,39 @@ export interface components {
             status: components["schemas"]["EligibilityStatus"];
         };
         /**
+         * DecisionConflictDetail
+         * @description Detailed discrepancy between decisions on linked duplicate records.
+         */
+        DecisionConflictDetail: {
+            /** Affected Records */
+            affected_records?: string[];
+            classification: components["schemas"]["DuplicateConflictClassification"];
+            /** Competing Decisions */
+            competing_decisions?: {
+                [key: string]: unknown;
+            }[];
+            /** Conflict Id */
+            conflict_id?: string | null;
+            /** Explanation */
+            explanation: string;
+            /**
+             * Is Resolved
+             * @default false
+             */
+            is_resolved: boolean;
+            /** Resolution */
+            resolution?: string | null;
+            /** Resolved At */
+            resolved_at?: string | null;
+            /** Resolved By */
+            resolved_by?: string | null;
+        };
+        /**
          * DecisionEventType
          * @description Types of append-only human reviewer decision events.
          * @enum {string}
          */
-        DecisionEventType: "screen_decision" | "pico_override" | "dedup_override" | "conflict_resolution" | "evidence_correction";
+        DecisionEventType: "screen_decision" | "pico_override" | "dedup_override" | "conflict_resolution" | "evidence_correction" | "devils_advocate_disposition" | "merge_split" | "merge_reversal";
         /**
          * DedupOverrideRequest
          * @description Reviewer confirmation or rejection of a proposed duplicate pair.
@@ -1202,6 +1454,449 @@ export interface components {
             record_id_a: string;
             /** Record Id B */
             record_id_b: string;
+        };
+        /**
+         * DevilsAdvocateChallengeResponse
+         * @description Devil's Advocate challenge assessment for a proposed exclusion.
+         */
+        DevilsAdvocateChallengeResponse: {
+            /** Counter Arguments */
+            counter_arguments?: components["schemas"]["CounterArgumentItem"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Critique
+             * @description Detailed challenge rationale
+             */
+            critique: string;
+            /** Disposed At */
+            disposed_at?: string | null;
+            /** @default pending */
+            disposition: components["schemas"]["ChallengeDisposition"];
+            /** Disposition By */
+            disposition_by?: string | null;
+            /** Disposition Notes */
+            disposition_notes?: string | null;
+            /** Group Id */
+            group_id: string;
+            /** Id */
+            id: string;
+            /** Original Exclusion Reason */
+            original_exclusion_reason?: string | null;
+            /** Proposed Decision */
+            proposed_decision: string;
+            recommendation: components["schemas"]["ChallengeRecommendation"];
+            /** Record Revision Id */
+            record_revision_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Vulnerability Flags */
+            vulnerability_flags?: components["schemas"]["VulnerabilityFlag"][];
+            /**
+             * Vulnerability Score
+             * @description Fragility score where 1.0 is extremely vulnerable/likely false exclusion
+             */
+            vulnerability_score: number;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /**
+         * DevilsAdvocateDashboardItem
+         * @description Summary item for review-level Devil's Advocate dashboard.
+         */
+        DevilsAdvocateDashboardItem: {
+            /** Authors */
+            authors?: string[];
+            /** Challenge Id */
+            challenge_id: string;
+            /** Counter Argument Count */
+            counter_argument_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            disposition: components["schemas"]["ChallengeDisposition"];
+            /** Doi */
+            doi?: string | null;
+            /** Group Id */
+            group_id: string;
+            /** Original Exclusion Reason */
+            original_exclusion_reason?: string | null;
+            /** Pmid */
+            pmid?: string | null;
+            /** Proposed Decision */
+            proposed_decision: string;
+            recommendation: components["schemas"]["ChallengeRecommendation"];
+            /** Title */
+            title: string;
+            /** Vulnerability Flags */
+            vulnerability_flags?: components["schemas"]["VulnerabilityFlag"][];
+            /** Vulnerability Score */
+            vulnerability_score: number;
+            /** Year */
+            year?: number | null;
+        };
+        /**
+         * DevilsAdvocateDashboardResponse
+         * @description Review-level Devil's Advocate metrics and challenge ledger.
+         */
+        DevilsAdvocateDashboardResponse: {
+            /** Challenges */
+            challenges?: components["schemas"]["DevilsAdvocateDashboardItem"][];
+            /** Conceded Count */
+            conceded_count: number;
+            /**
+             * Concession Rate
+             * @description Percentage of resolved challenges that were conceded
+             */
+            concession_rate: number;
+            /** Dismissed Count */
+            dismissed_count: number;
+            /**
+             * False Exclusions Prevented
+             * @description Exclusions successfully reversed to Include or Maybe
+             */
+            false_exclusions_prevented: number;
+            /** High Vulnerability Count */
+            high_vulnerability_count: number;
+            /** Pending Challenges */
+            pending_challenges: number;
+            /** Total Challenged */
+            total_challenged: number;
+            /** Upheld Count */
+            upheld_count: number;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /**
+         * DevilsAdvocateDispositionRequest
+         * @description Payload for human reviewer disposition on a Devil's Advocate challenge.
+         */
+        DevilsAdvocateDispositionRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /** @description New eligibility status if conceded (e.g. include or maybe) */
+            conceded_decision?: components["schemas"]["EligibilityStatus"] | null;
+            /** @description Human decision: conceded, upheld, or dismissed */
+            disposition: components["schemas"]["ChallengeDisposition"];
+            /**
+             * Notes
+             * @description Reviewer notes or justification
+             */
+            notes?: string | null;
+        };
+        /**
+         * DevilsAdvocateGenerateRequest
+         * @description Payload to request or force a fresh Devil's Advocate challenge.
+         */
+        DevilsAdvocateGenerateRequest: {
+            /**
+             * Exclusion Reason
+             * @description Explicit exclusion reason to challenge
+             */
+            exclusion_reason?: string | null;
+            /**
+             * Force Refresh
+             * @description Re-run challenge generation even if existing challenge is present
+             * @default false
+             */
+            force_refresh: boolean;
+            /**
+             * Proposed Decision
+             * @description Proposed decision (defaults to group effective decision)
+             */
+            proposed_decision?: string | null;
+        };
+        /**
+         * DuplicateConflictClassification
+         * @description Categories of decision discrepancies across duplicate records.
+         * @enum {string}
+         */
+        DuplicateConflictClassification: "decision_divergence" | "rationale_divergence" | "automated_vs_human" | "missing_decision" | "stale_merge" | "resolved";
+        /**
+         * DuplicateGroupGenealogyResponse
+         * @description Full genealogy, matching signals, conflicts, and provenance for a duplicate group.
+         */
+        DuplicateGroupGenealogyResponse: {
+            /** Active Conflicts */
+            active_conflicts?: components["schemas"]["DecisionConflictDetail"][];
+            /** Canonical Record Id */
+            canonical_record_id: string;
+            /** Effective Decision */
+            effective_decision: string;
+            /** Field Provenance */
+            field_provenance?: components["schemas"]["FieldProvenanceItem"][];
+            /** Group Id */
+            group_id: string;
+            /** Members */
+            members?: components["schemas"]["DuplicateRecordMemberDetail"][];
+            /** Membership Fingerprint */
+            membership_fingerprint: string;
+            /** Merge History */
+            merge_history?: components["schemas"]["DuplicateMergeHistoryItem"][];
+            /** Pairwise Signals */
+            pairwise_signals?: components["schemas"]["DuplicateMatchSignalDetail"][];
+            /** Row Version */
+            row_version: number;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /**
+         * DuplicateMatchSignalDetail
+         * @description Actual deterministic evidence and similarity score linking a candidate pair.
+         */
+        DuplicateMatchSignalDetail: {
+            /** Evidence Detail */
+            evidence_detail?: {
+                [key: string]: unknown;
+            };
+            /** Record Id A */
+            record_id_a: string;
+            /** Record Id B */
+            record_id_b: string;
+            /** Score */
+            score: number;
+            /** Signals */
+            signals?: string[];
+            status: components["schemas"]["DuplicateRelationshipStatus"];
+        };
+        /**
+         * DuplicateMergeHistoryItem
+         * @description Audited merge, split, or reversal event in group genealogy.
+         */
+        DuplicateMergeHistoryItem: {
+            /** Actor Id */
+            actor_id: string;
+            /** Affected Source Ids */
+            affected_source_ids?: string[];
+            /**
+             * Can Reverse
+             * @default true
+             */
+            can_reverse: boolean;
+            /** Canonical Record Id */
+            canonical_record_id?: string | null;
+            /** Event Id */
+            event_id: string;
+            /**
+             * Is Reversed
+             * @default false
+             */
+            is_reversed: boolean;
+            operation: components["schemas"]["DuplicateMergeOperation"];
+            /** Reason */
+            reason?: string | null;
+            /** Reversal Blockers */
+            reversal_blockers?: string[];
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+        };
+        /**
+         * DuplicateMergeOperation
+         * @description Provenance operations in duplicate group lineage and history.
+         * @enum {string}
+         */
+        DuplicateMergeOperation: "initial" | "merge" | "split" | "reversal" | "reconciliation";
+        /**
+         * DuplicateReconcileRequest
+         * @description Payload to reconcile a conflicting decision across duplicate records.
+         */
+        DuplicateReconcileRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /**
+             * Apply To All Members
+             * @description Propagate reconciled decision to all group members
+             * @default true
+             */
+            apply_to_all_members: boolean;
+            chosen_decision: components["schemas"]["EligibilityStatus"];
+            /**
+             * Expected Version
+             * @description Group row version for optimistic concurrency check
+             */
+            expected_version: number;
+            /**
+             * Reason
+             * @description Mandatory clinical/methodological rationale for reconciliation
+             */
+            reason: string;
+        };
+        /**
+         * DuplicateRecordMemberDetail
+         * @description Detail of an individual source record within a duplicate group.
+         */
+        DuplicateRecordMemberDetail: {
+            /** Abstract Text */
+            abstract_text?: string | null;
+            /** Authors */
+            authors?: string[];
+            /** Decision At */
+            decision_at?: string | null;
+            /** Decision By */
+            decision_by?: string | null;
+            /** Decision Rationale */
+            decision_rationale?: string | null;
+            /**
+             * Decision Source
+             * @default none
+             */
+            decision_source: string;
+            /** Doi */
+            doi?: string | null;
+            /** External Id */
+            external_id: string;
+            /**
+             * Individual Decision
+             * @default unscreened
+             */
+            individual_decision: string;
+            /**
+             * Is Canonical
+             * @default false
+             */
+            is_canonical: boolean;
+            /** Journal */
+            journal?: string | null;
+            /** Pmid */
+            pmid?: string | null;
+            /** Record Revision Id */
+            record_revision_id: string;
+            /** Source Namespace */
+            source_namespace: string;
+            /** Source Record Id */
+            source_record_id: string;
+            /** Title */
+            title: string;
+            /** Year */
+            year?: number | null;
+        };
+        /**
+         * DuplicateRelationshipStatus
+         * @description Status of duplicate relationship between records.
+         * @enum {string}
+         */
+        DuplicateRelationshipStatus: "confirmed" | "probable" | "possible" | "rejected" | "invalidated";
+        /**
+         * DuplicateReverseMergeRequest
+         * @description Payload to reverse an earlier merge operation without erasing audit history.
+         */
+        DuplicateReverseMergeRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /**
+             * Expected Version
+             * @description Group row version for optimistic concurrency check
+             */
+            expected_version: number;
+            /**
+             * Merge Event Id
+             * @description ID of merge event to reverse
+             */
+            merge_event_id: string;
+            /**
+             * Reason
+             * @description Rationale for merge reversal
+             */
+            reason: string;
+        };
+        /**
+         * DuplicateSplitRequest
+         * @description Payload to safely split a record out of a duplicate group.
+         */
+        DuplicateSplitRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /**
+             * Expected Version
+             * @description Group row version for optimistic concurrency check
+             */
+            expected_version: number;
+            /**
+             * Mark As Cannot Link
+             * @description Enforce permanent cannot-link constraint on pairwise edges
+             * @default true
+             */
+            mark_as_cannot_link: boolean;
+            /**
+             * Reason
+             * @description Mandatory justification for splitting duplicate group
+             */
+            reason: string;
+            /**
+             * Source Record Ids To Split
+             * @description List of source record IDs to separate into independent group
+             */
+            source_record_ids_to_split: string[];
+        };
+        /**
+         * DuplicateWorkspaceSummaryItem
+         * @description Summary item of duplicate group for workspace overview.
+         */
+        DuplicateWorkspaceSummaryItem: {
+            /** Canonical Title */
+            canonical_title: string;
+            /** Confidence Label */
+            confidence_label: string;
+            /** Conflict Types */
+            conflict_types?: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Effective Decision */
+            effective_decision: string;
+            /** Group Id */
+            group_id: string;
+            /** Has Unresolved Conflict */
+            has_unresolved_conflict: boolean;
+            /** Member Count */
+            member_count: number;
+            /** Sources */
+            sources?: string[];
+        };
+        /**
+         * DuplicateWorkspaceSummaryResponse
+         * @description Workspace-wide overview of duplicate groups, conflicts, and reconciliation status.
+         */
+        DuplicateWorkspaceSummaryResponse: {
+            /** Groups */
+            groups?: components["schemas"]["DuplicateWorkspaceSummaryItem"][];
+            /** Groups With Conflicts */
+            groups_with_conflicts: number;
+            /** Pending Candidate Pairs */
+            pending_candidate_pairs: number;
+            /** Resolved Conflicts Count */
+            resolved_conflicts_count: number;
+            /** Total Duplicate Groups */
+            total_duplicate_groups: number;
+            /** Total Duplicate Records */
+            total_duplicate_records: number;
+            /** Workspace Id */
+            workspace_id: string;
         };
         /**
          * EffectiveDecisionState
@@ -1635,6 +2330,45 @@ export interface components {
             revision_id: string;
             /** Sha256 Checksum */
             sha256_checksum: string;
+        };
+        /**
+         * FieldProvenanceItem
+         * @description Field-level metadata provenance comparison across duplicate records.
+         */
+        FieldProvenanceItem: {
+            /**
+             * Alternatives
+             * @description Alternative values from other duplicates
+             */
+            alternatives?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Canonical Source
+             * @description Source database providing canonical value
+             */
+            canonical_source: string;
+            /**
+             * Canonical Value
+             * @description Selected canonical value for group
+             */
+            canonical_value?: string | null;
+            /**
+             * Field Name
+             * @description Name of metadata field (e.g. title, doi, authors, year, journal)
+             */
+            field_name: string;
+            /**
+             * Has Discrepancy
+             * @description True if alternative values differ non-trivially
+             * @default false
+             */
+            has_discrepancy: boolean;
+            /**
+             * Source Record Id
+             * @description ID of source record supplying canonical value
+             */
+            source_record_id: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2810,6 +3544,12 @@ export interface components {
             type: string;
         };
         /**
+         * VulnerabilityFlag
+         * @description Categorical flags explaining why an exclusion decision is vulnerable.
+         * @enum {string}
+         */
+        VulnerabilityFlag: "abstract_only_limitation" | "uncertain_pico_element" | "overlooked_subgroup" | "indirect_comparator" | "surrogate_outcome" | "weak_rationale" | "criteria_ambiguity" | "counter_evidence_found";
+        /**
          * WorkspaceCreate
          * @description Payload to create a new review workspace.
          */
@@ -3389,6 +4129,77 @@ export interface operations {
             };
         };
     };
+    get_workspace_devils_advocate_dashboard_api_v1_workspaces__workspace_id__devils_advocate_get: {
+        parameters: {
+            query?: {
+                disposition?: string | null;
+                high_vulnerability_only?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevilsAdvocateDashboardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workspace_duplicates_overview_api_v1_workspaces__workspace_id__duplicates_get: {
+        parameters: {
+            query?: {
+                conflict_only?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateWorkspaceSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_evidence_csv_route_api_v1_workspaces__workspace_id__evidence_export_get: {
         parameters: {
             query?: never;
@@ -3474,6 +4285,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvidenceItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_group_devils_advocate_challenge_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevilsAdvocateChallengeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_group_challenge_disposition_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_disposition_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevilsAdvocateDispositionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevilsAdvocateChallengeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_group_devils_advocate_challenge_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevilsAdvocateGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevilsAdvocateChallengeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3574,6 +4489,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvidenceRevalidateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_duplicate_group_genealogy_endpoint_api_v1_workspaces__workspace_id__groups__group_id__genealogy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateGroupGenealogyResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3787,6 +4734,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArticleRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_duplicate_group_conflict_api_v1_workspaces__workspace_id__groups__group_id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuplicateReconcileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateGroupGenealogyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reverse_merge_event_endpoint_api_v1_workspaces__workspace_id__groups__group_id__reverse_merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuplicateReverseMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateGroupGenealogyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    split_duplicate_group_endpoint_api_v1_workspaces__workspace_id__groups__group_id__split_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuplicateSplitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateGroupGenealogyResponse"];
                 };
             };
             /** @description Validation Error */

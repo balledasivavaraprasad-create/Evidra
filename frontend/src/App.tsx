@@ -13,6 +13,7 @@ import { DuplicatesPage } from "./features/duplicates/DuplicatesPage";
 import { HistoryPage } from "./features/history/HistoryPage";
 import { MLReviewPage } from "./features/ml-review/MLReviewPage";
 import { ReviewRadarDashboard } from "./features/pico-radar/ReviewRadarDashboard";
+import { DevilsAdvocateDashboard } from "./features/devils-advocate/DevilsAdvocateDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +44,8 @@ export const App: React.FC = () => {
                 <Route path="/reviews/:id/history" element={<HistoryPage />} />
                 <Route path="/reviews/:id/radar" element={<ReviewRadarDashboard />} />
                 <Route path="/radar" element={<ReviewRadarDashboard />} />
+                <Route path="/reviews/:id/devils-advocate" element={<DevilsAdvocateDashboard />} />
+                <Route path="/devils-advocate" element={<DevilsAdvocateDashboard />} />
                 <Route path="/reviews/:id/search-evolution" element={<HistoryPage initialTab="search_evolution" />} />
                 <Route path="/review-queue" element={<ReviewQueuePage />} />
                 <Route path="/ml-ranking" element={<MLReviewPage />} />

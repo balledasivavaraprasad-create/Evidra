@@ -28,7 +28,13 @@ from app.contracts.enums import (
     RestoreMode,
     ScreeningEvidenceSource,
     SearchEvolutionCategory,
+    ChallengeDisposition,
+    ChallengeRecommendation,
+    DuplicateConflictClassification,
+    DuplicateMergeOperation,
+    DuplicateRelationshipStatus,
     SourceNamespace,
+    VulnerabilityFlag,
 )
 
 
@@ -1055,3 +1061,275 @@ class RadarFlagConflictRequest(BaseModel):
     conflict_explanation: str = Field(min_length=1, max_length=1000)
     competing_quote: str | None = None
     actor_id: str = Field(default="reviewer", max_length=128)
+
+# ============================================================================
+# Devil's Advocate Reviewer Models
+# ============================================================================
+
+class CounterArgumentItem(BaseModel):
+    """Structured counter-argument supporting potential eligibility."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    argument: str = Field(description="Summary of why paper might be eligible")
+    supporting_quote: str = Field(description="Verbatim quote from source text supporting counter-argument")
+    source_field: str = Field(default="abstract", description="Field where quote was located")
+    relevance_aspect: str = Field(description="PICO or study design aspect supported by quote")
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+
+
+class DevilsAdvocateChallengeResponse(BaseModel):
+    """Devil's Advocate challenge assessment for a proposed exclusion."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    workspace_id: str
+    group_id: str
+    record_revision_id: str
+    proposed_decision: str
+    original_exclusion_reason: str | None = None
+    recommendation: ChallengeRecommendation
+    vulnerability_score: float = Field(ge=0.0, le=1.0, description="Fragility score where 1.0 is extremely vulnerable/likely false exclusion")
+    critique: str = Field(description="Detailed challenge rationale")
+    counter_arguments: list[CounterArgumentItem] = Field(default_factory=list)
+    vulnerability_flags: list[VulnerabilityFlag] = Field(default_factory=list)
+    disposition: ChallengeDisposition = Field(default=ChallengeDisposition.PENDING)
+    disposition_notes: str | None = None
+    disposition_by: str | None = None
+    disposed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class DevilsAdvocateDispositionRequest(BaseModel):
+    """Payload for human reviewer disposition on a Devil's Advocate challenge."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    disposition: ChallengeDisposition = Field(description="Human decision: conceded, upheld, or dismissed")
+    notes: str | None = Field(default=None, max_length=2000, description="Reviewer notes or justification")
+    actor_id: str = Field(default="reviewer", max_length=128)
+    conceded_decision: EligibilityStatus | None = Field(
+        default=None,
+        description="New eligibility status if conceded (e.g. include or maybe)",
+    )
+
+
+class DevilsAdvocateGenerateRequest(BaseModel):
+    """Payload to request or force a fresh Devil's Advocate challenge."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    proposed_decision: str | None = Field(default=None, description="Proposed decision (defaults to group effective decision)")
+    exclusion_reason: str | None = Field(default=None, description="Explicit exclusion reason to challenge")
+    force_refresh: bool = Field(default=False, description="Re-run challenge generation even if existing challenge is present")
+
+
+class DevilsAdvocateDashboardItem(BaseModel):
+    """Summary item for review-level Devil's Advocate dashboard."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    challenge_id: str
+    group_id: str
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    year: int | None = None
+    pmid: str | None = None
+    doi: str | None = None
+    proposed_decision: str
+    original_exclusion_reason: str | None = None
+    recommendation: ChallengeRecommendation
+    vulnerability_score: float
+    vulnerability_flags: list[VulnerabilityFlag] = Field(default_factory=list)
+    disposition: ChallengeDisposition
+    counter_argument_count: int
+    created_at: datetime
+
+
+class DevilsAdvocateDashboardResponse(BaseModel):
+    """Review-level Devil's Advocate metrics and challenge ledger."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    total_challenged: int
+    pending_challenges: int
+    high_vulnerability_count: int
+    conceded_count: int
+    upheld_count: int
+    dismissed_count: int
+    concession_rate: float = Field(description="Percentage of resolved challenges that were conceded")
+    false_exclusions_prevented: int = Field(description="Exclusions successfully reversed to Include or Maybe")
+    challenges: list[DevilsAdvocateDashboardItem] = Field(default_factory=list)
+
+# ============================================================================
+# Duplicate Genealogy & Decision Reconciliation Models
+# ============================================================================
+
+class FieldProvenanceItem(BaseModel):
+    """Field-level metadata provenance comparison across duplicate records."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    field_name: str = Field(description="Name of metadata field (e.g. title, doi, authors, year, journal)")
+    canonical_value: str | None = Field(default=None, description="Selected canonical value for group")
+    canonical_source: str = Field(description="Source database providing canonical value")
+    source_record_id: str = Field(description="ID of source record supplying canonical value")
+    alternatives: list[dict[str, Any]] = Field(default_factory=list, description="Alternative values from other duplicates")
+    has_discrepancy: bool = Field(default=False, description="True if alternative values differ non-trivially")
+
+
+class DuplicateRecordMemberDetail(BaseModel):
+    """Detail of an individual source record within a duplicate group."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_record_id: str
+    record_revision_id: str
+    external_id: str
+    source_namespace: str
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    year: int | None = None
+    doi: str | None = None
+    pmid: str | None = None
+    journal: str | None = None
+    abstract_text: str | None = None
+    is_canonical: bool = False
+    individual_decision: str = "unscreened"
+    decision_source: str = "none"
+    decision_rationale: str | None = None
+    decision_by: str | None = None
+    decision_at: datetime | None = None
+
+
+class DuplicateMatchSignalDetail(BaseModel):
+    """Actual deterministic evidence and similarity score linking a candidate pair."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    record_id_a: str
+    record_id_b: str
+    score: float
+    status: DuplicateRelationshipStatus
+    signals: list[str] = Field(default_factory=list)
+    evidence_detail: dict[str, Any] = Field(default_factory=dict)
+
+
+class DecisionConflictDetail(BaseModel):
+    """Detailed discrepancy between decisions on linked duplicate records."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conflict_id: str | None = None
+    classification: DuplicateConflictClassification
+    affected_records: list[str] = Field(default_factory=list)
+    competing_decisions: list[dict[str, Any]] = Field(default_factory=list)
+    explanation: str
+    is_resolved: bool = False
+    resolution: str | None = None
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
+
+
+class DuplicateMergeHistoryItem(BaseModel):
+    """Audited merge, split, or reversal event in group genealogy."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    event_id: str
+    operation: DuplicateMergeOperation
+    affected_source_ids: list[str] = Field(default_factory=list)
+    canonical_record_id: str | None = None
+    actor_id: str
+    reason: str | None = None
+    timestamp: datetime
+    can_reverse: bool = True
+    reversal_blockers: list[str] = Field(default_factory=list)
+    is_reversed: bool = False
+
+
+class DuplicateGroupGenealogyResponse(BaseModel):
+    """Full genealogy, matching signals, conflicts, and provenance for a duplicate group."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    group_id: str
+    workspace_id: str
+    canonical_record_id: str
+    membership_fingerprint: str
+    row_version: int
+    effective_decision: str
+    members: list[DuplicateRecordMemberDetail] = Field(default_factory=list)
+    pairwise_signals: list[DuplicateMatchSignalDetail] = Field(default_factory=list)
+    active_conflicts: list[DecisionConflictDetail] = Field(default_factory=list)
+    field_provenance: list[FieldProvenanceItem] = Field(default_factory=list)
+    merge_history: list[DuplicateMergeHistoryItem] = Field(default_factory=list)
+
+
+class DuplicateReconcileRequest(BaseModel):
+    """Payload to reconcile a conflicting decision across duplicate records."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    chosen_decision: EligibilityStatus
+    reason: str = Field(min_length=1, max_length=1000, description="Mandatory clinical/methodological rationale for reconciliation")
+    actor_id: str = Field(default="reviewer", max_length=128)
+    apply_to_all_members: bool = Field(default=True, description="Propagate reconciled decision to all group members")
+    expected_version: int = Field(description="Group row version for optimistic concurrency check")
+
+
+class DuplicateSplitRequest(BaseModel):
+    """Payload to safely split a record out of a duplicate group."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_record_ids_to_split: list[str] = Field(min_length=1, description="List of source record IDs to separate into independent group")
+    reason: str = Field(min_length=1, max_length=1000, description="Mandatory justification for splitting duplicate group")
+    actor_id: str = Field(default="reviewer", max_length=128)
+    mark_as_cannot_link: bool = Field(default=True, description="Enforce permanent cannot-link constraint on pairwise edges")
+    expected_version: int = Field(description="Group row version for optimistic concurrency check")
+
+
+class DuplicateReverseMergeRequest(BaseModel):
+    """Payload to reverse an earlier merge operation without erasing audit history."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    merge_event_id: str = Field(description="ID of merge event to reverse")
+    reason: str = Field(min_length=1, max_length=1000, description="Rationale for merge reversal")
+    actor_id: str = Field(default="reviewer", max_length=128)
+    expected_version: int = Field(description="Group row version for optimistic concurrency check")
+
+
+class DuplicateWorkspaceSummaryItem(BaseModel):
+    """Summary item of duplicate group for workspace overview."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    group_id: str
+    canonical_title: str
+    member_count: int
+    sources: list[str] = Field(default_factory=list)
+    effective_decision: str
+    has_unresolved_conflict: bool
+    conflict_types: list[str] = Field(default_factory=list)
+    confidence_label: str
+    created_at: datetime
+
+
+class DuplicateWorkspaceSummaryResponse(BaseModel):
+    """Workspace-wide overview of duplicate groups, conflicts, and reconciliation status."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    total_duplicate_groups: int
+    total_duplicate_records: int
+    groups_with_conflicts: int
+    resolved_conflicts_count: int
+    pending_candidate_pairs: int
+    groups: list[DuplicateWorkspaceSummaryItem] = Field(default_factory=list)
+

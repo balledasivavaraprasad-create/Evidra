@@ -155,6 +155,27 @@
         "title": "BooleanOperator",
         "type": "string"
       },
+      "ChallengeDisposition": {
+        "description": "Human reviewer disposition response to a challenge.",
+        "enum": [
+          "pending",
+          "conceded",
+          "upheld",
+          "dismissed"
+        ],
+        "title": "ChallengeDisposition",
+        "type": "string"
+      },
+      "ChallengeRecommendation": {
+        "description": "Devil's advocate challenge recommendation outcome.",
+        "enum": [
+          "uphold_exclusion",
+          "reconsider_exclusion",
+          "needs_human_review"
+        ],
+        "title": "ChallengeRecommendation",
+        "type": "string"
+      },
       "ConflictKind": {
         "description": "Classification of review conflicts requiring manual resolution.",
         "enum": [
@@ -372,6 +393,47 @@
         ],
         "title": "CorpusRevisionState",
         "type": "string"
+      },
+      "CounterArgumentItem": {
+        "additionalProperties": false,
+        "description": "Structured counter-argument supporting potential eligibility.",
+        "properties": {
+          "argument": {
+            "description": "Summary of why paper might be eligible",
+            "title": "Argument",
+            "type": "string"
+          },
+          "confidence": {
+            "default": 1.0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "relevance_aspect": {
+            "description": "PICO or study design aspect supported by quote",
+            "title": "Relevance Aspect",
+            "type": "string"
+          },
+          "source_field": {
+            "default": "abstract",
+            "description": "Field where quote was located",
+            "title": "Source Field",
+            "type": "string"
+          },
+          "supporting_quote": {
+            "description": "Verbatim quote from source text supporting counter-argument",
+            "title": "Supporting Quote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "argument",
+          "supporting_quote",
+          "relevance_aspect"
+        ],
+        "title": "CounterArgumentItem",
+        "type": "object"
       },
       "CriteriaVersionCreate": {
         "additionalProperties": false,
@@ -623,6 +685,90 @@
         "title": "DecisionCommand",
         "type": "object"
       },
+      "DecisionConflictDetail": {
+        "additionalProperties": false,
+        "description": "Detailed discrepancy between decisions on linked duplicate records.",
+        "properties": {
+          "affected_records": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Affected Records",
+            "type": "array"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/DuplicateConflictClassification"
+          },
+          "competing_decisions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Competing Decisions",
+            "type": "array"
+          },
+          "conflict_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflict Id"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "is_resolved": {
+            "default": false,
+            "title": "Is Resolved",
+            "type": "boolean"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By"
+          }
+        },
+        "required": [
+          "classification",
+          "explanation"
+        ],
+        "title": "DecisionConflictDetail",
+        "type": "object"
+      },
       "DecisionEventType": {
         "description": "Types of append-only human reviewer decision events.",
         "enum": [
@@ -630,7 +776,10 @@
           "pico_override",
           "dedup_override",
           "conflict_resolution",
-          "evidence_correction"
+          "evidence_correction",
+          "devils_advocate_disposition",
+          "merge_split",
+          "merge_reversal"
         ],
         "title": "DecisionEventType",
         "type": "string"
@@ -675,6 +824,997 @@
           "expected_version"
         ],
         "title": "DedupOverrideRequest",
+        "type": "object"
+      },
+      "DevilsAdvocateChallengeResponse": {
+        "additionalProperties": false,
+        "description": "Devil's Advocate challenge assessment for a proposed exclusion.",
+        "properties": {
+          "counter_arguments": {
+            "items": {
+              "$ref": "#/components/schemas/CounterArgumentItem"
+            },
+            "title": "Counter Arguments",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "critique": {
+            "description": "Detailed challenge rationale",
+            "title": "Critique",
+            "type": "string"
+          },
+          "disposed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposed At"
+          },
+          "disposition": {
+            "$ref": "#/components/schemas/ChallengeDisposition",
+            "default": "pending"
+          },
+          "disposition_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposition By"
+          },
+          "disposition_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposition Notes"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "original_exclusion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Exclusion Reason"
+          },
+          "proposed_decision": {
+            "title": "Proposed Decision",
+            "type": "string"
+          },
+          "recommendation": {
+            "$ref": "#/components/schemas/ChallengeRecommendation"
+          },
+          "record_revision_id": {
+            "title": "Record Revision Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "vulnerability_flags": {
+            "items": {
+              "$ref": "#/components/schemas/VulnerabilityFlag"
+            },
+            "title": "Vulnerability Flags",
+            "type": "array"
+          },
+          "vulnerability_score": {
+            "description": "Fragility score where 1.0 is extremely vulnerable/likely false exclusion",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Vulnerability Score",
+            "type": "number"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "group_id",
+          "record_revision_id",
+          "proposed_decision",
+          "recommendation",
+          "vulnerability_score",
+          "critique",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "DevilsAdvocateChallengeResponse",
+        "type": "object"
+      },
+      "DevilsAdvocateDashboardItem": {
+        "additionalProperties": false,
+        "description": "Summary item for review-level Devil's Advocate dashboard.",
+        "properties": {
+          "authors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Authors",
+            "type": "array"
+          },
+          "challenge_id": {
+            "title": "Challenge Id",
+            "type": "string"
+          },
+          "counter_argument_count": {
+            "title": "Counter Argument Count",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "disposition": {
+            "$ref": "#/components/schemas/ChallengeDisposition"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "original_exclusion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Exclusion Reason"
+          },
+          "pmid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmid"
+          },
+          "proposed_decision": {
+            "title": "Proposed Decision",
+            "type": "string"
+          },
+          "recommendation": {
+            "$ref": "#/components/schemas/ChallengeRecommendation"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "vulnerability_flags": {
+            "items": {
+              "$ref": "#/components/schemas/VulnerabilityFlag"
+            },
+            "title": "Vulnerability Flags",
+            "type": "array"
+          },
+          "vulnerability_score": {
+            "title": "Vulnerability Score",
+            "type": "number"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "required": [
+          "challenge_id",
+          "group_id",
+          "title",
+          "proposed_decision",
+          "recommendation",
+          "vulnerability_score",
+          "disposition",
+          "counter_argument_count",
+          "created_at"
+        ],
+        "title": "DevilsAdvocateDashboardItem",
+        "type": "object"
+      },
+      "DevilsAdvocateDashboardResponse": {
+        "additionalProperties": false,
+        "description": "Review-level Devil's Advocate metrics and challenge ledger.",
+        "properties": {
+          "challenges": {
+            "items": {
+              "$ref": "#/components/schemas/DevilsAdvocateDashboardItem"
+            },
+            "title": "Challenges",
+            "type": "array"
+          },
+          "conceded_count": {
+            "title": "Conceded Count",
+            "type": "integer"
+          },
+          "concession_rate": {
+            "description": "Percentage of resolved challenges that were conceded",
+            "title": "Concession Rate",
+            "type": "number"
+          },
+          "dismissed_count": {
+            "title": "Dismissed Count",
+            "type": "integer"
+          },
+          "false_exclusions_prevented": {
+            "description": "Exclusions successfully reversed to Include or Maybe",
+            "title": "False Exclusions Prevented",
+            "type": "integer"
+          },
+          "high_vulnerability_count": {
+            "title": "High Vulnerability Count",
+            "type": "integer"
+          },
+          "pending_challenges": {
+            "title": "Pending Challenges",
+            "type": "integer"
+          },
+          "total_challenged": {
+            "title": "Total Challenged",
+            "type": "integer"
+          },
+          "upheld_count": {
+            "title": "Upheld Count",
+            "type": "integer"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "total_challenged",
+          "pending_challenges",
+          "high_vulnerability_count",
+          "conceded_count",
+          "upheld_count",
+          "dismissed_count",
+          "concession_rate",
+          "false_exclusions_prevented"
+        ],
+        "title": "DevilsAdvocateDashboardResponse",
+        "type": "object"
+      },
+      "DevilsAdvocateDispositionRequest": {
+        "additionalProperties": false,
+        "description": "Payload for human reviewer disposition on a Devil's Advocate challenge.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "conceded_decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EligibilityStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "New eligibility status if conceded (e.g. include or maybe)"
+          },
+          "disposition": {
+            "$ref": "#/components/schemas/ChallengeDisposition",
+            "description": "Human decision: conceded, upheld, or dismissed"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reviewer notes or justification",
+            "title": "Notes"
+          }
+        },
+        "required": [
+          "disposition"
+        ],
+        "title": "DevilsAdvocateDispositionRequest",
+        "type": "object"
+      },
+      "DevilsAdvocateGenerateRequest": {
+        "additionalProperties": false,
+        "description": "Payload to request or force a fresh Devil's Advocate challenge.",
+        "properties": {
+          "exclusion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Explicit exclusion reason to challenge",
+            "title": "Exclusion Reason"
+          },
+          "force_refresh": {
+            "default": false,
+            "description": "Re-run challenge generation even if existing challenge is present",
+            "title": "Force Refresh",
+            "type": "boolean"
+          },
+          "proposed_decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Proposed decision (defaults to group effective decision)",
+            "title": "Proposed Decision"
+          }
+        },
+        "title": "DevilsAdvocateGenerateRequest",
+        "type": "object"
+      },
+      "DuplicateConflictClassification": {
+        "description": "Categories of decision discrepancies across duplicate records.",
+        "enum": [
+          "decision_divergence",
+          "rationale_divergence",
+          "automated_vs_human",
+          "missing_decision",
+          "stale_merge",
+          "resolved"
+        ],
+        "title": "DuplicateConflictClassification",
+        "type": "string"
+      },
+      "DuplicateGroupGenealogyResponse": {
+        "additionalProperties": false,
+        "description": "Full genealogy, matching signals, conflicts, and provenance for a duplicate group.",
+        "properties": {
+          "active_conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionConflictDetail"
+            },
+            "title": "Active Conflicts",
+            "type": "array"
+          },
+          "canonical_record_id": {
+            "title": "Canonical Record Id",
+            "type": "string"
+          },
+          "effective_decision": {
+            "title": "Effective Decision",
+            "type": "string"
+          },
+          "field_provenance": {
+            "items": {
+              "$ref": "#/components/schemas/FieldProvenanceItem"
+            },
+            "title": "Field Provenance",
+            "type": "array"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/DuplicateRecordMemberDetail"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "membership_fingerprint": {
+            "title": "Membership Fingerprint",
+            "type": "string"
+          },
+          "merge_history": {
+            "items": {
+              "$ref": "#/components/schemas/DuplicateMergeHistoryItem"
+            },
+            "title": "Merge History",
+            "type": "array"
+          },
+          "pairwise_signals": {
+            "items": {
+              "$ref": "#/components/schemas/DuplicateMatchSignalDetail"
+            },
+            "title": "Pairwise Signals",
+            "type": "array"
+          },
+          "row_version": {
+            "title": "Row Version",
+            "type": "integer"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "group_id",
+          "workspace_id",
+          "canonical_record_id",
+          "membership_fingerprint",
+          "row_version",
+          "effective_decision"
+        ],
+        "title": "DuplicateGroupGenealogyResponse",
+        "type": "object"
+      },
+      "DuplicateMatchSignalDetail": {
+        "additionalProperties": false,
+        "description": "Actual deterministic evidence and similarity score linking a candidate pair.",
+        "properties": {
+          "evidence_detail": {
+            "additionalProperties": true,
+            "title": "Evidence Detail",
+            "type": "object"
+          },
+          "record_id_a": {
+            "title": "Record Id A",
+            "type": "string"
+          },
+          "record_id_b": {
+            "title": "Record Id B",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "signals": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Signals",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DuplicateRelationshipStatus"
+          }
+        },
+        "required": [
+          "record_id_a",
+          "record_id_b",
+          "score",
+          "status"
+        ],
+        "title": "DuplicateMatchSignalDetail",
+        "type": "object"
+      },
+      "DuplicateMergeHistoryItem": {
+        "additionalProperties": false,
+        "description": "Audited merge, split, or reversal event in group genealogy.",
+        "properties": {
+          "actor_id": {
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "affected_source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Affected Source Ids",
+            "type": "array"
+          },
+          "can_reverse": {
+            "default": true,
+            "title": "Can Reverse",
+            "type": "boolean"
+          },
+          "canonical_record_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Record Id"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "is_reversed": {
+            "default": false,
+            "title": "Is Reversed",
+            "type": "boolean"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/DuplicateMergeOperation"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "reversal_blockers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reversal Blockers",
+            "type": "array"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "operation",
+          "actor_id",
+          "timestamp"
+        ],
+        "title": "DuplicateMergeHistoryItem",
+        "type": "object"
+      },
+      "DuplicateMergeOperation": {
+        "description": "Provenance operations in duplicate group lineage and history.",
+        "enum": [
+          "initial",
+          "merge",
+          "split",
+          "reversal",
+          "reconciliation"
+        ],
+        "title": "DuplicateMergeOperation",
+        "type": "string"
+      },
+      "DuplicateReconcileRequest": {
+        "additionalProperties": false,
+        "description": "Payload to reconcile a conflicting decision across duplicate records.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "apply_to_all_members": {
+            "default": true,
+            "description": "Propagate reconciled decision to all group members",
+            "title": "Apply To All Members",
+            "type": "boolean"
+          },
+          "chosen_decision": {
+            "$ref": "#/components/schemas/EligibilityStatus"
+          },
+          "expected_version": {
+            "description": "Group row version for optimistic concurrency check",
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "reason": {
+            "description": "Mandatory clinical/methodological rationale for reconciliation",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "chosen_decision",
+          "reason",
+          "expected_version"
+        ],
+        "title": "DuplicateReconcileRequest",
+        "type": "object"
+      },
+      "DuplicateRecordMemberDetail": {
+        "additionalProperties": false,
+        "description": "Detail of an individual source record within a duplicate group.",
+        "properties": {
+          "abstract_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abstract Text"
+          },
+          "authors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Authors",
+            "type": "array"
+          },
+          "decision_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision At"
+          },
+          "decision_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision By"
+          },
+          "decision_rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Rationale"
+          },
+          "decision_source": {
+            "default": "none",
+            "title": "Decision Source",
+            "type": "string"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "individual_decision": {
+            "default": "unscreened",
+            "title": "Individual Decision",
+            "type": "string"
+          },
+          "is_canonical": {
+            "default": false,
+            "title": "Is Canonical",
+            "type": "boolean"
+          },
+          "journal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journal"
+          },
+          "pmid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmid"
+          },
+          "record_revision_id": {
+            "title": "Record Revision Id",
+            "type": "string"
+          },
+          "source_namespace": {
+            "title": "Source Namespace",
+            "type": "string"
+          },
+          "source_record_id": {
+            "title": "Source Record Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "required": [
+          "source_record_id",
+          "record_revision_id",
+          "external_id",
+          "source_namespace",
+          "title"
+        ],
+        "title": "DuplicateRecordMemberDetail",
+        "type": "object"
+      },
+      "DuplicateRelationshipStatus": {
+        "description": "Status of duplicate relationship between records.",
+        "enum": [
+          "confirmed",
+          "probable",
+          "possible",
+          "rejected",
+          "invalidated"
+        ],
+        "title": "DuplicateRelationshipStatus",
+        "type": "string"
+      },
+      "DuplicateReverseMergeRequest": {
+        "additionalProperties": false,
+        "description": "Payload to reverse an earlier merge operation without erasing audit history.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "expected_version": {
+            "description": "Group row version for optimistic concurrency check",
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "merge_event_id": {
+            "description": "ID of merge event to reverse",
+            "title": "Merge Event Id",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Rationale for merge reversal",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "merge_event_id",
+          "reason",
+          "expected_version"
+        ],
+        "title": "DuplicateReverseMergeRequest",
+        "type": "object"
+      },
+      "DuplicateSplitRequest": {
+        "additionalProperties": false,
+        "description": "Payload to safely split a record out of a duplicate group.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "expected_version": {
+            "description": "Group row version for optimistic concurrency check",
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "mark_as_cannot_link": {
+            "default": true,
+            "description": "Enforce permanent cannot-link constraint on pairwise edges",
+            "title": "Mark As Cannot Link",
+            "type": "boolean"
+          },
+          "reason": {
+            "description": "Mandatory justification for splitting duplicate group",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "source_record_ids_to_split": {
+            "description": "List of source record IDs to separate into independent group",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Source Record Ids To Split",
+            "type": "array"
+          }
+        },
+        "required": [
+          "source_record_ids_to_split",
+          "reason",
+          "expected_version"
+        ],
+        "title": "DuplicateSplitRequest",
+        "type": "object"
+      },
+      "DuplicateWorkspaceSummaryItem": {
+        "additionalProperties": false,
+        "description": "Summary item of duplicate group for workspace overview.",
+        "properties": {
+          "canonical_title": {
+            "title": "Canonical Title",
+            "type": "string"
+          },
+          "confidence_label": {
+            "title": "Confidence Label",
+            "type": "string"
+          },
+          "conflict_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Conflict Types",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "effective_decision": {
+            "title": "Effective Decision",
+            "type": "string"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "has_unresolved_conflict": {
+            "title": "Has Unresolved Conflict",
+            "type": "boolean"
+          },
+          "member_count": {
+            "title": "Member Count",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "group_id",
+          "canonical_title",
+          "member_count",
+          "effective_decision",
+          "has_unresolved_conflict",
+          "confidence_label",
+          "created_at"
+        ],
+        "title": "DuplicateWorkspaceSummaryItem",
+        "type": "object"
+      },
+      "DuplicateWorkspaceSummaryResponse": {
+        "additionalProperties": false,
+        "description": "Workspace-wide overview of duplicate groups, conflicts, and reconciliation status.",
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/DuplicateWorkspaceSummaryItem"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "groups_with_conflicts": {
+            "title": "Groups With Conflicts",
+            "type": "integer"
+          },
+          "pending_candidate_pairs": {
+            "title": "Pending Candidate Pairs",
+            "type": "integer"
+          },
+          "resolved_conflicts_count": {
+            "title": "Resolved Conflicts Count",
+            "type": "integer"
+          },
+          "total_duplicate_groups": {
+            "title": "Total Duplicate Groups",
+            "type": "integer"
+          },
+          "total_duplicate_records": {
+            "title": "Total Duplicate Records",
+            "type": "integer"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "total_duplicate_groups",
+          "total_duplicate_records",
+          "groups_with_conflicts",
+          "resolved_conflicts_count",
+          "pending_candidate_pairs"
+        ],
+        "title": "DuplicateWorkspaceSummaryResponse",
         "type": "object"
       },
       "EffectiveDecisionState": {
@@ -1473,6 +2613,61 @@
           "created_at"
         ],
         "title": "ExportResponse",
+        "type": "object"
+      },
+      "FieldProvenanceItem": {
+        "additionalProperties": false,
+        "description": "Field-level metadata provenance comparison across duplicate records.",
+        "properties": {
+          "alternatives": {
+            "description": "Alternative values from other duplicates",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Alternatives",
+            "type": "array"
+          },
+          "canonical_source": {
+            "description": "Source database providing canonical value",
+            "title": "Canonical Source",
+            "type": "string"
+          },
+          "canonical_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Selected canonical value for group",
+            "title": "Canonical Value"
+          },
+          "field_name": {
+            "description": "Name of metadata field (e.g. title, doi, authors, year, journal)",
+            "title": "Field Name",
+            "type": "string"
+          },
+          "has_discrepancy": {
+            "default": false,
+            "description": "True if alternative values differ non-trivially",
+            "title": "Has Discrepancy",
+            "type": "boolean"
+          },
+          "source_record_id": {
+            "description": "ID of source record supplying canonical value",
+            "title": "Source Record Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field_name",
+          "canonical_source",
+          "source_record_id"
+        ],
+        "title": "FieldProvenanceItem",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -4255,6 +5450,21 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VulnerabilityFlag": {
+        "description": "Categorical flags explaining why an exclusion decision is vulnerable.",
+        "enum": [
+          "abstract_only_limitation",
+          "uncertain_pico_element",
+          "overlooked_subgroup",
+          "indirect_comparator",
+          "surrogate_outcome",
+          "weak_rationale",
+          "criteria_ambiguity",
+          "counter_evidence_found"
+        ],
+        "title": "VulnerabilityFlag",
+        "type": "string"
+      },
       "WorkspaceCreate": {
         "additionalProperties": false,
         "description": "Payload to create a new review workspace.",
@@ -5155,6 +6365,168 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspace_id}/devils-advocate": {
+      "get": {
+        "description": "Retrieve review-level Devil's Advocate dashboard metrics and challenged exclusions ledger.",
+        "operationId": "get_workspace_devils_advocate_dashboard_api_v1_workspaces__workspace_id__devils_advocate_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "disposition",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Disposition"
+            }
+          },
+          {
+            "in": "query",
+            "name": "high_vulnerability_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "High Vulnerability Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevilsAdvocateDashboardResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Workspace Devils Advocate Dashboard",
+        "tags": [
+          "Devil's Advocate Reviewer"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/duplicates": {
+      "get": {
+        "description": "Retrieve workspace-wide overview of duplicate groups, conflicts, and candidate pairs.",
+        "operationId": "get_workspace_duplicates_overview_api_v1_workspaces__workspace_id__duplicates_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conflict_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Conflict Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateWorkspaceSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Workspace Duplicates Overview",
+        "tags": [
+          "Duplicate Genealogy & Reconciliation"
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspace_id}/evidence/export": {
       "get": {
         "description": "Download formula-injection sanitized CSV of all workspace evidence claims.",
@@ -5298,6 +6670,182 @@
         "summary": "Submit reviewer correction for evidence claim",
         "tags": [
           "Evidence Passport"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate": {
+      "get": {
+        "description": "Retrieve or compute Devil's Advocate adversarial challenge for a paper group.",
+        "operationId": "get_group_devils_advocate_challenge_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevilsAdvocateChallengeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Group Devils Advocate Challenge",
+        "tags": [
+          "Devil's Advocate Reviewer"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate/disposition": {
+      "post": {
+        "description": "Record human reviewer response to a Devil's Advocate challenge (conceded, upheld, dismissed).",
+        "operationId": "record_group_challenge_disposition_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_disposition_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevilsAdvocateDispositionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevilsAdvocateChallengeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Group Challenge Disposition",
+        "tags": [
+          "Devil's Advocate Reviewer"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate/generate": {
+      "post": {
+        "description": "Request or force a fresh Devil's Advocate challenge assessment.",
+        "operationId": "generate_group_devils_advocate_challenge_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_generate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevilsAdvocateGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevilsAdvocateChallengeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate Group Devils Advocate Challenge",
+        "tags": [
+          "Devil's Advocate Reviewer"
         ]
       }
     },
@@ -5462,6 +7010,58 @@
         "summary": "Revalidate all evidence claims for a paper group",
         "tags": [
           "Evidence Passport"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/genealogy": {
+      "get": {
+        "description": "Retrieve comprehensive genealogy, pairwise match evidence, conflicts, and field provenance.",
+        "operationId": "get_duplicate_group_genealogy_endpoint_api_v1_workspaces__workspace_id__groups__group_id__genealogy_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateGroupGenealogyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Duplicate Group Genealogy Endpoint",
+        "tags": [
+          "Duplicate Genealogy & Reconciliation"
         ]
       }
     },
@@ -5859,6 +7459,192 @@
         "summary": "Revalidate an evidence field against current source text",
         "tags": [
           "Missing-Evidence Radar"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/reconcile": {
+      "post": {
+        "description": "Reconcile conflicting screening decisions across duplicate records with audited attribution.",
+        "operationId": "reconcile_duplicate_group_conflict_api_v1_workspaces__workspace_id__groups__group_id__reconcile_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateReconcileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateGroupGenealogyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reconcile Duplicate Group Conflict",
+        "tags": [
+          "Duplicate Genealogy & Reconciliation"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/reverse-merge": {
+      "post": {
+        "description": "Safely reverse an earlier merge operation without erasing historical audit records.",
+        "operationId": "reverse_merge_event_endpoint_api_v1_workspaces__workspace_id__groups__group_id__reverse_merge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateReverseMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateGroupGenealogyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reverse Merge Event Endpoint",
+        "tags": [
+          "Duplicate Genealogy & Reconciliation"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/split": {
+      "post": {
+        "description": "Safely split one or more records out of a duplicate group into an independent group.",
+        "operationId": "split_duplicate_group_endpoint_api_v1_workspaces__workspace_id__groups__group_id__split_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateSplitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateGroupGenealogyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Split Duplicate Group Endpoint",
+        "tags": [
+          "Duplicate Genealogy & Reconciliation"
         ]
       }
     },

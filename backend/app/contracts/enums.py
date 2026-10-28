@@ -70,6 +70,9 @@ class DecisionEventType(str, Enum):
     DEDUP_OVERRIDE = "dedup_override"
     CONFLICT_RESOLUTION = "conflict_resolution"
     EVIDENCE_CORRECTION = "evidence_correction"
+    DEVILS_ADVOCATE_DISPOSITION = "devils_advocate_disposition"
+    MERGE_SPLIT = "merge_split"
+    MERGE_REVERSAL = "merge_reversal"
 
 
 class ConflictKind(str, Enum):
@@ -212,3 +215,71 @@ class RadarHumanReviewStatus(str, Enum):
     UNREVIEWED = "unreviewed"
     CONFIRMED = "confirmed"
     CORRECTED = "corrected"
+
+# ============================================================================
+# Devil's Advocate Reviewer Enums
+# ============================================================================
+
+class ChallengeRecommendation(str, Enum):
+    """Devil's advocate challenge recommendation outcome."""
+
+    UPHOLD_EXCLUSION = "uphold_exclusion"
+    RECONSIDER_EXCLUSION = "reconsider_exclusion"
+    NEEDS_HUMAN_REVIEW = "needs_human_review"
+
+
+class ChallengeDisposition(str, Enum):
+    """Human reviewer disposition response to a challenge."""
+
+    PENDING = "pending"
+    CONCEDED = "conceded"
+    UPHELD = "upheld"
+    DISMISSED = "dismissed"
+
+
+class VulnerabilityFlag(str, Enum):
+    """Categorical flags explaining why an exclusion decision is vulnerable."""
+
+    ABSTRACT_ONLY_LIMITATION = "abstract_only_limitation"
+    UNCERTAIN_PICO_ELEMENT = "uncertain_pico_element"
+    OVERLOOKED_SUBGROUP = "overlooked_subgroup"
+    INDIRECT_COMPARATOR = "indirect_comparator"
+    SURROGATE_OUTCOME = "surrogate_outcome"
+    WEAK_RATIONALE = "weak_rationale"
+    CRITERIA_AMBIGUITY = "criteria_ambiguity"
+    COUNTER_EVIDENCE_FOUND = "counter_evidence_found"
+
+# ============================================================================
+# Duplicate Genealogy & Decision Reconciliation Enums
+# ============================================================================
+
+class DuplicateRelationshipStatus(str, Enum):
+    """Status of duplicate relationship between records."""
+
+    CONFIRMED = "confirmed"
+    PROBABLE = "probable"
+    POSSIBLE = "possible"
+    REJECTED = "rejected"
+    INVALIDATED = "invalidated"
+
+
+class DuplicateConflictClassification(str, Enum):
+    """Categories of decision discrepancies across duplicate records."""
+
+    DECISION_DIVERGENCE = "decision_divergence"
+    RATIONALE_DIVERGENCE = "rationale_divergence"
+    AUTOMATED_VS_HUMAN = "automated_vs_human"
+    MISSING_DECISION = "missing_decision"
+    STALE_MERGE = "stale_merge"
+    RESOLVED = "resolved"
+
+
+class DuplicateMergeOperation(str, Enum):
+    """Provenance operations in duplicate group lineage and history."""
+
+    INITIAL = "initial"
+    MERGE = "merge"
+    SPLIT = "split"
+    REVERSAL = "reversal"
+    RECONCILIATION = "reconciliation"
+

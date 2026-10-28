@@ -50,6 +50,15 @@ from app.contracts.models import (
     QueryVersionResponse,
     RadarConfirmRequest,
     RadarCorrectRequest,
+    DevilsAdvocateChallengeResponse,
+    DevilsAdvocateDashboardResponse,
+    DevilsAdvocateDispositionRequest,
+    DevilsAdvocateGenerateRequest,
+    DuplicateGroupGenealogyResponse,
+    DuplicateReconcileRequest,
+    DuplicateReverseMergeRequest,
+    DuplicateSplitRequest,
+    DuplicateWorkspaceSummaryResponse,
     RadarFlagConflictRequest,
     RadarFlagUncertainRequest,
     ReviewEventResponse,
@@ -91,6 +100,18 @@ from app.services.evidence_passport import (
 from app.services.exports import export_corpus_studies
 from app.services.imports import trigger_import
 from app.services.jobs import cancel_job, get_job_by_id, to_job_response
+from app.services.genealogy import (
+    get_duplicate_group_genealogy,
+    get_workspace_duplicate_overview,
+    reconcile_duplicate_conflict,
+    reverse_merge_event,
+    split_duplicate_group,
+)
+from app.services.devils_advocate import (
+    get_or_generate_challenge,
+    get_workspace_challenge_dashboard,
+    record_challenge_disposition,
+)
 from app.services.radar import (
     confirm_radar_field,
     correct_radar_field,
@@ -1201,6 +1222,200 @@ def revalidate_group_radar_field(
         group_id=group_id,
         field_type=field_type,
     )
+
+
+
+# ============================================================================
+# Devil's Advocate Reviewer Endpoints
+# ============================================================================
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate",
+    response_model=DevilsAdvocateChallengeResponse,
+    tags=["Devil's Advocate Reviewer"],
+)
+def get_group_devils_advocate_challenge(
+    workspace_id: str,
+    group_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> DevilsAdvocateChallengeResponse:
+    """Retrieve or compute Devil's Advocate adversarial challenge for a paper group."""
+    return get_or_generate_challenge(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate/generate",
+    response_model=DevilsAdvocateChallengeResponse,
+    tags=["Devil's Advocate Reviewer"],
+)
+def generate_group_devils_advocate_challenge(
+    workspace_id: str,
+    group_id: str,
+    payload: DevilsAdvocateGenerateRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> DevilsAdvocateChallengeResponse:
+    """Request or force a fresh Devil's Advocate challenge assessment."""
+    return get_or_generate_challenge(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        payload=payload,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate/disposition",
+    response_model=DevilsAdvocateChallengeResponse,
+    tags=["Devil's Advocate Reviewer"],
+)
+def record_group_challenge_disposition(
+    workspace_id: str,
+    group_id: str,
+    payload: DevilsAdvocateDispositionRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> DevilsAdvocateChallengeResponse:
+    """Record human reviewer response to a Devil's Advocate challenge (conceded, upheld, dismissed)."""
+    return record_challenge_disposition(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        payload=payload,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/devils-advocate",
+    response_model=DevilsAdvocateDashboardResponse,
+    tags=["Devil's Advocate Reviewer"],
+)
+def get_workspace_devils_advocate_dashboard(
+    workspace_id: str,
+    disposition: str | None = None,
+    high_vulnerability_only: bool = False,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> DevilsAdvocateDashboardResponse:
+    """Retrieve review-level Devil's Advocate dashboard metrics and challenged exclusions ledger."""
+    return get_workspace_challenge_dashboard(
+        db=db,
+        workspace_id=workspace_id,
+        disposition_filter=disposition,
+        high_vulnerability_only=high_vulnerability_only,
+        limit=limit,
+        offset=offset,
+    )
+
+
+
+
+# ============================================================================
+# Duplicate Genealogy & Decision Reconciliation Endpoints
+# ============================================================================
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/duplicates",
+    response_model=DuplicateWorkspaceSummaryResponse,
+    tags=["Duplicate Genealogy & Reconciliation"],
+)
+def get_workspace_duplicates_overview(
+    workspace_id: str,
+    conflict_only: bool = False,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> DuplicateWorkspaceSummaryResponse:
+    """Retrieve workspace-wide overview of duplicate groups, conflicts, and candidate pairs."""
+    return get_workspace_duplicate_overview(
+        db=db,
+        workspace_id=workspace_id,
+        conflict_only=conflict_only,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/genealogy",
+    response_model=DuplicateGroupGenealogyResponse,
+    tags=["Duplicate Genealogy & Reconciliation"],
+)
+def get_duplicate_group_genealogy_endpoint(
+    workspace_id: str,
+    group_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> DuplicateGroupGenealogyResponse:
+    """Retrieve comprehensive genealogy, pairwise match evidence, conflicts, and field provenance."""
+    return get_duplicate_group_genealogy(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/reconcile",
+    response_model=DuplicateGroupGenealogyResponse,
+    tags=["Duplicate Genealogy & Reconciliation"],
+)
+def reconcile_duplicate_group_conflict(
+    workspace_id: str,
+    group_id: str,
+    payload: DuplicateReconcileRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> DuplicateGroupGenealogyResponse:
+    """Reconcile conflicting screening decisions across duplicate records with audited attribution."""
+    return reconcile_duplicate_conflict(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        payload=payload,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/split",
+    response_model=DuplicateGroupGenealogyResponse,
+    tags=["Duplicate Genealogy & Reconciliation"],
+)
+def split_duplicate_group_endpoint(
+    workspace_id: str,
+    group_id: str,
+    payload: DuplicateSplitRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> DuplicateGroupGenealogyResponse:
+    """Safely split one or more records out of a duplicate group into an independent group."""
+    return split_duplicate_group(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        payload=payload,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/reverse-merge",
+    response_model=DuplicateGroupGenealogyResponse,
+    tags=["Duplicate Genealogy & Reconciliation"],
+)
+def reverse_merge_event_endpoint(
+    workspace_id: str,
+    group_id: str,
+    payload: DuplicateReverseMergeRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> DuplicateGroupGenealogyResponse:
+    """Safely reverse an earlier merge operation without erasing historical audit records."""
+    return reverse_merge_event(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        payload=payload,
+    )
+
 
 frontend_dist = os.environ.get("FRONTEND_DIST")
 dist_path = (

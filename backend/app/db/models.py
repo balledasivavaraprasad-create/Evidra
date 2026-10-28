@@ -51,6 +51,8 @@ class WorkspaceModel(Base):
     paper_groups = relationship("PaperGroupModel", back_populates="workspace", cascade="all, delete-orphan")
     review_events = relationship("ReviewEventModel", back_populates="workspace", cascade="all, delete-orphan")
     evidence_passports = relationship("EvidencePassportModel", back_populates="workspace", cascade="all, delete-orphan")
+    devils_advocate_challenges = relationship("DevilsAdvocateChallengeModel", backref="workspace", cascade="all, delete-orphan")
+    duplicate_merge_events = relationship("DuplicateMergeEventModel", backref="workspace", cascade="all, delete-orphan")
 
 
 class CriteriaVersionModel(Base):
@@ -500,3 +502,52 @@ class EvidencePassportModel(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     workspace = relationship("WorkspaceModel", back_populates="evidence_passports")
+
+class DevilsAdvocateChallengeModel(Base):
+    """Adversarial screening challenge to identify false exclusions and challenge fragile decisions."""
+
+    __tablename__ = "devils_advocate_challenges"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    workspace_id = Column(String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    record_revision_id = Column(String(64), ForeignKey("record_revisions.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    proposed_decision = Column(String(32), nullable=False)
+    original_exclusion_reason = Column(Text, nullable=True)
+
+    recommendation = Column(String(32), nullable=False, default="uphold_exclusion")
+    vulnerability_score = Column(Float, nullable=False, default=0.0)
+    critique = Column(Text, nullable=False)
+    counter_arguments_json = Column(Text, nullable=False, default="[]")
+    vulnerability_flags_json = Column(Text, nullable=False, default="[]")
+
+    disposition = Column(String(32), nullable=False, default="pending", index=True)
+    disposition_notes = Column(Text, nullable=True)
+    disposition_by = Column(String(128), nullable=True)
+    disposed_at = Column(DateTime, nullable=True)
+
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+
+class DuplicateMergeEventModel(Base):
+    """Audited merge, split, and reversal operations with pre/post state and field provenance."""
+
+    __tablename__ = "duplicate_merge_events"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    workspace_id = Column(String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    canonical_record_id = Column(String(64), nullable=True)
+    operation = Column(String(32), nullable=False)
+    affected_source_ids_json = Column(Text, nullable=False, default="[]")
+    match_evidence_json = Column(Text, nullable=False, default="{}")
+    field_provenance_json = Column(Text, nullable=False, default="[]")
+    pre_operation_state_json = Column(Text, nullable=False, default="{}")
+    actor_id = Column(String(128), nullable=False)
+    reason = Column(Text, nullable=True)
+    status = Column(String(32), nullable=False, default="active")
+    reversal_event_id = Column(String(64), nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+

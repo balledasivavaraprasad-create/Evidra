@@ -23,6 +23,7 @@ import { PicoViewer } from "../pico/PicoViewer";
 import { AssistantPanel } from "./AssistantPanel";
 import { EvidencePassportPanel } from "../evidence-passport/EvidencePassportPanel";
 import { ArticleRadarWidget } from "../pico-radar/ArticleRadarWidget";
+import { DevilsAdvocateCard } from "../devils-advocate/DevilsAdvocateCard";
 import type { ArticleRadarResponse } from "../../api/client";
 import { ShieldCheck } from "lucide-react";
 
@@ -61,7 +62,7 @@ export const ReviewQueuePage: React.FC = () => {
   const getVersion = (id: string) => groupVersions[id] || 1;
 
   // Active Tab: Reader vs Audit Timeline vs Member Copies vs AI Assistant
-  const [activeTab, setActiveTab] = useState<"reader" | "radar" | "passport" | "audit" | "members" | "assistant">("reader");
+  const [activeTab, setActiveTab] = useState<"reader" | "radar" | "passport" | "audit" | "members" | "assistant" | "devils_advocate">("reader");
   const [articleRadar, setArticleRadar] = useState<ArticleRadarResponse | null>(null);
 
   // Load Revisions & Groups
@@ -269,7 +270,15 @@ export const ReviewQueuePage: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white rounded-lg text-xs font-medium transition border border-slate-700"
           >
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>PICO Radar Dashboard</span>
+            <span>PICO Radar</span>
+          </Link>
+          <Link
+            to={`/reviews/${workspaceId}/devils-advocate`}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 hover:text-white rounded-lg text-xs font-medium transition border border-amber-800/60"
+            title="View Devil's Advocate Exclusion Challenge Dashboard"
+          >
+            <span>⚖️</span>
+            <span>Devil's Advocate</span>
           </Link>
           <button
             type="button"
@@ -455,6 +464,18 @@ export const ReviewQueuePage: React.FC = () => {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setActiveTab("devils_advocate")}
+                    className={`px-2.5 py-1 rounded transition flex items-center gap-1 ${
+                      activeTab === "devils_advocate"
+                        ? "bg-slate-800 text-amber-300 font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <span>⚖️</span>
+                    <span>Devil's Advocate</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setActiveTab("passport")}
                     className={`px-2.5 py-1 rounded transition flex items-center gap-1 ${
                       activeTab === "passport"
@@ -517,6 +538,21 @@ export const ReviewQueuePage: React.FC = () => {
             </div>
 
             {/* TAB CONTENT */}
+            {activeTab === "devils_advocate" && (
+              <DevilsAdvocateCard
+                workspaceId={workspaceId}
+                groupId={selectedGroup.id}
+                effectiveDecision={selectedGroup.effective_status}
+                exclusionReason={groupDetail?.events?.find((e) => e.reason)?.reason || (groupDetail?.screen_result?.reasons || []).join(", ") || null}
+                onDecisionUpdated={() => {
+                  if (revisionId) {
+                    api.revisions.listGroups(revisionId).then(setGroups);
+                    api.groups.getDetail(selectedGroup.id, revisionId).then(setGroupDetail);
+                  }
+                }}
+              />
+            )}
+
             {activeTab === "radar" && (
               articleRadar ? (
                 <ArticleRadarWidget
