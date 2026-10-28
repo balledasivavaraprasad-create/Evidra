@@ -1,6 +1,7 @@
 """Reviewer decision persistence, optimistic locking, PICO verification, and conflict resolution."""
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from datetime import UTC, datetime
@@ -295,9 +296,23 @@ def record_dedup_override(
         )
         db.add(edge)
 
-    # Find associated group
+    # Find associated group, or create one if record not grouped yet
     member = db.query(GroupMemberModel).filter_by(source_record_id=request.record_id_a).first()
-    group_id = member.group_id if member else f"grp-{uuid4().hex[:12]}"
+    if not member:
+        new_grp = PaperGroupModel(
+            id=f"grp-{uuid4().hex[:12]}",
+            workspace_id=workspace_id,
+            membership_fingerprint=hashlib.sha256(request.record_id_a.encode("utf-8")).hexdigest(),
+            row_version=1,
+            created_at=utc_now(),
+        )
+        db.add(new_grp)
+        db.flush()
+        db.add(GroupMemberModel(group_id=new_grp.id, source_record_id=request.record_id_a))
+        db.flush()
+        group_id = new_grp.id
+    else:
+        group_id = member.group_id
 
     seq = _get_next_event_sequence(db, workspace_id)
     event = ReviewEventModel(

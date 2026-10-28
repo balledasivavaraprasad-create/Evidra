@@ -270,8 +270,12 @@ def process_corpus(
     existing_edges = db.query(DedupEdgeModel).filter_by(workspace_id=workspace_id).all()
     confirmed_proposals = []
     cannot_link_pairs: set[tuple[str, str]] = set()
+    src_to_rev = {src_id: rev_m.id for src_id, (rev_m, _) in unique_records_map.items()}
 
     for edge in existing_edges:
+        rec_a = src_to_rev.get(edge.record_id_a, edge.record_id_a)
+        rec_b = src_to_rev.get(edge.record_id_b, edge.record_id_b)
+
         if edge.status == DedupEdgeStatus.CONFIRMED.value:
             try:
                 ev = json.loads(edge.evidence_json)
@@ -280,8 +284,8 @@ def process_corpus(
             from app.contracts.models import DedupProposal
             confirmed_proposals.append(
                 DedupProposal(
-                    record_id_a=edge.record_id_a,
-                    record_id_b=edge.record_id_b,
+                    record_id_a=rec_a,
+                    record_id_b=rec_b,
                     score=edge.score,
                     method_version=edge.method_version,
                     evidence=ev,
@@ -289,6 +293,8 @@ def process_corpus(
                 )
             )
         elif edge.status == DedupEdgeStatus.REJECTED.value:
+            cannot_link_pairs.add((rec_a, rec_b))
+            cannot_link_pairs.add((rec_b, rec_a))
             cannot_link_pairs.add((edge.record_id_a, edge.record_id_b))
             cannot_link_pairs.add((edge.record_id_b, edge.record_id_a))
 
@@ -473,12 +479,26 @@ def process_corpus(
                 )
             )
 
-    # 9. Mark CorpusRevisionModel as PUBLISHED
-    corpus_rev.state = CorpusRevisionState.PUBLISHED.value
-    corpus_rev.published_at = utc_now()
-    ws.current_revision_id = corpus_rev.id
-    ws.row_version += 1
-    db.commit()
+    # 9. Project decision lineage and mark CorpusRevisionModel as PUBLISHED
+    try:
+        db.flush()
+        if corpus_rev.parent_id:
+            from app.services.snapshots import project_decision_lineage
+            project_decision_lineage(
+                db=db,
+                corpus_revision_id=corpus_rev.id,
+                parent_revision_id=corpus_rev.parent_id,
+            )
+
+        corpus_rev.state = CorpusRevisionState.PUBLISHED.value
+        corpus_rev.published_at = utc_now()
+        ws.current_revision_id = corpus_rev.id
+        ws.row_version += 1
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to publish corpus revision %s", corpus_rev.id)
+        raise
 
     return CorpusRevisionResponse(
         id=corpus_rev.id,
