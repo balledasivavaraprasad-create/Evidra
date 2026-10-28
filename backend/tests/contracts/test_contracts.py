@@ -13,6 +13,7 @@ from app.contracts.enums import (
     SourceNamespace,
 )
 from app.contracts.models import (
+    PaperGroupSummary,
     PicoSpan,
     QueryASTNode,
     QueryVersionCreate,
@@ -233,3 +234,56 @@ def test_openapi_json_is_up_to_date():
     assert "/api/v1/workspaces/{workspace_id}/criteria" in current_spec["paths"]
     assert "/api/v1/workspaces/{workspace_id}/queries" in current_spec["paths"]
     assert "/health/ready" in current_spec["paths"]
+
+
+def test_paper_group_summary_contract_has_row_version():
+    """Verify PaperGroupSummary contract includes row_version with default 1."""
+    summary_fields = PaperGroupSummary.model_fields
+    assert "row_version" in summary_fields
+    field = summary_fields["row_version"]
+    assert field.annotation is int
+    assert field.default == 1
+
+
+def test_group_row_version_increments_after_decision(db_session: Session, client: TestClient):
+    """Contract test: row_version is present on group summaries and increments after a decision."""
+    from app.contracts.enums import EligibilityStatus
+    from app.contracts.models import DecisionCommand
+    from app.services.corpus import process_corpus
+    from tests.integration.test_review_services import seed_test_workspace_with_records
+
+    ws_id, _s1, _s2, _s3 = seed_test_workspace_with_records(db_session)
+    rev = process_corpus(db=db_session, workspace_id=ws_id)
+
+    # 1. Check list groups endpoint returns row_version
+    list_res = client.get(f"/api/v1/revisions/{rev.id}/groups")
+    assert list_res.status_code == 200
+    groups = list_res.json()
+    assert len(groups) > 0
+    group_0 = groups[0]
+    assert "row_version" in group_0
+    assert group_0["row_version"] == 1
+
+    # 2. Check detail endpoint returns row_version
+    detail_res = client.get(f"/api/v1/groups/{group_0['id']}")
+    assert detail_res.status_code == 200
+    detail = detail_res.json()
+    assert "row_version" in detail["group"]
+    assert detail["group"]["row_version"] == 1
+
+    # 3. Submit human decision with expected_version=1
+    cmd = DecisionCommand(
+        status=EligibilityStatus.INCLUDE,
+        reason="Verified adult RCT meeting all inclusion criteria",
+        expected_version=1,
+    )
+    dec_res = client.post(f"/api/v1/groups/{group_0['id']}/decisions", json=cmd.model_dump())
+    assert dec_res.status_code == 200
+
+    # 4. Check row_version has incremented to 2 in both detail and list endpoints
+    detail_after = client.get(f"/api/v1/groups/{group_0['id']}").json()
+    assert detail_after["group"]["row_version"] == 2
+
+    groups_after = client.get(f"/api/v1/revisions/{rev.id}/groups").json()
+    target_summary = next(g for g in groups_after if g["id"] == group_0["id"])
+    assert target_summary["row_version"] == 2

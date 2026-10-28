@@ -2678,6 +2678,12 @@ export interface components {
              */
             member_count: number;
             representative_revision: components["schemas"]["RecordRevisionResponse"];
+            /**
+             * Row Version
+             * @description Optimistic locking row version
+             * @default 1
+             */
+            row_version: number;
             /** Workspace Id */
             workspace_id: string;
         };

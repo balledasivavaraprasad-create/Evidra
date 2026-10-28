@@ -9,6 +9,7 @@ export const MOCK_GROUPS: PaperGroupSummary[] = [
     has_conflict: false,
     has_human_decision: true,
     last_decision_at: "2026-10-27T10:00:00Z",
+    row_version: 1,
     representative_revision: {
       id: "rec-synth-0001",
       source_record_id: "src-synth-0001",
@@ -42,6 +43,7 @@ export const MOCK_GROUPS: PaperGroupSummary[] = [
     has_conflict: false,
     has_human_decision: false,
     last_decision_at: null,
+    row_version: 1,
     representative_revision: {
       id: "rec-synth-0005",
       source_record_id: "src-synth-0005",
@@ -74,6 +76,7 @@ export const MOCK_GROUPS: PaperGroupSummary[] = [
     has_conflict: true,
     has_human_decision: true,
     last_decision_at: "2026-10-27T09:30:00Z",
+    row_version: 1,
     representative_revision: {
       id: "rec-synth-0010",
       source_record_id: "src-synth-0010",
