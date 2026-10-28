@@ -64,6 +64,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get runtime system capabilities and feature flags
+         * @description Return runtime system capabilities (safe public boolean flags from settings).
+         */
+        get: operations["get_capabilities_api_v1_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/conflicts/{conflict_id}/resolve": {
         parameters: {
             query?: never;
@@ -1153,6 +1173,22 @@ export interface components {
          * @enum {string}
          */
         BooleanOperator: "AND" | "OR" | "NOT";
+        /**
+         * CapabilitiesResponse
+         * @description Runtime capabilities and feature flags.
+         */
+        CapabilitiesResponse: {
+            /**
+             * Llm Enabled
+             * @description Whether LLM features are enabled in settings
+             */
+            llm_enabled: boolean;
+            /**
+             * Rag Enabled
+             * @description Whether RAG features are enabled in settings
+             */
+            rag_enabled: boolean;
+        };
         /**
          * ChallengeDisposition
          * @description Human reviewer disposition response to a challenge.
@@ -3778,6 +3814,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthSessionResponse"];
+                };
+            };
+        };
+    };
+    get_capabilities_api_v1_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Runtime system capabilities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilitiesResponse"];
                 };
             };
         };
