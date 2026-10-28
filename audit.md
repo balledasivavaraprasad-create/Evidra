@@ -69,6 +69,7 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Review workbench, duplicate controls, and exact PICO editor (A03: `a507025`).
 - [x] Level 1 wiring, test server launcher, full browser walkthrough, and integrated CI activation (D04: `6dbd8cb`).
 - [x] Baseline evaluation, adversarial regression suite, and evaluation manifest (B03: `8704cbc`).
+- [x] Agent boundaries, replay safety, prompt injection defense, and model gateway (C03: `b3329be`).
 - [ ] Remaining domain endpoints (diffs, snapshots) and auth.
 - [ ] PubMed/Europe PMC quotas, registrations and disclaimer presentation.
 - [ ] Query builder and import UI approval workflow.
