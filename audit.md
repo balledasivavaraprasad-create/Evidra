@@ -45,6 +45,7 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | B02: Explainable screening criteria and rules | Merged | Commit `92c3480`; pure metadata-first screening engine conforming to `ScreeningPort`, 7 default review criteria, context/negation awareness for preclinical and cohort studies, honest Maybe state, 10-case benchmark (100% accuracy), and 12 unit tests passing; see [B02 handoff](prompts/handoffs/B02.md) |
 | A02: Query builder and approved import experience | Merged | Commit `03a7acc`; grouped Boolean query builder, AST compilation, criteria editor, search count runner across PubMed and Europe PMC, approved ingestion workflow, durable job polling with exponential backoff and cancel, 13 frontend tests passing; see [A02 handoff](prompts/handoffs/A02.md) |
 | C-ML01: Review prioritization model and artifact security | Merged | Commit `68e4715`; offline TF-IDF ranking pipeline, strict SHA-256 artifact verification, train/test evaluation split, calibration and unit tests; see [C-ML01 handoff](prompts/handoffs/C-ML01.md) |
+| C-ML02: Full-stack ML review prioritization, UI, and E2E tests | Merged | Commit `91c8a29`; dedicated ML review UI (`frontend/src/features/ml-review/`), baseline ordering toggle, authorized ML ranking API, `MachineResultModel` caching, 13 backend tests passing, 27 frontend tests passing, Playwright E2E browser tests passing; see [C-ML02 handoff](prompts/handoffs/C-ML02.md) |
 | D03: Reviewer services and deterministic pipeline integration | Merged | Commit `78a8d01`; Alembic migration `002_review_services_schema`, paper groups, group snapshots, append-only review decision events, optimistic concurrency (409 on version collision), PICO offset/quote validation, dedup overrides, formula-sanitized CSV export, evidence retrieval repository, 74 backend tests passing; see [D03 handoff](prompts/handoffs/D03.md) |
 | D05: Version snapshots, decision lineage and exact restoration | Merged | Commit `ef5ff75`; Level 2 snapshot restoration, lineage projection (merge/split/extend/retain), decision carryover, merge conflict detection, structured diff, deterministic invalidation fingerprints, 8 Level 2 tests passing, 104 backend tests passing; see [D05 handoff](prompts/handoffs/D05.md) |
 | B04: Group merge/split and cross-version regression suite | Merged | Commit `14795d4`; cross-version regression suite covering bridge records, cannot-link/rejected edge preservation, single-trial distinct publication separation, split ambiguity conflicts, export blocking on unresolved conflicts, partition arrival invariance, 6 regression tests passing, 110 backend tests passing; see [B04 handoff](prompts/handoffs/B04.md) |
@@ -88,12 +89,14 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Operational hardening, SQLite WAL-safe backup, readiness probes, and release configuration (D06: `93ab93a`).
 - [x] Final reproducible algorithm evaluation evidence and report contribution (B06: `99f3ad2`).
 - [x] Deployment packaging, Docker single-host setup, demo script, and final release handoff (A06: `762cbd6`).
-- [x] All 24 implementation prompts completed, verified, and merged into main.
+- [x] Review prioritization model, dataset pipeline, and artifact security (C-ML01: `68e4715`).
+- [x] Full-stack ML review prioritization, UI, and E2E tests (C-ML02: `91c8a29`).
+- [x] All 24 base implementation prompts + ML foundation and full-stack integration completed, verified, and merged into main.
 
-The dependency probes have been completely replaced with full application code, test suites, and verified benchmark evaluations. All 24 implementation prompts (D01 through A06) are **100% COMPLETED, MERGED INTO MAIN, AND VERIFIED**.
+The dependency probes have been completely replaced with full application code, test suites, and verified benchmark evaluations. All 24 base implementation prompts plus C-ML01 and C-ML02 are **100% COMPLETED, MERGED INTO MAIN, AND VERIFIED**.
 
-- **Total Backend Tests:** 167 passed in 3.60s.
-- **Total Frontend Tests:** 21 passed in 373ms.
+- **Total Backend Tests:** 174 passed in 3.55s.
+- **Total Frontend Tests:** 27 passed in 659ms.
 - **CI Stages Promoted:** Backend, Frontend, Integration, Level 2, and AI all active.
 - **Deployment Status:** Single-host Docker container packaging verified (`infra/Dockerfile`, `docker-compose.yml`, `entrypoint.sh`). Release Tag: `v1.0.0`.
 
