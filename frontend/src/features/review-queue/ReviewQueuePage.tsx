@@ -282,6 +282,8 @@ export const ReviewQueuePage: React.FC = () => {
         const msg = err instanceof Error ? err.message : "Failed to save PICO annotations";
         setErrorBanner(msg);
       }
+      // Re-throw so the PICO editor shows its own error instead of a false "saved" state
+      throw err;
     }
   };
 
