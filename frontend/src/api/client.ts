@@ -36,6 +36,12 @@ export type PicoResult = components["schemas"]["PicoResult"];
 export type EffectiveDecisionState = components["schemas"]["EffectiveDecisionState"];
 export type EligibilityStatus = components["schemas"]["EligibilityStatus"];
 export type CorpusDiffResponse = components["schemas"]["CorpusDiffResponse"];
+export type AssistantRequest = components["schemas"]["AssistantRequest"];
+export type AssistantProposal = components["schemas"]["AssistantProposal"];
+export type RetrievalChunk = components["schemas"]["RetrievalChunk"];
+export type ScreeningRankRequest = components["schemas"]["ScreeningRankRequest"];
+export type ScreeningRankResponse = components["schemas"]["ScreeningRankResponse"];
+export type RankedGroupItem = components["schemas"]["RankedGroupItem"];
 export type RestoreMode = "exact_snapshot" | "latest_decisions";
 
 export interface SnapshotRestoreRequest {
@@ -219,4 +225,19 @@ export const api = {
       }),
     downloadUrl: (exportId: string) => `/api/v1/exports/${exportId}/download`,
   },
+  screening: {
+    getRank: (workspaceId: string, payload?: ScreeningRankRequest) =>
+      request<ScreeningRankResponse>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/screening/rank`, {
+        method: "POST",
+        body: payload ? JSON.stringify(payload) : undefined,
+      }),
+  },
+  assistant: {
+    query: (workspaceId: string, payload: AssistantRequest) =>
+      request<AssistantProposal>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/assistant`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  },
 };
+

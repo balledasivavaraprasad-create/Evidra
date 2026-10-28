@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  evidra:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: evidra-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - AUTH_MODE=local
+      - SECRET_KEY=evidra-production-deployment-key-32chars-min
+      - DATA_DIR=/app/data
+      - DATABASE_URL=sqlite:////app/data/review.sqlite
+      - CHECKPOINT_DATABASE_URL=sqlite:////app/data/checkpoints.sqlite
+      - SOURCE_RATE_LIMIT_PER_SECOND=3.0
+      - LLM_ENABLED=false
+      - RAG_ENABLED=false
+    volumes:
+      - evidra-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  evidra-data:
+    name: evidra-persistent-storage
