@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LogOut, Sparkles, Sun, Moon } from "lucide-react";
+import { LogOut, Sun, Moon } from "lucide-react";
 import { api } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
@@ -69,9 +69,6 @@ export const Header: React.FC = () => {
       </a>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap lg:flex-nowrap items-center gap-x-8">
         <Link to="/" className="flex items-center gap-2.5 h-16 shrink-0" aria-label="Evidra home">
-          <span className="grid place-items-center w-8 h-8 rounded-lg border border-[var(--border-gold)] bg-[var(--gold-glow)]">
-            <Sparkles className="w-4 h-4 text-[var(--accent-gold)]" strokeWidth={1.75} />
-          </span>
           <span className="font-serif text-[1.35rem] font-medium tracking-tight text-[var(--text-primary)]">Evidra</span>
         </Link>
 

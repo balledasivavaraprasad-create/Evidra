@@ -922,3 +922,61 @@ html.light {
     animation: none;
   }
 }
+
+/* Ink pill button: solid ink, a paper-coloured fill sweeps in from the left on hover.
+   Light theme: black that turns white. Dark theme: ivory that turns ink. */
+.btn-ink {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.8rem 1.6rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--bg-base);
+  background: var(--text-primary);
+  border: 1px solid var(--text-primary);
+  transition: color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-ink::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--bg-surface);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-ink:hover,
+.btn-ink:focus-visible {
+  color: var(--text-primary);
+}
+.btn-ink:hover::before,
+.btn-ink:focus-visible::before {
+  transform: scaleX(1);
+}
+
+/* Scroll reveal: sections fade up as they come into view and fade out as they leave */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
