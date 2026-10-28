@@ -37,7 +37,16 @@ def test_returns_the_latest_saved_version(client: TestClient):
     assert body["sequence"] == 2
     assert body["question"] == "Second question"
     assert body["pico_description"] == {"population": "adults", "intervention": "metformin"}
-    assert body["criteria"] == [{**CRITERION, "metadata_first": True}]
+    assert body["criteria"] == [
+        {
+            **CRITERION,
+            "metadata_first": True,
+            "keywords": [],
+            "exclude_keywords": [],
+            "source": "custom",
+            "ai_suggested_keywords": [],
+        }
+    ]
 
 
 def test_404_when_nothing_saved_yet(client: TestClient):

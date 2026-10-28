@@ -82,6 +82,16 @@ def compute_criteria_hash(criteria: list[CriterionDefinition]) -> str:
             "is_inclusion": c.is_inclusion,
             "rationale": c.rationale,
             "metadata_first": c.metadata_first,
+            # Keyword rules differ by their keywords; old rules without any hash exactly as before
+            **(
+                {
+                    "keywords": c.keywords,
+                    "exclude_keywords": c.exclude_keywords,
+                    "source": c.source,
+                }
+                if (c.keywords or c.exclude_keywords)
+                else {}
+            ),
         }
         for c in sorted(criteria, key=lambda x: x.id)
     ]

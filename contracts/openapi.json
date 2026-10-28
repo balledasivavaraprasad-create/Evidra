@@ -497,6 +497,64 @@
         "title": "CounterArgumentItem",
         "type": "object"
       },
+      "CriteriaSuggestRequest": {
+        "additionalProperties": false,
+        "description": "Review question and PICO to build screening rules from.",
+        "properties": {
+          "pico": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "population / intervention / comparator / outcome (P, I, C, O also accepted)",
+            "title": "Pico",
+            "type": "object"
+          },
+          "question": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "title": "CriteriaSuggestRequest",
+        "type": "object"
+      },
+      "CriteriaSuggestResponse": {
+        "additionalProperties": false,
+        "description": "Suggested screening rules. Nothing is saved until the reviewer saves a criteria version.",
+        "properties": {
+          "ai_synonyms_used": {
+            "default": false,
+            "description": "True when an AI model added synonym keywords",
+            "title": "Ai Synonyms Used",
+            "type": "boolean"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionDefinition"
+            },
+            "title": "Criteria",
+            "type": "array"
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why AI synonyms were skipped or failed, if relevant",
+            "title": "Notice"
+          }
+        },
+        "required": [
+          "criteria"
+        ],
+        "title": "CriteriaSuggestResponse",
+        "type": "object"
+      },
       "CriteriaVersionCreate": {
         "additionalProperties": false,
         "description": "Request payload to create a new immutable review criteria version.",
@@ -596,10 +654,26 @@
         "additionalProperties": false,
         "description": "Definition of an individual inclusion or exclusion rule.",
         "properties": {
+          "ai_suggested_keywords": {
+            "description": "The subset of keywords an AI model suggested as synonyms, so the UI can mark them",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ai Suggested Keywords",
+            "type": "array"
+          },
           "category": {
             "description": "Domain category, e.g. 'population', 'study_design', 'species'",
             "title": "Category",
             "type": "string"
+          },
+          "exclude_keywords": {
+            "description": "Words or phrases that fail this rule when matched in title or abstract",
+            "items": {
+              "type": "string"
+            },
+            "title": "Exclude Keywords",
+            "type": "array"
           },
           "id": {
             "description": "Criterion unique key within criteria version, e.g. 'population_adults'",
@@ -610,6 +684,14 @@
             "description": "True if passing includes study; False if passing excludes study",
             "title": "Is Inclusion",
             "type": "boolean"
+          },
+          "keywords": {
+            "description": "Words or phrases matched (case-insensitive, whole word) in title and abstract. An inclusion rule passes if any matches; an exclusion rule fails if any matches.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Keywords",
+            "type": "array"
           },
           "metadata_first": {
             "default": true,
@@ -625,6 +707,17 @@
           "rationale": {
             "description": "Scientific justification for criterion",
             "title": "Rationale",
+            "type": "string"
+          },
+          "source": {
+            "default": "custom",
+            "description": "Where the rule came from: the review's PICO, a topic-neutral rule, or added by the reviewer",
+            "enum": [
+              "pico",
+              "generic",
+              "custom"
+            ],
+            "title": "Source",
             "type": "string"
           }
         },
@@ -6968,6 +7061,59 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspace_id}/criteria/suggest": {
+      "post": {
+        "description": "Build screening rules from the PICO. Nothing is saved; the reviewer edits and saves them.\n\nFully deterministic unless AI is enabled, in which case synonym keywords may be added to the\npopulation and intervention rules (marked as AI-suggested). AI failure never blocks the rules.",
+        "operationId": "suggest_criteria_api_v1_workspaces__workspace_id__criteria_suggest_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriteriaSuggestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CriteriaSuggestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Suggest screening rules from the review question and PICO",
+        "tags": [
+          "Criteria"
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspace_id}/dedup-decisions": {
       "post": {
         "description": "Confirm duplicate group merge or record cannot-link constraint (Implemented in D03).",
@@ -8618,7 +8764,7 @@
     },
     "/api/v1/workspaces/{workspace_id}/process-corpus": {
       "post": {
-        "description": "Run full deterministic review pipeline on imported workspace records.",
+        "description": "Run full deterministic review pipeline on imported workspace records.\n\nScreens with ``criteria_version_id`` when given, else the newest saved criteria version.",
         "operationId": "run_process_corpus_api_v1_workspaces__workspace_id__process_corpus_post",
         "parameters": [
           {
@@ -8628,6 +8774,22 @@
             "schema": {
               "title": "Workspace Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "criteria_version_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Criteria Version Id"
             }
           }
         ],

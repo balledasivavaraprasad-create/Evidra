@@ -452,6 +452,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspace_id}/criteria/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest screening rules from the review question and PICO
+         * @description Build screening rules from the PICO. Nothing is saved; the reviewer edits and saves them.
+         *
+         *     Fully deterministic unless AI is enabled, in which case synonym keywords may be added to the
+         *     population and intervention rules (marked as AI-suggested). AI failure never blocks the rules.
+         */
+        post: operations["suggest_criteria_api_v1_workspaces__workspace_id__criteria_suggest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspace_id}/dedup-decisions": {
         parameters: {
             query?: never;
@@ -968,6 +991,8 @@ export interface paths {
         /**
          * Trigger deterministic deduplication, screening, and PICO extraction
          * @description Run full deterministic review pipeline on imported workspace records.
+         *
+         *     Screens with ``criteria_version_id`` when given, else the newest saved criteria version.
          */
         post: operations["run_process_corpus_api_v1_workspaces__workspace_id__process_corpus_post"];
         delete?: never;
@@ -1501,6 +1526,43 @@ export interface components {
             supporting_quote: string;
         };
         /**
+         * CriteriaSuggestRequest
+         * @description Review question and PICO to build screening rules from.
+         */
+        CriteriaSuggestRequest: {
+            /**
+             * Pico
+             * @description population / intervention / comparator / outcome (P, I, C, O also accepted)
+             */
+            pico?: {
+                [key: string]: string;
+            };
+            /**
+             * Question
+             * @default
+             */
+            question: string;
+        };
+        /**
+         * CriteriaSuggestResponse
+         * @description Suggested screening rules. Nothing is saved until the reviewer saves a criteria version.
+         */
+        CriteriaSuggestResponse: {
+            /**
+             * Ai Synonyms Used
+             * @description True when an AI model added synonym keywords
+             * @default false
+             */
+            ai_synonyms_used: boolean;
+            /** Criteria */
+            criteria: components["schemas"]["CriterionDefinition"][];
+            /**
+             * Notice
+             * @description Why AI synonyms were skipped or failed, if relevant
+             */
+            notice?: string | null;
+        };
+        /**
          * CriteriaVersionCreate
          * @description Request payload to create a new immutable review criteria version.
          */
@@ -1562,10 +1624,20 @@ export interface components {
          */
         CriterionDefinition: {
             /**
+             * Ai Suggested Keywords
+             * @description The subset of keywords an AI model suggested as synonyms, so the UI can mark them
+             */
+            ai_suggested_keywords?: string[];
+            /**
              * Category
              * @description Domain category, e.g. 'population', 'study_design', 'species'
              */
             category: string;
+            /**
+             * Exclude Keywords
+             * @description Words or phrases that fail this rule when matched in title or abstract
+             */
+            exclude_keywords?: string[];
             /**
              * Id
              * @description Criterion unique key within criteria version, e.g. 'population_adults'
@@ -1576,6 +1648,11 @@ export interface components {
              * @description True if passing includes study; False if passing excludes study
              */
             is_inclusion: boolean;
+            /**
+             * Keywords
+             * @description Words or phrases matched (case-insensitive, whole word) in title and abstract. An inclusion rule passes if any matches; an exclusion rule fails if any matches.
+             */
+            keywords?: string[];
             /**
              * Metadata First
              * @description Whether to check metadata tags before text heuristics
@@ -1592,6 +1669,13 @@ export interface components {
              * @description Scientific justification for criterion
              */
             rationale: string;
+            /**
+             * Source
+             * @description Where the rule came from: the review's PICO, a topic-neutral rule, or added by the reviewer
+             * @default custom
+             * @enum {string}
+             */
+            source: "pico" | "generic" | "custom";
         };
         /**
          * CriterionEvidence
@@ -4782,6 +4866,41 @@ export interface operations {
             };
         };
     };
+    suggest_criteria_api_v1_workspaces__workspace_id__criteria_suggest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriteriaSuggestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CriteriaSuggestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     record_dedup_override_route_api_v1_workspaces__workspace_id__dedup_decisions_post: {
         parameters: {
             query?: never;
@@ -5685,7 +5804,9 @@ export interface operations {
     };
     run_process_corpus_api_v1_workspaces__workspace_id__process_corpus_post: {
         parameters: {
-            query?: never;
+            query?: {
+                criteria_version_id?: string | null;
+            };
             header?: never;
             path: {
                 workspace_id: string;

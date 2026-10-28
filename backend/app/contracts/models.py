@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -144,6 +144,45 @@ class CriterionDefinition(BaseModel):
     is_inclusion: bool = Field(description="True if passing includes study; False if passing excludes study")
     rationale: str = Field(description="Scientific justification for criterion")
     metadata_first: bool = Field(default=True, description="Whether to check metadata tags before text heuristics")
+    keywords: list[str] = Field(
+        default_factory=list,
+        description="Words or phrases matched (case-insensitive, whole word) in title and abstract. "
+        "An inclusion rule passes if any matches; an exclusion rule fails if any matches.",
+    )
+    exclude_keywords: list[str] = Field(
+        default_factory=list,
+        description="Words or phrases that fail this rule when matched in title or abstract",
+    )
+    source: Literal["pico", "generic", "custom"] = Field(
+        default="custom",
+        description="Where the rule came from: the review's PICO, a topic-neutral rule, or added by the reviewer",
+    )
+    ai_suggested_keywords: list[str] = Field(
+        default_factory=list,
+        description="The subset of keywords an AI model suggested as synonyms, so the UI can mark them",
+    )
+
+
+class CriteriaSuggestRequest(BaseModel):
+    """Review question and PICO to build screening rules from."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(default="", max_length=2000)
+    pico: dict[str, str] = Field(
+        default_factory=dict,
+        description="population / intervention / comparator / outcome (P, I, C, O also accepted)",
+    )
+
+
+class CriteriaSuggestResponse(BaseModel):
+    """Suggested screening rules. Nothing is saved until the reviewer saves a criteria version."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    criteria: list[CriterionDefinition]
+    ai_synonyms_used: bool = Field(default=False, description="True when an AI model added synonym keywords")
+    notice: str | None = Field(default=None, description="Why AI synonyms were skipped or failed, if relevant")
 
 
 class CriteriaVersionCreate(BaseModel):

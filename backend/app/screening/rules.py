@@ -536,6 +536,108 @@ def evaluate_study_design(
 
 
 # Dispatch map matching criterion IDs to their specialized pure evaluation functions
+# ---------------------------------------------------------------------------
+# Keyword rules (rules built from the review's own question)
+# ---------------------------------------------------------------------------
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9(\[])")
+
+
+def keyword_pattern(keyword: str) -> re.Pattern[str]:
+    """Case-insensitive whole-word / whole-phrase pattern for one keyword.
+
+    Spaces in a phrase match any run of whitespace, and the last word may carry a plural
+    "s" or "es" ("SGLT2 inhibitor" also finds "SGLT2 inhibitors"). It never matches inside a
+    longer word: "placebo" does not match "nonplacebo", and "T2D" does not match "T2DM".
+    """
+    words = [re.escape(w) for w in keyword.strip().split()]
+    body = r"\s+".join(words)
+    return re.compile(rf"(?<![\w]){body}(?:e?s)?(?![\w])", re.IGNORECASE)
+
+
+def _sentences(text: str) -> list[str]:
+    return [s.strip() for s in _SENTENCE_SPLIT_RE.split(text) if s.strip()]
+
+
+def _first_match(keywords: list[str], title: str, abstract: str) -> tuple[str, str] | None:
+    """The first keyword found, with the sentence (or title) that contains it."""
+    chunks = ([title] if title.strip() else []) + _sentences(abstract)
+    for chunk in chunks:
+        for keyword in keywords:
+            if keyword.strip() and keyword_pattern(keyword).search(chunk):
+                return keyword, chunk
+    return None
+
+
+def evaluate_keywords(
+    criterion: CriterionDefinition,
+    record: RecordRevisionResponse,
+) -> CriterionEvidence:
+    """Evaluate a keyword rule against the record's title and abstract.
+
+    - Any ``exclude_keywords`` match fails the rule, whatever else matches.
+    - Inclusion rule: PASS if any keyword matches (evidence is the matched sentence), FAIL if none.
+    - Exclusion rule: FAIL if any keyword matches, PASS if none.
+    - With no abstract, a missed keyword is not evidence of absence: the verdict is UNKNOWN
+      (Maybe), never an invented FAIL.
+    """
+    title = record.title or ""
+    abstract = (record.abstract_text or "").strip()
+
+    def evidence(verdict: CriterionVerdict, code: str, why: str, snippet: str | None) -> CriterionEvidence:
+        return CriterionEvidence(
+            criterion_id=criterion.id,
+            name=criterion.name,
+            verdict=verdict,
+            reason_code=code,
+            explanation=why,
+            evidence_snippet=snippet[:400] if snippet else None,
+            source=ScreeningEvidenceSource.RULE,
+            method_version=METHOD_VERSION,
+        )
+
+    blocked = _first_match(criterion.exclude_keywords, title, abstract) if criterion.exclude_keywords else None
+    if blocked:
+        keyword, sentence = blocked
+        return evidence(
+            CriterionVerdict.FAIL,
+            "EXCLUDE_KEYWORD_MATCH",
+            f"Mentions '{keyword}', which this rule excludes",
+            sentence,
+        )
+
+    found = _first_match(criterion.keywords, title, abstract)
+    if criterion.is_inclusion:
+        if found:
+            keyword, sentence = found
+            return evidence(CriterionVerdict.PASS, "KEYWORD_MATCH", f"Mentions '{keyword}'", sentence)
+        if len(abstract) < 30:
+            return evidence(
+                CriterionVerdict.UNKNOWN,
+                "NO_ABSTRACT_TO_CHECK",
+                "No abstract to check these keywords against; needs a manual look",
+                None,
+            )
+        return evidence(
+            CriterionVerdict.FAIL,
+            "NO_KEYWORD_MATCH",
+            "None of these terms appear in the title or abstract: " + ", ".join(criterion.keywords),
+            None,
+        )
+
+    # Exclusion rule: a keyword match is the reason to exclude
+    if found:
+        keyword, sentence = found
+        return evidence(CriterionVerdict.FAIL, "EXCLUDE_KEYWORD_MATCH", f"Mentions '{keyword}'", sentence)
+    if criterion.keywords and len(abstract) < 30:
+        return evidence(
+            CriterionVerdict.UNKNOWN,
+            "NO_ABSTRACT_TO_CHECK",
+            "No abstract to check against this exclusion; needs a manual look",
+            None,
+        )
+    return evidence(CriterionVerdict.PASS, "NO_EXCLUDED_TERM", "No excluded term found", None)
+
+
 RULE_EVALUATORS = {
     "abstract_available": evaluate_abstract_presence,
     "english_language": evaluate_language,

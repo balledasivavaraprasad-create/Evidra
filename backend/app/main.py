@@ -31,6 +31,8 @@ from app.contracts.models import (
     ConflictResolveRequest,
     CorpusDiffResponse,
     CorpusRevisionResponse,
+    CriteriaSuggestRequest,
+    CriteriaSuggestResponse,
     CriteriaVersionCreate,
     CriteriaVersionResponse,
     CriterionDefinition,
@@ -621,6 +623,41 @@ def get_latest_criteria_version(
 
 
 @app.post(
+    "/api/v1/workspaces/{workspace_id}/criteria/suggest",
+    tags=["Criteria"],
+    summary="Suggest screening rules from the review question and PICO",
+    response_model=CriteriaSuggestResponse,
+)
+def suggest_criteria(
+    workspace_id: str,
+    payload: CriteriaSuggestRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> CriteriaSuggestResponse:
+    """Build screening rules from the PICO. Nothing is saved; the reviewer edits and saves them.
+
+    Fully deterministic unless AI is enabled, in which case synonym keywords may be added to the
+    population and intervention rules (marked as AI-suggested). AI failure never blocks the rules.
+    """
+    ws = db.query(WorkspaceModel).filter_by(id=workspace_id).first()
+    if not ws:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workspace '{workspace_id}' not found",
+        )
+
+    from app.gateway.synonyms import build_synonym_provider
+    from app.screening.generate import rules_from_pico
+
+    provider, _ = build_synonym_provider()
+    rules = rules_from_pico(ws.title, payload.question, payload.pico, synonyms=provider)
+    used = any(r.ai_suggested_keywords for r in rules)
+    notice = None
+    if provider is not None and not used and provider.problems:
+        notice = f"AI synonyms were skipped: {provider.problems[0]}"
+    return CriteriaSuggestResponse(criteria=rules, ai_synonyms_used=used, notice=notice)
+
+
+@app.post(
     "/api/v1/workspaces/{workspace_id}/queries",
     tags=["Queries"],
     summary="Save a new query version",
@@ -839,9 +876,16 @@ def list_corpus_revisions(workspace_id: str, db: Session = Depends(get_db)) -> l
     summary="Trigger deterministic deduplication, screening, and PICO extraction",
     response_model=CorpusRevisionResponse,
 )
-def run_process_corpus(workspace_id: str, db: Session = Depends(get_db)) -> CorpusRevisionResponse:  # noqa: B008
-    """Run full deterministic review pipeline on imported workspace records."""
-    return process_corpus(db=db, workspace_id=workspace_id)
+def run_process_corpus(
+    workspace_id: str,
+    criteria_version_id: str | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> CorpusRevisionResponse:
+    """Run full deterministic review pipeline on imported workspace records.
+
+    Screens with ``criteria_version_id`` when given, else the newest saved criteria version.
+    """
+    return process_corpus(db=db, workspace_id=workspace_id, criteria_version_id=criteria_version_id)
 
 
 @app.get(

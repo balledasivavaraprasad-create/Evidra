@@ -17,7 +17,7 @@ from app.contracts.models import (
     ScreenResult,
 )
 from app.screening.defaults import METHOD_VERSION
-from app.screening.rules import RULE_EVALUATORS
+from app.screening.rules import RULE_EVALUATORS, evaluate_keywords
 
 
 def compute_screening_fingerprint(
@@ -53,6 +53,12 @@ class ScreeningEngine:
         criterion: CriterionDefinition,
     ) -> CriterionEvidence:
         """Evaluate a single criterion against a normalized record revision."""
+        # Rules with keywords (built from the review's question, or edited by the reviewer) are
+        # evaluated by their keywords. The id-based evaluators below remain only for older
+        # criteria versions that carry no keywords.
+        if criterion.keywords or criterion.exclude_keywords:
+            return evaluate_keywords(criterion, record)
+
         evaluator = RULE_EVALUATORS.get(criterion.id)
         if evaluator is not None:
             return evaluator(record, criterion)

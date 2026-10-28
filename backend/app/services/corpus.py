@@ -50,7 +50,9 @@ from app.db.models import (
 )
 from app.dedup import DeduplicationEngine
 from app.pico import RuleBasedPicoExtractor
-from app.screening import ScreeningEngine, get_default_criteria_version
+from app.screening import ScreeningEngine, get_default_criteria_version  # noqa: F401 - re-exported for tests
+from app.screening.defaults import compute_criteria_hash
+from app.screening.generate import rules_from_pico
 
 logger = logging.getLogger(__name__)
 
@@ -312,16 +314,17 @@ def process_corpus(
             .first()
         )
         if not crit_model:
-            # Create initial default criteria version
-            default_crit = get_default_criteria_version(workspace_id=workspace_id)
+            # Nothing saved yet: screen with the topic-neutral rules only, under an id that
+            # belongs to this workspace (never a shared "default" id).
+            fallback = rules_from_pico(ws.title, ws.title, {})
             crit_model = CriteriaVersionModel(
-                id=default_crit.id,
+                id=f"crit-default-{workspace_id}",
                 workspace_id=workspace_id,
                 sequence=1,
-                question=default_crit.question,
-                pico_json=json.dumps(default_crit.pico),
-                criteria_json=json.dumps([c.model_dump() for c in default_crit.criteria]),
-                content_hash=default_crit.content_hash,
+                question=ws.title,
+                pico_json=json.dumps({}),
+                criteria_json=json.dumps([c.model_dump() for c in fallback]),
+                content_hash=compute_criteria_hash(fallback),
                 created_at=utc_now(),
             )
             db.add(crit_model)
