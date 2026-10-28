@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     llm_max_budget_cents: int = Field(default=500, description="Spend limit in cents")
     langsmith_tracing: bool = False
 
+    run_worker_in_process: bool | None = Field(
+        default=None,
+        description="Run background job worker in-process inside FastAPI lifespan",
+    )
+
     cors_origins: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -81,6 +86,8 @@ class Settings(BaseSettings):
                 )
         if self.auth_mode == "password" and (not self.site_password or len(self.site_password) < 8):
             raise ValueError("AUTH_MODE='password' requires SITE_PASSWORD with at least 8 characters.")
+        if self.run_worker_in_process is None:
+            self.run_worker_in_process = (self.app_env == "production")
         return self
 
 

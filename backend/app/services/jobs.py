@@ -152,7 +152,7 @@ def acquire_next_job(db: Session, worker_id: str, lease_seconds: int = 60) -> Jo
             (JobModel.state == JobState.QUEUED.value)
             | (
                 (JobModel.state == JobState.RUNNING.value)
-                & (JobModel.lease_until < now)
+                & ((JobModel.lease_until < now) | JobModel.lease_until.is_(None))
             )
         )
         .order_by(JobModel.created_at.asc())
@@ -168,3 +168,16 @@ def acquire_next_job(db: Session, worker_id: str, lease_seconds: int = 60) -> Jo
         db.commit()
         db.refresh(job)
     return job
+
+def recover_stuck_jobs(db: Session) -> int:
+    """Reset jobs stuck in RUNNING state back to QUEUED after process restart."""
+    stuck_jobs = db.query(JobModel).filter(JobModel.state == JobState.RUNNING.value).all()
+    count = len(stuck_jobs)
+    for job in stuck_jobs:
+        job.state = JobState.QUEUED.value
+        job.lease_owner = None
+        job.lease_until = None
+        job.stage = "queued"
+    if count > 0:
+        db.commit()
+    return count
