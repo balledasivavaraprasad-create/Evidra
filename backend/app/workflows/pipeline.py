@@ -135,6 +135,12 @@ def resume_review_pipeline(
 
     with SqliteSaver.from_conn_string(db_path) as saver:
         graph = build_review_graph(checkpointer=saver)
+        current_state = graph.get_state(config)
+        if not current_state or not current_state.values or not current_state.next:
+            raise ValueError(
+                f"No active checkpoint found to resume for workspace '{workspace_id}' (thread '{thread_id}')"
+            )
+
         # Resume command payload passed into the interrupt
         resume_payload = {
             "approved": approved,
