@@ -335,7 +335,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get the latest saved criteria version
+         * @description Return the newest saved criteria version so the UI can resume without re-saving.
+         */
+        get: operations["get_latest_criteria_version_api_v1_workspaces__workspace_id__criteria_get"];
         put?: never;
         /**
          * Save a new criteria version
@@ -4244,6 +4248,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_latest_criteria_version_api_v1_workspaces__workspace_id__criteria_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CriteriaVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

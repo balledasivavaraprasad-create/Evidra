@@ -14,9 +14,13 @@ import {
   type QueryGroupClause,
 } from "./astCompiler";
 
+/** Shown while there is no saved review question to attach the query to. */
+export const SAVE_QUESTION_HINT = "Save the review question first.";
+
 interface QueryBuilderProps {
   workspaceId: string;
-  criteriaVersionId?: string;
+  /** The saved review question this query belongs to. Saving and searching stay off until it exists. */
+  criteriaVersionId?: string | null;
   onQuerySaved?: (query: QueryVersionResponse) => void;
   onExecutionSelected?: (selectedIds: string[]) => void;
   /** Starting terms, one inner list per OR-group (defaults to the metformin example) */
@@ -25,7 +29,7 @@ interface QueryBuilderProps {
 
 export const QueryBuilder: React.FC<QueryBuilderProps> = ({
   workspaceId,
-  criteriaVersionId = "crit-ver-default",
+  criteriaVersionId,
   onQuerySaved,
   onExecutionSelected,
   initialTerms,
@@ -140,7 +144,13 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
     setError(null);
   };
 
+  const criteriaReady = !!criteriaVersionId;
+
   const handleSaveQuery = async () => {
+    if (!criteriaVersionId) {
+      setError(SAVE_QUESTION_HINT);
+      return;
+    }
     if (!isValidDateFormat(startDate) || !isValidDateFormat(endDate)) {
       setError("Dates must follow YYYY, YYYY-MM, or YYYY-MM-DD format.");
       return;
@@ -171,6 +181,10 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
   };
 
   const handleRunSearchCount = async (source: SourceNamespace) => {
+    if (!criteriaReady) {
+      setError(SAVE_QUESTION_HINT);
+      return;
+    }
     if (!activeQuery) {
       setError("Please save the query version before executing search counts.");
       return;
@@ -398,7 +412,8 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
         <button
           type="button"
           onClick={handleSaveQuery}
-          disabled={savingQuery}
+          disabled={savingQuery || !criteriaReady}
+          aria-describedby={criteriaReady ? undefined : "query-criteria-hint"}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition disabled:opacity-50"
         >
           {savingQuery ? "Saving Query Version..." : "Save Query Version"}
@@ -409,7 +424,8 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
             <button
               key={src}
               type="button"
-              disabled={!activeQuery || executingSource === src}
+              disabled={!criteriaReady || !activeQuery || executingSource === src}
+              aria-describedby={criteriaReady ? undefined : "query-criteria-hint"}
               onClick={() => handleRunSearchCount(src)}
               className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-lg text-xs font-medium transition disabled:opacity-40"
             >
@@ -419,6 +435,11 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
           ))}
         </div>
       </div>
+      {!criteriaReady && (
+        <p id="query-criteria-hint" className="-mt-3 mb-6 text-xs text-amber-300">
+          {SAVE_QUESTION_HINT}
+        </p>
+      )}
 
       {/* Search Executions Table */}
       {executions.length > 0 && (

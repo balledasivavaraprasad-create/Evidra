@@ -6412,6 +6412,47 @@
       }
     },
     "/api/v1/workspaces/{workspace_id}/criteria": {
+      "get": {
+        "description": "Return the newest saved criteria version so the UI can resume without re-saving.",
+        "operationId": "get_latest_criteria_version_api_v1_workspaces__workspace_id__criteria_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CriteriaVersionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get the latest saved criteria version",
+        "tags": [
+          "Criteria"
+        ]
+      },
       "post": {
         "description": "Save immutable review question and inclusion/exclusion criteria version.",
         "operationId": "create_criteria_version_api_v1_workspaces__workspace_id__criteria_post",
