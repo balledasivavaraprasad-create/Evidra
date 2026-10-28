@@ -1,0 +1,43 @@
+{
+  "manifest_version": "1.0.0",
+  "generated_by": "dev-B (T2 Deduplication and Screening Owner)",
+  "platform_environment": "macOS / Linux, Python 3.12, SQLite 3.x",
+  "algorithms": {
+    "dedup": {
+      "method_version": "dedup-rules-v1.0.0",
+      "evaluation": {
+        "benchmark_file": "evals/dedup/benchmark.json",
+        "benchmark_sha256": "decfbcc3d68426d2e832fe56d69f543447a4f3f27348b4dab3411f0cf4001d24",
+        "total_pairs": 5,
+        "confusion_matrix": {
+          "TP": 2,
+          "FP": 0,
+          "FN": 0,
+          "TN": 3
+        },
+        "precision": 1.0,
+        "recall": 1.0,
+        "specificity": 1.0,
+        "f1_score": 1.0,
+        "balanced_accuracy": 1.0,
+        "study_vs_paper_false_merges": 0
+      }
+    },
+    "screening": {
+      "method_version": "screening-rules-v1.0.0",
+      "evaluation": {
+        "benchmark_file": "evals/screening/fixtures.json",
+        "benchmark_sha256": "1021139813b7d896d900849a26122461b805b08867251bc07fafe76366ce0e74",
+        "total_cases": 10,
+        "status_distribution": {
+          "include": 4,
+          "exclude": 5,
+          "maybe": 1
+        },
+        "accuracy": 1.0,
+        "reason_completeness": 1.0,
+        "maybe_rate": 0.1
+      }
+    }
+  }
+}
