@@ -16,11 +16,18 @@ from app.contracts.enums import (
     DedupEdgeStatus,
     EffectiveDecisionState,
     EligibilityStatus,
+    EvidenceClaimType,
+    EvidenceProvenance,
+    EvidenceSemanticAssessment,
+    EvidenceValidationStatus,
     JobKind,
     JobState,
     PicoLabel,
+    RadarEvidenceStatus,
+    RadarHumanReviewStatus,
     RestoreMode,
     ScreeningEvidenceSource,
+    SearchEvolutionCategory,
     SourceNamespace,
 )
 
@@ -154,6 +161,8 @@ class QueryVersionCreate(BaseModel):
     sources: list[SourceNamespace] = Field(min_length=1, description="List of target databases")
     parent_id: str | None = Field(default=None, description="Previous query version UUID if an edit")
     criteria_version_id: str = Field(description="Associated criteria version UUID")
+    change_description: str | None = Field(default=None, description="Optional description of intent or changes for this search version")
+    restored_from_version_id: str | None = Field(default=None, description="Prior query version ID if restored from an earlier search state")
 
 
 class QueryVersionResponse(BaseModel):
@@ -171,6 +180,8 @@ class QueryVersionResponse(BaseModel):
     sources: list[SourceNamespace]
     criteria_version_id: str
     content_hash: str = Field(description="SHA-256 hash of query AST and parameters")
+    change_description: str | None = None
+    restored_from_version_id: str | None = None
     created_at: datetime
 
 
@@ -398,6 +409,7 @@ class PaperGroupDetail(BaseModel):
     members: list[RecordRevisionResponse]
     screen_result: ScreenResult | None = None
     pico_result: PicoResult | None = None
+    evidence_bundle: EvidencePassportBundle | None = None
     events: list[ReviewEventResponse] = Field(default_factory=list)
     conflicts: list[ReviewConflictResponse] = Field(default_factory=list)
 
@@ -668,3 +680,378 @@ class MLRankingResponse(BaseModel):
     duration_ms: int | None = None
 
 
+
+
+# ============================================================================
+# Evidence Passport Contracts
+# ============================================================================
+
+class EvidenceItemResponse(BaseModel):
+    """Full auditable representation of an evidence-backed claim or PICO item."""
+
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
+
+    id: str = Field(description="Unique evidence item UUID")
+    workspace_id: str = Field(description="Associated workspace ID")
+    paper_group_id: str | None = Field(default=None, description="Associated paper group ID if resolved")
+    record_revision_id: str = Field(description="Immutable source record revision ID")
+    claim_type: EvidenceClaimType = Field(description="Category: screening_rationale, population, etc.")
+    claim_value: str = Field(description="Current claim or extracted clinical value")
+    original_claim_value: str | None = Field(default=None, description="Original AI-proposed claim before human edits")
+    source_field: str = Field(default="abstract", description="Source text field (e.g. abstract, title)")
+    supporting_quote: str = Field(description="Exact quoted passage from source text")
+    start_cp: int | None = Field(default=None, description="Zero-based start code point offset")
+    end_cp: int | None = Field(default=None, description="Half-open end code point offset")
+    source_fingerprint: str = Field(description="SHA-256 text fingerprint of source at extraction time")
+    provenance: EvidenceProvenance = Field(description="Provenance: model_generated, deterministic, human, etc.")
+    validation_status: EvidenceValidationStatus = Field(description="verified, stale, mismatched, etc.")
+    validation_message: str | None = Field(default=None, description="Human-readable explanation of validation checks")
+    semantic_assessment: EvidenceSemanticAssessment = Field(default=EvidenceSemanticAssessment.UNASSESSED, description="supports, contradicts, or insufficient")
+    assessed_by: str | None = Field(default=None, description="Actor who performed semantic assessment")
+    is_contradictory: bool = Field(default=False, description="Flag indicating passage contradicts the claim")
+    uncertainty_note: str | None = Field(default=None, description="Uncertainty or limitation notes")
+    reviewer_correction_reason: str | None = Field(default=None, description="Rationale recorded for human override")
+    event_id: str | None = Field(default=None, description="Linked review audit event ID")
+    created_at: datetime
+    updated_at: datetime
+
+
+class EvidencePassportSummary(BaseModel):
+    """Aggregated transparency and validation metrics for a paper's evidence passport."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total_claims: int = Field(default=0)
+    verified_quotes_count: int = Field(default=0)
+    needs_review_count: int = Field(default=0)
+    stale_count: int = Field(default=0)
+    mismatched_count: int = Field(default=0)
+    missing_source_count: int = Field(default=0)
+    pico_fields_with_evidence: int = Field(default=0, description="Count of PICO categories with verified evidence")
+    human_corrected_count: int = Field(default=0)
+    contradictory_count: int = Field(default=0)
+
+
+class EvidencePassportBundle(BaseModel):
+    """Complete Evidence Passport for a literature group or paper."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    group_id: str | None = None
+    record_revision_id: str
+    title: str = Field(description="Paper title")
+    abstract_text: str | None = Field(default=None, description="Source abstract text for UI highlighting")
+    source_fingerprint: str = Field(description="Current SHA-256 fingerprint of stored source text")
+    summary: EvidencePassportSummary
+    items: list[EvidenceItemResponse] = Field(default_factory=list)
+
+
+class EvidenceCorrectionRequest(BaseModel):
+    """Reviewer manual correction of an evidence-backed claim."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    claim_value: str = Field(min_length=1, max_length=2000, description="Corrected claim or PICO text")
+    supporting_quote: str | None = Field(default=None, description="Optional updated exact quotation")
+    start_cp: int | None = Field(default=None, ge=0)
+    end_cp: int | None = Field(default=None, gt=0)
+    semantic_assessment: EvidenceSemanticAssessment = Field(default=EvidenceSemanticAssessment.SUPPORTS)
+    reason: str = Field(min_length=1, max_length=1000, description="Mandatory rationale for human correction")
+    actor_id: str = Field(default="reviewer", max_length=128)
+
+
+class EvidenceItemCreateRequest(BaseModel):
+    """Request to create a new manual or imported evidence claim."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    record_revision_id: str = Field(description="Target record revision ID")
+    claim_type: EvidenceClaimType = Field(description="Claim category")
+    claim_value: str = Field(min_length=1, max_length=2000)
+    source_field: str = Field(default="abstract")
+    supporting_quote: str = Field(min_length=1, description="Exact passage from source")
+    start_cp: int | None = Field(default=None, ge=0)
+    end_cp: int | None = Field(default=None, gt=0)
+    semantic_assessment: EvidenceSemanticAssessment = Field(default=EvidenceSemanticAssessment.UNASSESSED)
+    uncertainty_note: str | None = None
+    actor_id: str = Field(default="reviewer", max_length=128)
+
+
+class EvidenceRevalidateResponse(BaseModel):
+    """Outcome of revalidating evidence claims against updated source text."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items_revalidated: int
+    verified_count: int
+    stale_count: int
+    mismatched_count: int
+    needs_review_count: int
+
+
+class EvidenceCoverageResponse(BaseModel):
+    """Review-wide transparency and evidence quality metrics."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    total_papers: int
+    papers_with_verified_evidence: int
+    papers_needing_review: int
+    total_claims: int
+    verified_claims: int
+    stale_claims: int
+    mismatched_claims: int
+    pico_evidence_coverage_percent: float
+    human_corrections_count: int
+
+
+class SearchEvolutionMetadataFieldDiff(BaseModel):
+    """Field-level diff between two versions of record metadata."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    field_name: str
+    base_value: str | None = None
+    target_value: str | None = None
+
+
+class SearchEvolutionRecordDiff(BaseModel):
+    """Diff representation of a source record across search versions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_record_id: str
+    external_id: str
+    source: SourceNamespace
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    year: int | None = None
+    journal: str | None = None
+    doi: str | None = None
+    pmid: str | None = None
+    category: SearchEvolutionCategory
+    base_record_revision_id: str | None = None
+    target_record_revision_id: str | None = None
+    field_diffs: list[SearchEvolutionMetadataFieldDiff] = Field(default_factory=list)
+    screening_decision: EffectiveDecisionState | None = None
+    screening_reason: str | None = None
+    screening_preserved_from_version_id: str | None = None
+    metadata_changed_since_screening: bool = False
+
+
+class SearchEvolutionDiffSummary(BaseModel):
+    """Aggregated counts and metrics comparing two search versions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    base_version_id: str
+    base_sequence: int
+    target_version_id: str
+    target_sequence: int
+    total_base_records: int
+    total_target_records: int
+    newly_discovered_count: int
+    repeated_count: int
+    missing_from_newer_count: int
+    metadata_changed_count: int
+    conflicts_count: int
+    screened_target_count: int
+    unscreened_target_count: int
+
+
+class SearchEvolutionDiffResponse(BaseModel):
+    """Detailed diff comparing two search versions across all records."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    summary: SearchEvolutionDiffSummary
+    records: list[SearchEvolutionRecordDiff]
+
+
+class SearchEvolutionVersionSummary(BaseModel):
+    """Timeline summary of a query version and its executed search runs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    sequence: int
+    workspace_id: str
+    parent_id: str | None = None
+    restored_from_version_id: str | None = None
+    change_description: str | None = None
+    created_at: datetime
+    sources: list[SourceNamespace]
+    start_date: str | None = None
+    end_date: str | None = None
+    total_records: int
+    screened_records: int
+    unscreened_records: int
+    new_records_count: int = 0
+    repeated_records_count: int = 0
+    executions: list[SearchExecutionResponse] = Field(default_factory=list)
+
+
+class SearchRestoreRequest(BaseModel):
+    """Request payload to safely restore a prior search configuration."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str | None = Field(default=None, description="Optional reason for restoring this search version")
+    actor_id: str = Field(default="researcher", max_length=128)
+
+
+class SearchRestoreResponse(BaseModel):
+    """Response after restoring an earlier search version."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    restored_query: QueryVersionResponse
+    restored_from_version_id: str
+    message: str
+
+
+class RadarFieldDetail(BaseModel):
+    """Detailed PICO element evidence status and supporting passage."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    claim_type: EvidenceClaimType
+    field_label: str
+    radar_status: RadarEvidenceStatus
+    human_review_status: RadarHumanReviewStatus
+    claim_value: str | None = None
+    original_claim_value: str | None = None
+    source_field: str = Field(default="abstract", description="Examined source text container (e.g. abstract)")
+    supporting_quote: str | None = None
+    start_cp: int | None = None
+    end_cp: int | None = None
+    validation_status: EvidenceValidationStatus = Field(default=EvidenceValidationStatus.NEEDS_REVIEW)
+    validation_message: str | None = None
+    semantic_assessment: EvidenceSemanticAssessment = Field(default=EvidenceSemanticAssessment.UNASSESSED)
+    is_contradictory: bool = False
+    uncertainty_note: str | None = None
+    reviewer_correction_reason: str | None = None
+    reviewer_notes: str | None = None
+    evidence_id: str | None = None
+    updated_at: datetime | None = None
+
+
+class ArticleRadarResponse(BaseModel):
+    """Article-level Missing-Evidence Radar representing all 4 PICO dimensions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    group_id: str
+    paper_title: str
+    source_text: str | None = None
+    source_field: str = Field(default="abstract")
+    has_source_text: bool = True
+    effective_decision: EffectiveDecisionState
+    screening_reason: str | None = None
+    pico: dict[str, RadarFieldDetail]
+    overall_coverage_pct: float
+    needs_human_review: bool
+
+
+class ReviewRadarDimensionSummary(BaseModel):
+    """Aggregated coverage metrics for one PICO dimension across review."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dimension: EvidenceClaimType
+    total_assessed: int
+    supported_count: int
+    uncertain_count: int
+    not_found_count: int
+    conflicting_count: int
+    stale_count: int
+    not_assessed_count: int
+    human_confirmed_count: int
+    human_corrected_count: int
+    pending_review_count: int
+    supported_percent: float
+
+
+class ReviewRadarArticleRow(BaseModel):
+    """Single article row in review-level coverage matrix."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    group_id: str
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    year: int | None = None
+    journal: str | None = None
+    doi: str | None = None
+    pmid: str | None = None
+    has_source_text: bool = True
+    effective_decision: EffectiveDecisionState
+    population_status: RadarEvidenceStatus
+    intervention_status: RadarEvidenceStatus
+    comparator_status: RadarEvidenceStatus
+    outcome_status: RadarEvidenceStatus
+    population_value: str | None = None
+    intervention_value: str | None = None
+    comparator_value: str | None = None
+    outcome_value: str | None = None
+    needs_review: bool = False
+    priority_rank: int = 0
+
+
+class ReviewRadarResponse(BaseModel):
+    """Review-wide Missing-Evidence Radar matrix and dimension statistics."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    total_articles: int
+    articles_with_source_text: int
+    articles_without_source_text: int
+    dimension_summaries: dict[str, ReviewRadarDimensionSummary]
+    total_fields_supported_percent: float
+    needs_review_total: int
+    rows: list[ReviewRadarArticleRow]
+
+
+class RadarConfirmRequest(BaseModel):
+    """Payload to confirm an extracted PICO value as verified."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    actor_id: str = Field(default="reviewer", max_length=128)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class RadarCorrectRequest(BaseModel):
+    """Payload to correct a PICO value with reviewer rationale."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    claim_value: str = Field(min_length=1, max_length=2000)
+    supporting_quote: str | None = None
+    start_cp: int | None = None
+    end_cp: int | None = None
+    reason: str = Field(min_length=1, max_length=1000, description="Mandatory rationale for human correction")
+    actor_id: str = Field(default="reviewer", max_length=128)
+
+
+class RadarFlagUncertainRequest(BaseModel):
+    """Payload to flag a PICO element as ambiguous or uncertain."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    uncertainty_note: str = Field(min_length=1, max_length=1000)
+    actor_id: str = Field(default="reviewer", max_length=128)
+
+
+class RadarFlagConflictRequest(BaseModel):
+    """Payload to flag conflicting evidence for a PICO element."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conflict_explanation: str = Field(min_length=1, max_length=1000)
+    competing_quote: str | None = None
+    actor_id: str = Field(default="reviewer", max_length=128)

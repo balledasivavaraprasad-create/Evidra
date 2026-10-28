@@ -50,6 +50,7 @@ class WorkspaceModel(Base):
     corpus_revisions = relationship("CorpusRevisionModel", back_populates="workspace", cascade="all, delete-orphan")
     paper_groups = relationship("PaperGroupModel", back_populates="workspace", cascade="all, delete-orphan")
     review_events = relationship("ReviewEventModel", back_populates="workspace", cascade="all, delete-orphan")
+    evidence_passports = relationship("EvidencePassportModel", back_populates="workspace", cascade="all, delete-orphan")
 
 
 class CriteriaVersionModel(Base):
@@ -89,6 +90,8 @@ class QueryVersionModel(Base):
     sources_json = Column(Text, nullable=False)
     criteria_version_id = Column(String(64), ForeignKey("criteria_versions.id"), nullable=False)
     content_hash = Column(String(64), nullable=False)
+    change_description = Column(Text, nullable=True)
+    restored_from_version_id = Column(String(64), ForeignKey("query_versions.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     workspace = relationship("WorkspaceModel", back_populates="query_versions")
@@ -461,3 +464,39 @@ class ExportModel(Base):
     file_path = Column(Text, nullable=False)
     created_by = Column(String(128), nullable=False)
     created_at = Column(DateTime, default=utc_now, nullable=False)
+
+
+class EvidencePassportModel(Base):
+    """Persistent auditable evidence-backed claim and validation record."""
+
+    __tablename__ = "evidence_passports"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    workspace_id = Column(String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    paper_group_id = Column(String(64), ForeignKey("paper_groups.id", ondelete="CASCADE"), nullable=True, index=True)
+    record_revision_id = Column(String(64), ForeignKey("record_revisions.id", ondelete="CASCADE"), nullable=False, index=True)
+    claim_type = Column(String(32), nullable=False, index=True)
+    claim_value = Column(Text, nullable=False)
+    original_claim_value = Column(Text, nullable=True)
+    source_field = Column(String(32), default="abstract", nullable=False)
+    supporting_quote = Column(Text, nullable=False)
+    start_cp = Column(Integer, nullable=True)
+    end_cp = Column(Integer, nullable=True)
+    source_fingerprint = Column(String(64), nullable=False)
+    provenance = Column(String(64), nullable=False)
+    validation_status = Column(String(32), nullable=False, index=True)
+    validation_message = Column(Text, nullable=True)
+    semantic_assessment = Column(String(32), default="unassessed", nullable=False)
+    assessed_by = Column(String(128), nullable=True)
+    is_contradictory = Column(Boolean, default=False, nullable=False)
+    uncertainty_note = Column(Text, nullable=True)
+    reviewer_correction_reason = Column(Text, nullable=True)
+    superseded_by_id = Column(String(64), ForeignKey("evidence_passports.id", ondelete="SET NULL"), nullable=True)
+    event_id = Column(String(64), ForeignKey("review_events.id", ondelete="SET NULL"), nullable=True)
+    radar_status = Column(String(32), default="not_assessed", nullable=False, index=True)
+    human_review_status = Column(String(32), default="unreviewed", nullable=False, index=True)
+    reviewer_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+
+    workspace = relationship("WorkspaceModel", back_populates="evidence_passports")

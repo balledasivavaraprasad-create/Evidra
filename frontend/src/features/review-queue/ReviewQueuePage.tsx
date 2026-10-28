@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import {
   BookOpen,
   CheckCircle,
@@ -21,6 +21,10 @@ import { api, type PaperGroupSummary, type PaperGroupDetail, type PicoSpan, ApiE
 import { MOCK_GROUPS } from "../../api/fixtures";
 import { PicoViewer } from "../pico/PicoViewer";
 import { AssistantPanel } from "./AssistantPanel";
+import { EvidencePassportPanel } from "../evidence-passport/EvidencePassportPanel";
+import { ArticleRadarWidget } from "../pico-radar/ArticleRadarWidget";
+import type { ArticleRadarResponse } from "../../api/client";
+import { ShieldCheck } from "lucide-react";
 
 const EXCLUSION_REASONS = [
   "Preclinical animal model without human participants",
@@ -57,7 +61,8 @@ export const ReviewQueuePage: React.FC = () => {
   const getVersion = (id: string) => groupVersions[id] || 1;
 
   // Active Tab: Reader vs Audit Timeline vs Member Copies vs AI Assistant
-  const [activeTab, setActiveTab] = useState<"reader" | "audit" | "members" | "assistant">("reader");
+  const [activeTab, setActiveTab] = useState<"reader" | "radar" | "passport" | "audit" | "members" | "assistant">("reader");
+  const [articleRadar, setArticleRadar] = useState<ArticleRadarResponse | null>(null);
 
   // Load Revisions & Groups
   useEffect(() => {
@@ -259,6 +264,13 @@ export const ReviewQueuePage: React.FC = () => {
             <span>Process Corpus</span>
           </button>
 
+          <Link
+            to={`/reviews/${workspaceId}/radar`}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white rounded-lg text-xs font-medium transition border border-slate-700"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span>PICO Radar Dashboard</span>
+          </Link>
           <button
             type="button"
             onClick={handleExportCsv}
@@ -426,6 +438,40 @@ export const ReviewQueuePage: React.FC = () => {
                   </button>
                   <button
                     type="button"
+                    onClick={() => {
+                      setActiveTab("radar");
+                      if (selectedGroupId) {
+                        api.radar.getArticleRadar(workspaceId, selectedGroupId).then(setArticleRadar);
+                      }
+                    }}
+                    className={`px-2.5 py-1 rounded transition flex items-center gap-1 ${
+                      activeTab === "radar"
+                        ? "bg-slate-800 text-cyan-300 font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3 text-cyan-400" />
+                    <span>PICO Radar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("passport")}
+                    className={`px-2.5 py-1 rounded transition flex items-center gap-1 ${
+                      activeTab === "passport"
+                        ? "bg-slate-800 text-indigo-300 font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <ShieldCheck className="w-3 h-3 text-indigo-400" />
+                    <span>Passport</span>
+                    {groupDetail?.evidence_bundle?.summary && (
+                      <span className="text-[10px] px-1 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 font-mono">
+                        {groupDetail.evidence_bundle.summary.total_claims}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setActiveTab("audit")}
                     className={`px-2.5 py-1 rounded transition flex items-center gap-1 ${activeTab === "audit" ? "bg-slate-800 text-cyan-300 font-bold" : "text-slate-400"}`}
                   >
@@ -471,6 +517,21 @@ export const ReviewQueuePage: React.FC = () => {
             </div>
 
             {/* TAB CONTENT */}
+            {activeTab === "radar" && (
+              articleRadar ? (
+                <ArticleRadarWidget
+                  radar={articleRadar}
+                  workspaceId={workspaceId}
+                  groupId={selectedGroup.id}
+                  onRadarUpdated={(updated) => setArticleRadar(updated)}
+                />
+              ) : (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  Loading Missing-Evidence Radar...
+                </div>
+              )
+            )}
+
             {activeTab === "reader" && (
               <PicoViewer
                 key={rep?.id || selectedGroup.id}
@@ -479,6 +540,17 @@ export const ReviewQueuePage: React.FC = () => {
                 initialSpans={[]}
                 comparatorAbsent={false}
                 onSaveSpans={handleSavePico}
+              />
+            )}
+
+            {activeTab === "passport" && (
+              <EvidencePassportPanel
+                workspaceId={workspaceId}
+                groupId={selectedGroup.id}
+                initialBundle={groupDetail?.evidence_bundle}
+                onRefreshGroup={() => {
+                  api.groups.getDetail(selectedGroupId, revisionId || undefined).then((d) => setGroupDetail(d));
+                }}
               />
             )}
 

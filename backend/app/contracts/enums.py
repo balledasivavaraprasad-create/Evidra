@@ -69,6 +69,7 @@ class DecisionEventType(str, Enum):
     PICO_OVERRIDE = "pico_override"
     DEDUP_OVERRIDE = "dedup_override"
     CONFLICT_RESOLUTION = "conflict_resolution"
+    EVIDENCE_CORRECTION = "evidence_correction"
 
 
 class ConflictKind(str, Enum):
@@ -136,3 +137,78 @@ class DedupEdgeStatus(str, Enum):
     PROPOSED = "proposed"
     CONFIRMED = "confirmed"
     REJECTED = "rejected"
+
+
+# ============================================================================
+# Evidence Passport Enums
+# ============================================================================
+
+class EvidenceClaimType(str, Enum):
+    """Category of claim or study characteristic backed by an evidence passport."""
+
+    SCREENING_RATIONALE = "screening_rationale"
+    POPULATION = "population"
+    INTERVENTION = "intervention"
+    COMPARATOR = "comparator"
+    OUTCOME = "outcome"
+    STUDY_CHARACTERISTIC = "study_characteristic"
+
+
+class EvidenceValidationStatus(str, Enum):
+    """Deterministic structural and textual validation status of an evidence item."""
+
+    VERIFIED = "verified"
+    STALE = "stale"
+    MISMATCHED = "mismatched"
+    MISSING_SOURCE = "missing_source"
+    INSUFFICIENT_EVIDENCE = "insufficient_evidence"
+    NEEDS_REVIEW = "needs_review"
+
+
+class EvidenceSemanticAssessment(str, Enum):
+    """Semantic support evaluation assessing whether quotation logically establishes claim."""
+
+    SUPPORTS = "supports"
+    CONTRADICTS = "contradicts"
+    INSUFFICIENT = "insufficient"
+    UNASSESSED = "unassessed"
+
+
+class EvidenceProvenance(str, Enum):
+    """Origin of an evidence passport item."""
+
+    MODEL_GENERATED = "model_generated"
+    DETERMINISTIC_EXTRACTION = "deterministic_extraction"
+    IMPORTED_ANNOTATION = "imported_annotation"
+    HUMAN_CREATED = "human_created"
+    HUMAN_CORRECTED = "human_corrected"
+    HUMAN_CONFIRMED = "human_confirmed"
+
+
+class SearchEvolutionCategory(str, Enum):
+    """Categorization of records in a search evolution comparison."""
+
+    NEWLY_DISCOVERED = "newly_discovered"
+    REPEATED = "repeated"
+    MISSING_FROM_NEWER = "missing_from_newer"
+    METADATA_CHANGED = "metadata_changed"
+    CONFLICT = "conflict"
+
+
+class RadarEvidenceStatus(str, Enum):
+    """Missing-evidence radar classification for PICO information."""
+
+    SUPPORTED = "supported"
+    UNCERTAIN = "uncertain"
+    NOT_FOUND = "not_found"
+    CONFLICTING = "conflicting"
+    STALE = "stale"
+    NOT_ASSESSED = "not_assessed"
+
+
+class RadarHumanReviewStatus(str, Enum):
+    """Human review dimension for PICO claims."""
+
+    UNREVIEWED = "unreviewed"
+    CONFIRMED = "confirmed"
+    CORRECTED = "corrected"

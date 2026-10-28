@@ -798,11 +798,34 @@ def get_paper_group_detail(
         for cf in conflicts
     ]
 
+    from app.services.evidence_passport import (
+        generate_or_sync_passport_for_record,
+        get_paper_group_evidence_bundle,
+    )
+    evidence_bundle = None
+    try:
+        generate_or_sync_passport_for_record(
+            db=db,
+            workspace_id=group.workspace_id,
+            group_id=group.id,
+            record_revision=rep_rev,
+            screen_result=screen_res,
+            pico_result=pico_res,
+        )
+        evidence_bundle = get_paper_group_evidence_bundle(
+            db=db,
+            workspace_id=group.workspace_id,
+            group_id=group.id,
+        )
+    except (HTTPException, ValueError, KeyError, AttributeError, TypeError) as e:
+        logger.warning("Failed to generate or retrieve evidence_bundle for group %s: %s", group_id, e)
+
     return PaperGroupDetail(
         group=summary,
         members=member_dtos,
         screen_result=screen_res,
         pico_result=pico_res,
+        evidence_bundle=evidence_bundle,
         events=event_dtos,
         conflicts=conflict_dtos,
     )

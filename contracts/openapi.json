@@ -1,6 +1,85 @@
 {
   "components": {
     "schemas": {
+      "ArticleRadarResponse": {
+        "additionalProperties": false,
+        "description": "Article-level Missing-Evidence Radar representing all 4 PICO dimensions.",
+        "properties": {
+          "effective_decision": {
+            "$ref": "#/components/schemas/EffectiveDecisionState"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "has_source_text": {
+            "default": true,
+            "title": "Has Source Text",
+            "type": "boolean"
+          },
+          "needs_human_review": {
+            "title": "Needs Human Review",
+            "type": "boolean"
+          },
+          "overall_coverage_pct": {
+            "title": "Overall Coverage Pct",
+            "type": "number"
+          },
+          "paper_title": {
+            "title": "Paper Title",
+            "type": "string"
+          },
+          "pico": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RadarFieldDetail"
+            },
+            "title": "Pico",
+            "type": "object"
+          },
+          "screening_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screening Reason"
+          },
+          "source_field": {
+            "default": "abstract",
+            "title": "Source Field",
+            "type": "string"
+          },
+          "source_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Text"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "group_id",
+          "paper_title",
+          "effective_decision",
+          "pico",
+          "overall_coverage_pct",
+          "needs_human_review"
+        ],
+        "title": "ArticleRadarResponse",
+        "type": "object"
+      },
       "AssistantProposal": {
         "additionalProperties": false,
         "description": "Structured proposal from the bounded assistant, requiring reviewer confirmation.",
@@ -550,7 +629,8 @@
           "screen_decision",
           "pico_override",
           "dedup_override",
-          "conflict_resolution"
+          "conflict_resolution",
+          "evidence_correction"
         ],
         "title": "DecisionEventType",
         "type": "string"
@@ -707,6 +787,626 @@
         ],
         "title": "ErrorEnvelope",
         "type": "object"
+      },
+      "EvidenceClaimType": {
+        "description": "Category of claim or study characteristic backed by an evidence passport.",
+        "enum": [
+          "screening_rationale",
+          "population",
+          "intervention",
+          "comparator",
+          "outcome",
+          "study_characteristic"
+        ],
+        "title": "EvidenceClaimType",
+        "type": "string"
+      },
+      "EvidenceCorrectionRequest": {
+        "additionalProperties": false,
+        "description": "Reviewer manual correction of an evidence-backed claim.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "claim_value": {
+            "description": "Corrected claim or PICO text",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Claim Value",
+            "type": "string"
+          },
+          "end_cp": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Cp"
+          },
+          "reason": {
+            "description": "Mandatory rationale for human correction",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "semantic_assessment": {
+            "$ref": "#/components/schemas/EvidenceSemanticAssessment",
+            "default": "supports"
+          },
+          "start_cp": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Cp"
+          },
+          "supporting_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional updated exact quotation",
+            "title": "Supporting Quote"
+          }
+        },
+        "required": [
+          "claim_value",
+          "reason"
+        ],
+        "title": "EvidenceCorrectionRequest",
+        "type": "object"
+      },
+      "EvidenceCoverageResponse": {
+        "additionalProperties": false,
+        "description": "Review-wide transparency and evidence quality metrics.",
+        "properties": {
+          "human_corrections_count": {
+            "title": "Human Corrections Count",
+            "type": "integer"
+          },
+          "mismatched_claims": {
+            "title": "Mismatched Claims",
+            "type": "integer"
+          },
+          "papers_needing_review": {
+            "title": "Papers Needing Review",
+            "type": "integer"
+          },
+          "papers_with_verified_evidence": {
+            "title": "Papers With Verified Evidence",
+            "type": "integer"
+          },
+          "pico_evidence_coverage_percent": {
+            "title": "Pico Evidence Coverage Percent",
+            "type": "number"
+          },
+          "stale_claims": {
+            "title": "Stale Claims",
+            "type": "integer"
+          },
+          "total_claims": {
+            "title": "Total Claims",
+            "type": "integer"
+          },
+          "total_papers": {
+            "title": "Total Papers",
+            "type": "integer"
+          },
+          "verified_claims": {
+            "title": "Verified Claims",
+            "type": "integer"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "total_papers",
+          "papers_with_verified_evidence",
+          "papers_needing_review",
+          "total_claims",
+          "verified_claims",
+          "stale_claims",
+          "mismatched_claims",
+          "pico_evidence_coverage_percent",
+          "human_corrections_count"
+        ],
+        "title": "EvidenceCoverageResponse",
+        "type": "object"
+      },
+      "EvidenceItemCreateRequest": {
+        "additionalProperties": false,
+        "description": "Request to create a new manual or imported evidence claim.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "claim_type": {
+            "$ref": "#/components/schemas/EvidenceClaimType",
+            "description": "Claim category"
+          },
+          "claim_value": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Claim Value",
+            "type": "string"
+          },
+          "end_cp": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Cp"
+          },
+          "record_revision_id": {
+            "description": "Target record revision ID",
+            "title": "Record Revision Id",
+            "type": "string"
+          },
+          "semantic_assessment": {
+            "$ref": "#/components/schemas/EvidenceSemanticAssessment",
+            "default": "unassessed"
+          },
+          "source_field": {
+            "default": "abstract",
+            "title": "Source Field",
+            "type": "string"
+          },
+          "start_cp": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Cp"
+          },
+          "supporting_quote": {
+            "description": "Exact passage from source",
+            "minLength": 1,
+            "title": "Supporting Quote",
+            "type": "string"
+          },
+          "uncertainty_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uncertainty Note"
+          }
+        },
+        "required": [
+          "record_revision_id",
+          "claim_type",
+          "claim_value",
+          "supporting_quote"
+        ],
+        "title": "EvidenceItemCreateRequest",
+        "type": "object"
+      },
+      "EvidenceItemResponse": {
+        "additionalProperties": false,
+        "description": "Full auditable representation of an evidence-backed claim or PICO item.",
+        "properties": {
+          "assessed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Actor who performed semantic assessment",
+            "title": "Assessed By"
+          },
+          "claim_type": {
+            "$ref": "#/components/schemas/EvidenceClaimType",
+            "description": "Category: screening_rationale, population, etc."
+          },
+          "claim_value": {
+            "description": "Current claim or extracted clinical value",
+            "title": "Claim Value",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "end_cp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Half-open end code point offset",
+            "title": "End Cp"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Linked review audit event ID",
+            "title": "Event Id"
+          },
+          "id": {
+            "description": "Unique evidence item UUID",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_contradictory": {
+            "default": false,
+            "description": "Flag indicating passage contradicts the claim",
+            "title": "Is Contradictory",
+            "type": "boolean"
+          },
+          "original_claim_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original AI-proposed claim before human edits",
+            "title": "Original Claim Value"
+          },
+          "paper_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Associated paper group ID if resolved",
+            "title": "Paper Group Id"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/EvidenceProvenance",
+            "description": "Provenance: model_generated, deterministic, human, etc."
+          },
+          "record_revision_id": {
+            "description": "Immutable source record revision ID",
+            "title": "Record Revision Id",
+            "type": "string"
+          },
+          "reviewer_correction_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Rationale recorded for human override",
+            "title": "Reviewer Correction Reason"
+          },
+          "semantic_assessment": {
+            "$ref": "#/components/schemas/EvidenceSemanticAssessment",
+            "default": "unassessed",
+            "description": "supports, contradicts, or insufficient"
+          },
+          "source_field": {
+            "default": "abstract",
+            "description": "Source text field (e.g. abstract, title)",
+            "title": "Source Field",
+            "type": "string"
+          },
+          "source_fingerprint": {
+            "description": "SHA-256 text fingerprint of source at extraction time",
+            "title": "Source Fingerprint",
+            "type": "string"
+          },
+          "start_cp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Zero-based start code point offset",
+            "title": "Start Cp"
+          },
+          "supporting_quote": {
+            "description": "Exact quoted passage from source text",
+            "title": "Supporting Quote",
+            "type": "string"
+          },
+          "uncertainty_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Uncertainty or limitation notes",
+            "title": "Uncertainty Note"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "validation_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human-readable explanation of validation checks",
+            "title": "Validation Message"
+          },
+          "validation_status": {
+            "$ref": "#/components/schemas/EvidenceValidationStatus",
+            "description": "verified, stale, mismatched, etc."
+          },
+          "workspace_id": {
+            "description": "Associated workspace ID",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "record_revision_id",
+          "claim_type",
+          "claim_value",
+          "supporting_quote",
+          "source_fingerprint",
+          "provenance",
+          "validation_status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "EvidenceItemResponse",
+        "type": "object"
+      },
+      "EvidencePassportBundle": {
+        "additionalProperties": false,
+        "description": "Complete Evidence Passport for a literature group or paper.",
+        "properties": {
+          "abstract_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Source abstract text for UI highlighting",
+            "title": "Abstract Text"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "record_revision_id": {
+            "title": "Record Revision Id",
+            "type": "string"
+          },
+          "source_fingerprint": {
+            "description": "Current SHA-256 fingerprint of stored source text",
+            "title": "Source Fingerprint",
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EvidencePassportSummary"
+          },
+          "title": {
+            "description": "Paper title",
+            "title": "Title",
+            "type": "string"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "record_revision_id",
+          "title",
+          "source_fingerprint",
+          "summary"
+        ],
+        "title": "EvidencePassportBundle",
+        "type": "object"
+      },
+      "EvidencePassportSummary": {
+        "additionalProperties": false,
+        "description": "Aggregated transparency and validation metrics for a paper's evidence passport.",
+        "properties": {
+          "contradictory_count": {
+            "default": 0,
+            "title": "Contradictory Count",
+            "type": "integer"
+          },
+          "human_corrected_count": {
+            "default": 0,
+            "title": "Human Corrected Count",
+            "type": "integer"
+          },
+          "mismatched_count": {
+            "default": 0,
+            "title": "Mismatched Count",
+            "type": "integer"
+          },
+          "missing_source_count": {
+            "default": 0,
+            "title": "Missing Source Count",
+            "type": "integer"
+          },
+          "needs_review_count": {
+            "default": 0,
+            "title": "Needs Review Count",
+            "type": "integer"
+          },
+          "pico_fields_with_evidence": {
+            "default": 0,
+            "description": "Count of PICO categories with verified evidence",
+            "title": "Pico Fields With Evidence",
+            "type": "integer"
+          },
+          "stale_count": {
+            "default": 0,
+            "title": "Stale Count",
+            "type": "integer"
+          },
+          "total_claims": {
+            "default": 0,
+            "title": "Total Claims",
+            "type": "integer"
+          },
+          "verified_quotes_count": {
+            "default": 0,
+            "title": "Verified Quotes Count",
+            "type": "integer"
+          }
+        },
+        "title": "EvidencePassportSummary",
+        "type": "object"
+      },
+      "EvidenceProvenance": {
+        "description": "Origin of an evidence passport item.",
+        "enum": [
+          "model_generated",
+          "deterministic_extraction",
+          "imported_annotation",
+          "human_created",
+          "human_corrected",
+          "human_confirmed"
+        ],
+        "title": "EvidenceProvenance",
+        "type": "string"
+      },
+      "EvidenceRevalidateResponse": {
+        "additionalProperties": false,
+        "description": "Outcome of revalidating evidence claims against updated source text.",
+        "properties": {
+          "items_revalidated": {
+            "title": "Items Revalidated",
+            "type": "integer"
+          },
+          "mismatched_count": {
+            "title": "Mismatched Count",
+            "type": "integer"
+          },
+          "needs_review_count": {
+            "title": "Needs Review Count",
+            "type": "integer"
+          },
+          "stale_count": {
+            "title": "Stale Count",
+            "type": "integer"
+          },
+          "verified_count": {
+            "title": "Verified Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items_revalidated",
+          "verified_count",
+          "stale_count",
+          "mismatched_count",
+          "needs_review_count"
+        ],
+        "title": "EvidenceRevalidateResponse",
+        "type": "object"
+      },
+      "EvidenceSemanticAssessment": {
+        "description": "Semantic support evaluation assessing whether quotation logically establishes claim.",
+        "enum": [
+          "supports",
+          "contradicts",
+          "insufficient",
+          "unassessed"
+        ],
+        "title": "EvidenceSemanticAssessment",
+        "type": "string"
+      },
+      "EvidenceValidationStatus": {
+        "description": "Deterministic structural and textual validation status of an evidence item.",
+        "enum": [
+          "verified",
+          "stale",
+          "mismatched",
+          "missing_source",
+          "insufficient_evidence",
+          "needs_review"
+        ],
+        "title": "EvidenceValidationStatus",
+        "type": "string"
       },
       "ExportRequest": {
         "additionalProperties": false,
@@ -1206,6 +1906,16 @@
             "title": "Events",
             "type": "array"
           },
+          "evidence_bundle": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidencePassportBundle"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "group": {
             "$ref": "#/components/schemas/PaperGroupSummary"
           },
@@ -1558,6 +2268,18 @@
             "$ref": "#/components/schemas/QueryASTNode-Input",
             "description": "Root AST node representing query structure"
           },
+          "change_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description of intent or changes for this search version",
+            "title": "Change Description"
+          },
           "criteria_version_id": {
             "description": "Associated criteria version UUID",
             "title": "Criteria Version Id",
@@ -1587,6 +2309,18 @@
             ],
             "description": "Previous query version UUID if an edit",
             "title": "Parent Id"
+          },
+          "restored_from_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Prior query version ID if restored from an earlier search state",
+            "title": "Restored From Version Id"
           },
           "sources": {
             "description": "List of target databases",
@@ -1626,6 +2360,17 @@
           "ast": {
             "$ref": "#/components/schemas/QueryASTNode-Output",
             "description": "Root AST node representing query structure"
+          },
+          "change_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Description"
           },
           "content_hash": {
             "description": "SHA-256 hash of query AST and parameters",
@@ -1667,6 +2412,17 @@
             ],
             "title": "Parent Id"
           },
+          "restored_from_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restored From Version Id"
+          },
           "sequence": {
             "title": "Sequence",
             "type": "integer"
@@ -1706,6 +2462,344 @@
         ],
         "title": "QueryVersionResponse",
         "type": "object"
+      },
+      "RadarConfirmRequest": {
+        "additionalProperties": false,
+        "description": "Payload to confirm an extracted PICO value as verified.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "title": "RadarConfirmRequest",
+        "type": "object"
+      },
+      "RadarCorrectRequest": {
+        "additionalProperties": false,
+        "description": "Payload to correct a PICO value with reviewer rationale.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "claim_value": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Claim Value",
+            "type": "string"
+          },
+          "end_cp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Cp"
+          },
+          "reason": {
+            "description": "Mandatory rationale for human correction",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "start_cp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Cp"
+          },
+          "supporting_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supporting Quote"
+          }
+        },
+        "required": [
+          "claim_value",
+          "reason"
+        ],
+        "title": "RadarCorrectRequest",
+        "type": "object"
+      },
+      "RadarEvidenceStatus": {
+        "description": "Missing-evidence radar classification for PICO information.",
+        "enum": [
+          "supported",
+          "uncertain",
+          "not_found",
+          "conflicting",
+          "stale",
+          "not_assessed"
+        ],
+        "title": "RadarEvidenceStatus",
+        "type": "string"
+      },
+      "RadarFieldDetail": {
+        "additionalProperties": false,
+        "description": "Detailed PICO element evidence status and supporting passage.",
+        "properties": {
+          "claim_type": {
+            "$ref": "#/components/schemas/EvidenceClaimType"
+          },
+          "claim_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Value"
+          },
+          "end_cp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Cp"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          },
+          "field_label": {
+            "title": "Field Label",
+            "type": "string"
+          },
+          "human_review_status": {
+            "$ref": "#/components/schemas/RadarHumanReviewStatus"
+          },
+          "is_contradictory": {
+            "default": false,
+            "title": "Is Contradictory",
+            "type": "boolean"
+          },
+          "original_claim_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Claim Value"
+          },
+          "radar_status": {
+            "$ref": "#/components/schemas/RadarEvidenceStatus"
+          },
+          "reviewer_correction_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Correction Reason"
+          },
+          "reviewer_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Notes"
+          },
+          "semantic_assessment": {
+            "$ref": "#/components/schemas/EvidenceSemanticAssessment",
+            "default": "unassessed"
+          },
+          "source_field": {
+            "default": "abstract",
+            "description": "Examined source text container (e.g. abstract)",
+            "title": "Source Field",
+            "type": "string"
+          },
+          "start_cp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Cp"
+          },
+          "supporting_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supporting Quote"
+          },
+          "uncertainty_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uncertainty Note"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "validation_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Message"
+          },
+          "validation_status": {
+            "$ref": "#/components/schemas/EvidenceValidationStatus",
+            "default": "needs_review"
+          }
+        },
+        "required": [
+          "claim_type",
+          "field_label",
+          "radar_status",
+          "human_review_status"
+        ],
+        "title": "RadarFieldDetail",
+        "type": "object"
+      },
+      "RadarFlagConflictRequest": {
+        "additionalProperties": false,
+        "description": "Payload to flag conflicting evidence for a PICO element.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "competing_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Competing Quote"
+          },
+          "conflict_explanation": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Conflict Explanation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "conflict_explanation"
+        ],
+        "title": "RadarFlagConflictRequest",
+        "type": "object"
+      },
+      "RadarFlagUncertainRequest": {
+        "additionalProperties": false,
+        "description": "Payload to flag a PICO element as ambiguous or uncertain.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "uncertainty_note": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Uncertainty Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uncertainty_note"
+        ],
+        "title": "RadarFlagUncertainRequest",
+        "type": "object"
+      },
+      "RadarHumanReviewStatus": {
+        "description": "Human review dimension for PICO claims.",
+        "enum": [
+          "unreviewed",
+          "confirmed",
+          "corrected"
+        ],
+        "title": "RadarHumanReviewStatus",
+        "type": "string"
       },
       "RankedGroupItem": {
         "additionalProperties": false,
@@ -2081,6 +3175,281 @@
         "title": "ReviewEventResponse",
         "type": "object"
       },
+      "ReviewRadarArticleRow": {
+        "additionalProperties": false,
+        "description": "Single article row in review-level coverage matrix.",
+        "properties": {
+          "authors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Authors",
+            "type": "array"
+          },
+          "comparator_status": {
+            "$ref": "#/components/schemas/RadarEvidenceStatus"
+          },
+          "comparator_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparator Value"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "effective_decision": {
+            "$ref": "#/components/schemas/EffectiveDecisionState"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "has_source_text": {
+            "default": true,
+            "title": "Has Source Text",
+            "type": "boolean"
+          },
+          "intervention_status": {
+            "$ref": "#/components/schemas/RadarEvidenceStatus"
+          },
+          "intervention_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intervention Value"
+          },
+          "journal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journal"
+          },
+          "needs_review": {
+            "default": false,
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "outcome_status": {
+            "$ref": "#/components/schemas/RadarEvidenceStatus"
+          },
+          "outcome_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome Value"
+          },
+          "pmid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmid"
+          },
+          "population_status": {
+            "$ref": "#/components/schemas/RadarEvidenceStatus"
+          },
+          "population_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population Value"
+          },
+          "priority_rank": {
+            "default": 0,
+            "title": "Priority Rank",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "required": [
+          "group_id",
+          "title",
+          "effective_decision",
+          "population_status",
+          "intervention_status",
+          "comparator_status",
+          "outcome_status"
+        ],
+        "title": "ReviewRadarArticleRow",
+        "type": "object"
+      },
+      "ReviewRadarDimensionSummary": {
+        "additionalProperties": false,
+        "description": "Aggregated coverage metrics for one PICO dimension across review.",
+        "properties": {
+          "conflicting_count": {
+            "title": "Conflicting Count",
+            "type": "integer"
+          },
+          "dimension": {
+            "$ref": "#/components/schemas/EvidenceClaimType"
+          },
+          "human_confirmed_count": {
+            "title": "Human Confirmed Count",
+            "type": "integer"
+          },
+          "human_corrected_count": {
+            "title": "Human Corrected Count",
+            "type": "integer"
+          },
+          "not_assessed_count": {
+            "title": "Not Assessed Count",
+            "type": "integer"
+          },
+          "not_found_count": {
+            "title": "Not Found Count",
+            "type": "integer"
+          },
+          "pending_review_count": {
+            "title": "Pending Review Count",
+            "type": "integer"
+          },
+          "stale_count": {
+            "title": "Stale Count",
+            "type": "integer"
+          },
+          "supported_count": {
+            "title": "Supported Count",
+            "type": "integer"
+          },
+          "supported_percent": {
+            "title": "Supported Percent",
+            "type": "number"
+          },
+          "total_assessed": {
+            "title": "Total Assessed",
+            "type": "integer"
+          },
+          "uncertain_count": {
+            "title": "Uncertain Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dimension",
+          "total_assessed",
+          "supported_count",
+          "uncertain_count",
+          "not_found_count",
+          "conflicting_count",
+          "stale_count",
+          "not_assessed_count",
+          "human_confirmed_count",
+          "human_corrected_count",
+          "pending_review_count",
+          "supported_percent"
+        ],
+        "title": "ReviewRadarDimensionSummary",
+        "type": "object"
+      },
+      "ReviewRadarResponse": {
+        "additionalProperties": false,
+        "description": "Review-wide Missing-Evidence Radar matrix and dimension statistics.",
+        "properties": {
+          "articles_with_source_text": {
+            "title": "Articles With Source Text",
+            "type": "integer"
+          },
+          "articles_without_source_text": {
+            "title": "Articles Without Source Text",
+            "type": "integer"
+          },
+          "dimension_summaries": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ReviewRadarDimensionSummary"
+            },
+            "title": "Dimension Summaries",
+            "type": "object"
+          },
+          "needs_review_total": {
+            "title": "Needs Review Total",
+            "type": "integer"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewRadarArticleRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "total_articles": {
+            "title": "Total Articles",
+            "type": "integer"
+          },
+          "total_fields_supported_percent": {
+            "title": "Total Fields Supported Percent",
+            "type": "number"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "total_articles",
+          "articles_with_source_text",
+          "articles_without_source_text",
+          "dimension_summaries",
+          "total_fields_supported_percent",
+          "needs_review_total",
+          "rows"
+        ],
+        "title": "ReviewRadarResponse",
+        "type": "object"
+      },
       "ScreenResult": {
         "additionalProperties": false,
         "description": "Overall screening verdict with granular per-criterion audit trails.",
@@ -2226,6 +3595,428 @@
         "title": "ScreeningRankResponse",
         "type": "object"
       },
+      "SearchEvolutionCategory": {
+        "description": "Categorization of records in a search evolution comparison.",
+        "enum": [
+          "newly_discovered",
+          "repeated",
+          "missing_from_newer",
+          "metadata_changed",
+          "conflict"
+        ],
+        "title": "SearchEvolutionCategory",
+        "type": "string"
+      },
+      "SearchEvolutionDiffResponse": {
+        "additionalProperties": false,
+        "description": "Detailed diff comparing two search versions across all records.",
+        "properties": {
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/SearchEvolutionRecordDiff"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SearchEvolutionDiffSummary"
+          }
+        },
+        "required": [
+          "summary",
+          "records"
+        ],
+        "title": "SearchEvolutionDiffResponse",
+        "type": "object"
+      },
+      "SearchEvolutionDiffSummary": {
+        "additionalProperties": false,
+        "description": "Aggregated counts and metrics comparing two search versions.",
+        "properties": {
+          "base_sequence": {
+            "title": "Base Sequence",
+            "type": "integer"
+          },
+          "base_version_id": {
+            "title": "Base Version Id",
+            "type": "string"
+          },
+          "conflicts_count": {
+            "title": "Conflicts Count",
+            "type": "integer"
+          },
+          "metadata_changed_count": {
+            "title": "Metadata Changed Count",
+            "type": "integer"
+          },
+          "missing_from_newer_count": {
+            "title": "Missing From Newer Count",
+            "type": "integer"
+          },
+          "newly_discovered_count": {
+            "title": "Newly Discovered Count",
+            "type": "integer"
+          },
+          "repeated_count": {
+            "title": "Repeated Count",
+            "type": "integer"
+          },
+          "screened_target_count": {
+            "title": "Screened Target Count",
+            "type": "integer"
+          },
+          "target_sequence": {
+            "title": "Target Sequence",
+            "type": "integer"
+          },
+          "target_version_id": {
+            "title": "Target Version Id",
+            "type": "string"
+          },
+          "total_base_records": {
+            "title": "Total Base Records",
+            "type": "integer"
+          },
+          "total_target_records": {
+            "title": "Total Target Records",
+            "type": "integer"
+          },
+          "unscreened_target_count": {
+            "title": "Unscreened Target Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "base_version_id",
+          "base_sequence",
+          "target_version_id",
+          "target_sequence",
+          "total_base_records",
+          "total_target_records",
+          "newly_discovered_count",
+          "repeated_count",
+          "missing_from_newer_count",
+          "metadata_changed_count",
+          "conflicts_count",
+          "screened_target_count",
+          "unscreened_target_count"
+        ],
+        "title": "SearchEvolutionDiffSummary",
+        "type": "object"
+      },
+      "SearchEvolutionMetadataFieldDiff": {
+        "additionalProperties": false,
+        "description": "Field-level diff between two versions of record metadata.",
+        "properties": {
+          "base_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Value"
+          },
+          "field_name": {
+            "title": "Field Name",
+            "type": "string"
+          },
+          "target_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Value"
+          }
+        },
+        "required": [
+          "field_name"
+        ],
+        "title": "SearchEvolutionMetadataFieldDiff",
+        "type": "object"
+      },
+      "SearchEvolutionRecordDiff": {
+        "additionalProperties": false,
+        "description": "Diff representation of a source record across search versions.",
+        "properties": {
+          "authors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Authors",
+            "type": "array"
+          },
+          "base_record_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Record Revision Id"
+          },
+          "category": {
+            "$ref": "#/components/schemas/SearchEvolutionCategory"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "field_diffs": {
+            "items": {
+              "$ref": "#/components/schemas/SearchEvolutionMetadataFieldDiff"
+            },
+            "title": "Field Diffs",
+            "type": "array"
+          },
+          "journal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journal"
+          },
+          "metadata_changed_since_screening": {
+            "default": false,
+            "title": "Metadata Changed Since Screening",
+            "type": "boolean"
+          },
+          "pmid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmid"
+          },
+          "screening_decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EffectiveDecisionState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "screening_preserved_from_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screening Preserved From Version Id"
+          },
+          "screening_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screening Reason"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceNamespace"
+          },
+          "source_record_id": {
+            "title": "Source Record Id",
+            "type": "string"
+          },
+          "target_record_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Record Revision Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "required": [
+          "source_record_id",
+          "external_id",
+          "source",
+          "title",
+          "category"
+        ],
+        "title": "SearchEvolutionRecordDiff",
+        "type": "object"
+      },
+      "SearchEvolutionVersionSummary": {
+        "additionalProperties": false,
+        "description": "Timeline summary of a query version and its executed search runs.",
+        "properties": {
+          "change_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Description"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "executions": {
+            "items": {
+              "$ref": "#/components/schemas/SearchExecutionResponse"
+            },
+            "title": "Executions",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "new_records_count": {
+            "default": 0,
+            "title": "New Records Count",
+            "type": "integer"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "repeated_records_count": {
+            "default": 0,
+            "title": "Repeated Records Count",
+            "type": "integer"
+          },
+          "restored_from_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restored From Version Id"
+          },
+          "screened_records": {
+            "title": "Screened Records",
+            "type": "integer"
+          },
+          "sequence": {
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceNamespace"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "total_records": {
+            "title": "Total Records",
+            "type": "integer"
+          },
+          "unscreened_records": {
+            "title": "Unscreened Records",
+            "type": "integer"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sequence",
+          "workspace_id",
+          "created_at",
+          "sources",
+          "total_records",
+          "screened_records",
+          "unscreened_records"
+        ],
+        "title": "SearchEvolutionVersionSummary",
+        "type": "object"
+      },
       "SearchExecutionCreate": {
         "additionalProperties": false,
         "description": "Request to execute a search query against a specific source provider.",
@@ -2340,6 +4131,56 @@
           "status"
         ],
         "title": "SearchExecutionResponse",
+        "type": "object"
+      },
+      "SearchRestoreRequest": {
+        "additionalProperties": false,
+        "description": "Request payload to safely restore a prior search configuration.",
+        "properties": {
+          "actor_id": {
+            "default": "researcher",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional reason for restoring this search version",
+            "title": "Reason"
+          }
+        },
+        "title": "SearchRestoreRequest",
+        "type": "object"
+      },
+      "SearchRestoreResponse": {
+        "additionalProperties": false,
+        "description": "Response after restoring an earlier search version.",
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "restored_from_version_id": {
+            "title": "Restored From Version Id",
+            "type": "string"
+          },
+          "restored_query": {
+            "$ref": "#/components/schemas/QueryVersionResponse"
+          }
+        },
+        "required": [
+          "restored_query",
+          "restored_from_version_id",
+          "message"
+        ],
+        "title": "SearchRestoreResponse",
         "type": "object"
       },
       "SourceNamespace": {
@@ -3314,6 +5155,713 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspace_id}/evidence/export": {
+      "get": {
+        "description": "Download formula-injection sanitized CSV of all workspace evidence claims.",
+        "operationId": "export_evidence_csv_route_api_v1_workspaces__workspace_id__evidence_export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Evidence Passport as formula-injection-safe CSV",
+        "tags": [
+          "Evidence Passport"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/evidence/summary": {
+      "get": {
+        "description": "Retrieve workspace-wide evidence coverage, verified quote rates, and review workload.",
+        "operationId": "get_evidence_summary_route_api_v1_workspaces__workspace_id__evidence_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceCoverageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get review-wide evidence transparency metrics",
+        "tags": [
+          "Evidence Passport"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/evidence/{evidence_id}/correct": {
+      "post": {
+        "description": "Correct claim or evidence passage with backend verification and audit trail preservation.",
+        "operationId": "correct_evidence_item_route_api_v1_workspaces__workspace_id__evidence__evidence_id__correct_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "evidence_id",
+            "required": true,
+            "schema": {
+              "title": "Evidence Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidenceCorrectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceItemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit reviewer correction for evidence claim",
+        "tags": [
+          "Evidence Passport"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/evidence": {
+      "get": {
+        "description": "Retrieve all evidence-backed claims, quotations, offsets, and summary metrics for a study.",
+        "operationId": "get_group_evidence_passport_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidencePassportBundle"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get complete Evidence Passport for paper group",
+        "tags": [
+          "Evidence Passport"
+        ]
+      },
+      "post": {
+        "description": "Add a new evidence-backed claim with deterministic quote validation.",
+        "operationId": "create_evidence_item_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidenceItemCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceItemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create manual evidence claim",
+        "tags": [
+          "Evidence Passport"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/evidence/revalidate": {
+      "post": {
+        "description": "Revalidate quotations and offsets against current source text revision.",
+        "operationId": "revalidate_paper_evidence_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_revalidate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceRevalidateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revalidate all evidence claims for a paper group",
+        "tags": [
+          "Evidence Passport"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar": {
+      "get": {
+        "description": "Get detailed 4-dimensional PICO evidence coverage, quotes, offsets, and review status.",
+        "operationId": "get_group_radar_detail_api_v1_workspaces__workspace_id__groups__group_id__pico_radar_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleRadarResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Article-level Missing-Evidence Radar for a paper group",
+        "tags": [
+          "Missing-Evidence Radar"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/confirm": {
+      "post": {
+        "description": "Confirm extracted PICO value without changing study eligibility or screening decision.",
+        "operationId": "confirm_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "field_type",
+            "required": true,
+            "schema": {
+              "title": "Field Type",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadarConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleRadarResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm an extracted PICO value as verified",
+        "tags": [
+          "Missing-Evidence Radar"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/correct": {
+      "post": {
+        "description": "Record human correction with mandatory rationale while preserving original extraction.",
+        "operationId": "correct_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__correct_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "field_type",
+            "required": true,
+            "schema": {
+              "title": "Field Type",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadarCorrectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleRadarResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit human correction for a PICO element with audit history",
+        "tags": [
+          "Missing-Evidence Radar"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/flag-conflict": {
+      "post": {
+        "description": "Flag conflicting evidence passages and route to reviewer conflict queue.",
+        "operationId": "flag_conflict_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__flag_conflict_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "field_type",
+            "required": true,
+            "schema": {
+              "title": "Field Type",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadarFlagConflictRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleRadarResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Flag conflicting evidence for a PICO field",
+        "tags": [
+          "Missing-Evidence Radar"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/flag-uncertain": {
+      "post": {
+        "description": "Flag ambiguous or insufficient evidence to prioritize for human review.",
+        "operationId": "flag_uncertain_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__flag_uncertain_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "field_type",
+            "required": true,
+            "schema": {
+              "title": "Field Type",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadarFlagUncertainRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleRadarResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Flag a PICO field as uncertain or ambiguous",
+        "tags": [
+          "Missing-Evidence Radar"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/revalidate": {
+      "post": {
+        "description": "Check supporting quote and fingerprint against current stored text.",
+        "operationId": "revalidate_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__revalidate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "field_type",
+            "required": true,
+            "schema": {
+              "title": "Field Type",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleRadarResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revalidate an evidence field against current source text",
+        "tags": [
+          "Missing-Evidence Radar"
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspace_id}/imports": {
       "post": {
         "description": "Queue durable literature import job for approved search executions.",
@@ -3364,6 +5912,127 @@
         "summary": "Trigger approved record import job",
         "tags": [
           "Ingestion"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/pico-radar": {
+      "get": {
+        "description": "Retrieve comprehensive review-level PICO evidence matrix and dimension metrics.",
+        "operationId": "get_workspace_radar_overview_api_v1_workspaces__workspace_id__pico_radar_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dimension_filter",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dimension Filter"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status_filter",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status Filter"
+            }
+          },
+          {
+            "in": "query",
+            "name": "needs_review_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Needs Review Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewRadarResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review-level PICO evidence coverage matrix and dimension metrics",
+        "tags": [
+          "Missing-Evidence Radar"
         ]
       }
     },
@@ -3798,6 +6467,235 @@
         "summary": "Compute ML-prioritized screening order",
         "tags": [
           "Screening"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/search-versions": {
+      "get": {
+        "description": "Retrieve versioned timeline of search strategies, counts, and screening metrics.",
+        "operationId": "list_workspace_search_versions_api_v1_workspaces__workspace_id__search_versions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SearchEvolutionVersionSummary"
+                  },
+                  "title": "Response List Workspace Search Versions Api V1 Workspaces  Workspace Id  Search Versions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List workspace search versions with timeline summaries and executed provider counts",
+        "tags": [
+          "Search Evolution"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/search-versions/{target_version_id}/diff": {
+      "get": {
+        "description": "Compare search versions across new, repeated, missing, changed, and conflicting records.",
+        "operationId": "diff_workspace_search_versions_api_v1_workspaces__workspace_id__search_versions__target_version_id__diff_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "target_version_id",
+            "required": true,
+            "schema": {
+              "title": "Target Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "base_version_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Base Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchEvolutionDiffResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compute 6-way diff between base search version and target search version",
+        "tags": [
+          "Search Evolution"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/search-versions/{version_id}": {
+      "get": {
+        "description": "Get detailed execution metadata and counts for a specific search version.",
+        "operationId": "get_workspace_search_version_api_v1_workspaces__workspace_id__search_versions__version_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchEvolutionVersionSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get detailed summary and execution history for a single search version",
+        "tags": [
+          "Search Evolution"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/search-versions/{version_id}/restore": {
+      "post": {
+        "description": "Restore historical search query strategy non-destructively without erasing reviewer decisions.",
+        "operationId": "restore_workspace_search_version_api_v1_workspaces__workspace_id__search_versions__version_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchRestoreResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Safely restore a prior search query configuration into a new active version",
+        "tags": [
+          "Search Evolution"
         ]
       }
     },

@@ -18,6 +18,7 @@ from app.contracts.enums import (
     SourceNamespace,
 )
 from app.contracts.models import (
+    ArticleRadarResponse,
     AssistantProposal,
     AssistantRequest,
     ConflictResolveRequest,
@@ -29,6 +30,12 @@ from app.contracts.models import (
     DedupOverrideRequest,
     ErrorDetail,
     ErrorEnvelope,
+    EvidenceCorrectionRequest,
+    EvidenceCoverageResponse,
+    EvidenceItemCreateRequest,
+    EvidenceItemResponse,
+    EvidencePassportBundle,
+    EvidenceRevalidateResponse,
     ExportRequest,
     ExportResponse,
     ImportJobCreate,
@@ -41,11 +48,20 @@ from app.contracts.models import (
     QueryASTNode,
     QueryVersionCreate,
     QueryVersionResponse,
+    RadarConfirmRequest,
+    RadarCorrectRequest,
+    RadarFlagConflictRequest,
+    RadarFlagUncertainRequest,
     ReviewEventResponse,
+    ReviewRadarResponse,
     ScreeningRankRequest,
     ScreeningRankResponse,
+    SearchEvolutionDiffResponse,
+    SearchEvolutionVersionSummary,
     SearchExecutionCreate,
     SearchExecutionResponse,
+    SearchRestoreRequest,
+    SearchRestoreResponse,
     WorkspaceCreate,
     WorkspaceResponse,
 )
@@ -64,9 +80,26 @@ from app.services.corpus import (
     list_paper_groups_in_revision,
     process_corpus,
 )
+from app.services.evidence_passport import (
+    apply_reviewer_correction,
+    create_manual_evidence_item,
+    export_evidence_passport_csv,
+    get_paper_group_evidence_bundle,
+    get_workspace_evidence_coverage,
+    revalidate_group_evidence,
+)
 from app.services.exports import export_corpus_studies
 from app.services.imports import trigger_import
 from app.services.jobs import cancel_job, get_job_by_id, to_job_response
+from app.services.radar import (
+    confirm_radar_field,
+    correct_radar_field,
+    flag_conflict_radar_field,
+    flag_uncertain_radar_field,
+    get_or_sync_article_radar,
+    get_review_level_radar,
+    revalidate_radar_field,
+)
 from app.services.review_decisions import (
     record_dedup_override,
     record_screening_decision,
@@ -74,6 +107,12 @@ from app.services.review_decisions import (
     save_pico_annotations,
 )
 from app.services.screening_rank import rank_screening_groups
+from app.services.search_evolution import (
+    compute_search_evolution_diff,
+    get_search_version_detail,
+    list_search_versions,
+    restore_search_configuration,
+)
 from app.services.snapshots import (
     compute_corpus_diff,
 )
@@ -362,6 +401,8 @@ def create_query_version(
         sources_json=sources_json,
         criteria_version_id=payload.criteria_version_id,
         content_hash=content_hash,
+        change_description=payload.change_description,
+        restored_from_version_id=payload.restored_from_version_id,
     )
     db.add(query_model)
     db.commit()
@@ -378,6 +419,8 @@ def create_query_version(
         sources=payload.sources,
         criteria_version_id=query_model.criteria_version_id,
         content_hash=query_model.content_hash,
+        change_description=query_model.change_description,
+        restored_from_version_id=query_model.restored_from_version_id,
         created_at=query_model.created_at,
     )
 
@@ -822,6 +865,342 @@ def query_assistant(
 # ============================================================================
 # Single-Host Production SPA Static Files Mount (A06 Packaging)
 # ============================================================================
+
+
+
+# ============================================================================
+# Evidence Passport Routes
+# ============================================================================
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/evidence",
+    tags=["Evidence Passport"],
+    summary="Get complete Evidence Passport for paper group",
+    response_model=EvidencePassportBundle,
+)
+def get_group_evidence_passport_route(
+    workspace_id: str,
+    group_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> EvidencePassportBundle:
+    """Retrieve all evidence-backed claims, quotations, offsets, and summary metrics for a study."""
+    return get_paper_group_evidence_bundle(db=db, workspace_id=workspace_id, group_id=group_id)
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/evidence/{evidence_id}/correct",
+    tags=["Evidence Passport"],
+    summary="Submit reviewer correction for evidence claim",
+    response_model=EvidenceItemResponse,
+)
+def correct_evidence_item_route(
+    workspace_id: str,
+    evidence_id: str,
+    payload: EvidenceCorrectionRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> EvidenceItemResponse:
+    """Correct claim or evidence passage with backend verification and audit trail preservation."""
+    return apply_reviewer_correction(db=db, workspace_id=workspace_id, evidence_id=evidence_id, payload=payload)
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/evidence",
+    tags=["Evidence Passport"],
+    summary="Create manual evidence claim",
+    response_model=EvidenceItemResponse,
+)
+def create_evidence_item_route(
+    workspace_id: str,
+    group_id: str,
+    payload: EvidenceItemCreateRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> EvidenceItemResponse:
+    """Add a new evidence-backed claim with deterministic quote validation."""
+    return create_manual_evidence_item(db=db, workspace_id=workspace_id, group_id=group_id, payload=payload)
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/evidence/revalidate",
+    tags=["Evidence Passport"],
+    summary="Revalidate all evidence claims for a paper group",
+    response_model=EvidenceRevalidateResponse,
+)
+def revalidate_paper_evidence_route(
+    workspace_id: str,
+    group_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> EvidenceRevalidateResponse:
+    """Revalidate quotations and offsets against current source text revision."""
+    return revalidate_group_evidence(db=db, workspace_id=workspace_id, group_id=group_id)
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/evidence/summary",
+    tags=["Evidence Passport"],
+    summary="Get review-wide evidence transparency metrics",
+    response_model=EvidenceCoverageResponse,
+)
+def get_evidence_summary_route(
+    workspace_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> EvidenceCoverageResponse:
+    """Retrieve workspace-wide evidence coverage, verified quote rates, and review workload."""
+    return get_workspace_evidence_coverage(db=db, workspace_id=workspace_id)
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/evidence/export",
+    tags=["Evidence Passport"],
+    summary="Export Evidence Passport as formula-injection-safe CSV",
+)
+def export_evidence_csv_route(
+    workspace_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    """Download formula-injection sanitized CSV of all workspace evidence claims."""
+    from fastapi.responses import Response
+    csv_data = export_evidence_passport_csv(db=db, workspace_id=workspace_id)
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=evidence_passport_{workspace_id}.csv",
+        },
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/search-versions",
+    tags=["Search Evolution"],
+    summary="List workspace search versions with timeline summaries and executed provider counts",
+    response_model=list[SearchEvolutionVersionSummary],
+)
+def list_workspace_search_versions(
+    workspace_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> list[SearchEvolutionVersionSummary]:
+    """Retrieve versioned timeline of search strategies, counts, and screening metrics."""
+    return list_search_versions(db=db, workspace_id=workspace_id)
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/search-versions/{version_id}",
+    tags=["Search Evolution"],
+    summary="Get detailed summary and execution history for a single search version",
+    response_model=SearchEvolutionVersionSummary,
+)
+def get_workspace_search_version(
+    workspace_id: str,
+    version_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> SearchEvolutionVersionSummary:
+    """Get detailed execution metadata and counts for a specific search version."""
+    return get_search_version_detail(db=db, workspace_id=workspace_id, version_id=version_id)
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/search-versions/{target_version_id}/diff",
+    tags=["Search Evolution"],
+    summary="Compute 6-way diff between base search version and target search version",
+    response_model=SearchEvolutionDiffResponse,
+)
+def diff_workspace_search_versions(
+    workspace_id: str,
+    target_version_id: str,
+    base_version_id: str | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> SearchEvolutionDiffResponse:
+    """Compare search versions across new, repeated, missing, changed, and conflicting records."""
+    return compute_search_evolution_diff(
+        db=db,
+        workspace_id=workspace_id,
+        target_version_id=target_version_id,
+        base_version_id=base_version_id,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/search-versions/{version_id}/restore",
+    tags=["Search Evolution"],
+    summary="Safely restore a prior search query configuration into a new active version",
+    response_model=SearchRestoreResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def restore_workspace_search_version(
+    workspace_id: str,
+    version_id: str,
+    payload: SearchRestoreRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> SearchRestoreResponse:
+    """Restore historical search query strategy non-destructively without erasing reviewer decisions."""
+    return restore_search_configuration(
+        db=db,
+        workspace_id=workspace_id,
+        target_version_id=version_id,
+        reason=payload.reason,
+        actor_id=payload.actor_id,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/pico-radar",
+    tags=["Missing-Evidence Radar"],
+    summary="Review-level PICO evidence coverage matrix and dimension metrics",
+    response_model=ReviewRadarResponse,
+)
+def get_workspace_radar_overview(
+    workspace_id: str,
+    dimension_filter: str | None = None,
+    status_filter: str | None = None,
+    needs_review_only: bool = False,
+    query: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ReviewRadarResponse:
+    """Retrieve comprehensive review-level PICO evidence matrix and dimension metrics."""
+    return get_review_level_radar(
+        db=db,
+        workspace_id=workspace_id,
+        dimension_filter=dimension_filter,
+        status_filter=status_filter,
+        needs_review_only=needs_review_only,
+        query=query,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar",
+    tags=["Missing-Evidence Radar"],
+    summary="Article-level Missing-Evidence Radar for a paper group",
+    response_model=ArticleRadarResponse,
+)
+def get_group_radar_detail(
+    workspace_id: str,
+    group_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ArticleRadarResponse:
+    """Get detailed 4-dimensional PICO evidence coverage, quotes, offsets, and review status."""
+    return get_or_sync_article_radar(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/confirm",
+    tags=["Missing-Evidence Radar"],
+    summary="Confirm an extracted PICO value as verified",
+    response_model=ArticleRadarResponse,
+)
+def confirm_group_radar_field(
+    workspace_id: str,
+    group_id: str,
+    field_type: str,
+    payload: RadarConfirmRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ArticleRadarResponse:
+    """Confirm extracted PICO value without changing study eligibility or screening decision."""
+    return confirm_radar_field(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        field_type=field_type,
+        payload=payload,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/correct",
+    tags=["Missing-Evidence Radar"],
+    summary="Submit human correction for a PICO element with audit history",
+    response_model=ArticleRadarResponse,
+)
+def correct_group_radar_field(
+    workspace_id: str,
+    group_id: str,
+    field_type: str,
+    payload: RadarCorrectRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ArticleRadarResponse:
+    """Record human correction with mandatory rationale while preserving original extraction."""
+    return correct_radar_field(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        field_type=field_type,
+        payload=payload,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/flag-uncertain",
+    tags=["Missing-Evidence Radar"],
+    summary="Flag a PICO field as uncertain or ambiguous",
+    response_model=ArticleRadarResponse,
+)
+def flag_uncertain_group_radar_field(
+    workspace_id: str,
+    group_id: str,
+    field_type: str,
+    payload: RadarFlagUncertainRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ArticleRadarResponse:
+    """Flag ambiguous or insufficient evidence to prioritize for human review."""
+    return flag_uncertain_radar_field(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        field_type=field_type,
+        payload=payload,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/flag-conflict",
+    tags=["Missing-Evidence Radar"],
+    summary="Flag conflicting evidence for a PICO field",
+    response_model=ArticleRadarResponse,
+)
+def flag_conflict_group_radar_field(
+    workspace_id: str,
+    group_id: str,
+    field_type: str,
+    payload: RadarFlagConflictRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ArticleRadarResponse:
+    """Flag conflicting evidence passages and route to reviewer conflict queue."""
+    return flag_conflict_radar_field(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        field_type=field_type,
+        payload=payload,
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/revalidate",
+    tags=["Missing-Evidence Radar"],
+    summary="Revalidate an evidence field against current source text",
+    response_model=ArticleRadarResponse,
+)
+def revalidate_group_radar_field(
+    workspace_id: str,
+    group_id: str,
+    field_type: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ArticleRadarResponse:
+    """Check supporting quote and fingerprint against current stored text."""
+    return revalidate_radar_field(
+        db=db,
+        workspace_id=workspace_id,
+        group_id=group_id,
+        field_type=field_type,
+    )
 
 frontend_dist = os.environ.get("FRONTEND_DIST")
 dist_path = (

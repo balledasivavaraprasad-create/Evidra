@@ -26,14 +26,19 @@ import {
   type SnapshotRestoreRequest,
 } from "../../api/client";
 import { ConflictResolutionModal } from "../conflicts/ConflictResolutionModal";
+import { SearchEvolutionView } from "../search-evolution/SearchEvolutionView";
 
-type ActiveTab = "timeline" | "diff" | "conflicts";
+type ActiveTab = "timeline" | "diff" | "search_evolution" | "conflicts";
 
-export const HistoryPage: React.FC = () => {
+interface HistoryPageProps {
+  initialTab?: ActiveTab;
+}
+
+export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline" }) => {
   const { id: workspaceId } = useParams<{ id: string }>();
   const activeWorkspaceId = workspaceId || "ws-default";
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>("timeline");
+  const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
   const [revisions, setRevisions] = useState<CorpusRevisionResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -179,6 +184,18 @@ export const HistoryPage: React.FC = () => {
           </button>
           <button
             type="button"
+            onClick={() => startTransition(() => setActiveTab("search_evolution"))}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+              activeTab === "search_evolution"
+                ? "bg-slate-800 text-indigo-400 shadow-sm"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Search Evolution</span>
+          </button>
+          <button
+            type="button"
             onClick={() => startTransition(() => setActiveTab("conflicts"))}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
               activeTab === "conflicts"
@@ -237,6 +254,11 @@ export const HistoryPage: React.FC = () => {
             Retry
           </button>
         </div>
+      )}
+
+      {/* TAB: SEARCH EVOLUTION */}
+      {activeTab === "search_evolution" && (
+        <SearchEvolutionView workspaceId={activeWorkspaceId} />
       )}
 
       {/* TAB 1: TIMELINE */}

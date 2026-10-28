@@ -304,6 +304,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspace_id}/evidence/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Evidence Passport as formula-injection-safe CSV
+         * @description Download formula-injection sanitized CSV of all workspace evidence claims.
+         */
+        get: operations["export_evidence_csv_route_api_v1_workspaces__workspace_id__evidence_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/evidence/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get review-wide evidence transparency metrics
+         * @description Retrieve workspace-wide evidence coverage, verified quote rates, and review workload.
+         */
+        get: operations["get_evidence_summary_route_api_v1_workspaces__workspace_id__evidence_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/evidence/{evidence_id}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit reviewer correction for evidence claim
+         * @description Correct claim or evidence passage with backend verification and audit trail preservation.
+         */
+        post: operations["correct_evidence_item_route_api_v1_workspaces__workspace_id__evidence__evidence_id__correct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get complete Evidence Passport for paper group
+         * @description Retrieve all evidence-backed claims, quotations, offsets, and summary metrics for a study.
+         */
+        get: operations["get_group_evidence_passport_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_get"];
+        put?: never;
+        /**
+         * Create manual evidence claim
+         * @description Add a new evidence-backed claim with deterministic quote validation.
+         */
+        post: operations["create_evidence_item_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/evidence/revalidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revalidate all evidence claims for a paper group
+         * @description Revalidate quotations and offsets against current source text revision.
+         */
+        post: operations["revalidate_paper_evidence_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_revalidate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Article-level Missing-Evidence Radar for a paper group
+         * @description Get detailed 4-dimensional PICO evidence coverage, quotes, offsets, and review status.
+         */
+        get: operations["get_group_radar_detail_api_v1_workspaces__workspace_id__groups__group_id__pico_radar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm an extracted PICO value as verified
+         * @description Confirm extracted PICO value without changing study eligibility or screening decision.
+         */
+        post: operations["confirm_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit human correction for a PICO element with audit history
+         * @description Record human correction with mandatory rationale while preserving original extraction.
+         */
+        post: operations["correct_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__correct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/flag-conflict": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Flag conflicting evidence for a PICO field
+         * @description Flag conflicting evidence passages and route to reviewer conflict queue.
+         */
+        post: operations["flag_conflict_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__flag_conflict_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/flag-uncertain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Flag a PICO field as uncertain or ambiguous
+         * @description Flag ambiguous or insufficient evidence to prioritize for human review.
+         */
+        post: operations["flag_uncertain_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__flag_uncertain_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/groups/{group_id}/pico-radar/{field_type}/revalidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revalidate an evidence field against current source text
+         * @description Check supporting quote and fingerprint against current stored text.
+         */
+        post: operations["revalidate_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__revalidate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspace_id}/imports": {
         parameters: {
             query?: never;
@@ -318,6 +542,26 @@ export interface paths {
          * @description Queue durable literature import job for approved search executions.
          */
         post: operations["trigger_import_job_api_v1_workspaces__workspace_id__imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/pico-radar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Review-level PICO evidence coverage matrix and dimension metrics
+         * @description Retrieve comprehensive review-level PICO evidence matrix and dimension metrics.
+         */
+        get: operations["get_workspace_radar_overview_api_v1_workspaces__workspace_id__pico_radar_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -448,6 +692,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspace_id}/search-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List workspace search versions with timeline summaries and executed provider counts
+         * @description Retrieve versioned timeline of search strategies, counts, and screening metrics.
+         */
+        get: operations["list_workspace_search_versions_api_v1_workspaces__workspace_id__search_versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/search-versions/{target_version_id}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compute 6-way diff between base search version and target search version
+         * @description Compare search versions across new, repeated, missing, changed, and conflicting records.
+         */
+        get: operations["diff_workspace_search_versions_api_v1_workspaces__workspace_id__search_versions__target_version_id__diff_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/search-versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get detailed summary and execution history for a single search version
+         * @description Get detailed execution metadata and counts for a specific search version.
+         */
+        get: operations["get_workspace_search_version_api_v1_workspaces__workspace_id__search_versions__version_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/search-versions/{version_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Safely restore a prior search query configuration into a new active version
+         * @description Restore historical search query strategy non-destructively without erasing reviewer decisions.
+         */
+        post: operations["restore_workspace_search_version_api_v1_workspaces__workspace_id__search_versions__version_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -492,6 +816,41 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ArticleRadarResponse
+         * @description Article-level Missing-Evidence Radar representing all 4 PICO dimensions.
+         */
+        ArticleRadarResponse: {
+            effective_decision: components["schemas"]["EffectiveDecisionState"];
+            /** Group Id */
+            group_id: string;
+            /**
+             * Has Source Text
+             * @default true
+             */
+            has_source_text: boolean;
+            /** Needs Human Review */
+            needs_human_review: boolean;
+            /** Overall Coverage Pct */
+            overall_coverage_pct: number;
+            /** Paper Title */
+            paper_title: string;
+            /** Pico */
+            pico: {
+                [key: string]: components["schemas"]["RadarFieldDetail"];
+            };
+            /** Screening Reason */
+            screening_reason?: string | null;
+            /**
+             * Source Field
+             * @default abstract
+             */
+            source_field: string;
+            /** Source Text */
+            source_text?: string | null;
+            /** Workspace Id */
+            workspace_id: string;
+        };
         /**
          * AssistantProposal
          * @description Structured proposal from the bounded assistant, requiring reviewer confirmation.
@@ -824,7 +1183,7 @@ export interface components {
          * @description Types of append-only human reviewer decision events.
          * @enum {string}
          */
-        DecisionEventType: "screen_decision" | "pico_override" | "dedup_override" | "conflict_resolution";
+        DecisionEventType: "screen_decision" | "pico_override" | "dedup_override" | "conflict_resolution" | "evidence_correction";
         /**
          * DedupOverrideRequest
          * @description Reviewer confirmation or rejection of a proposed duplicate pair.
@@ -909,6 +1268,338 @@ export interface components {
              */
             trace_id?: string;
         };
+        /**
+         * EvidenceClaimType
+         * @description Category of claim or study characteristic backed by an evidence passport.
+         * @enum {string}
+         */
+        EvidenceClaimType: "screening_rationale" | "population" | "intervention" | "comparator" | "outcome" | "study_characteristic";
+        /**
+         * EvidenceCorrectionRequest
+         * @description Reviewer manual correction of an evidence-backed claim.
+         */
+        EvidenceCorrectionRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /**
+             * Claim Value
+             * @description Corrected claim or PICO text
+             */
+            claim_value: string;
+            /** End Cp */
+            end_cp?: number | null;
+            /**
+             * Reason
+             * @description Mandatory rationale for human correction
+             */
+            reason: string;
+            /** @default supports */
+            semantic_assessment: components["schemas"]["EvidenceSemanticAssessment"];
+            /** Start Cp */
+            start_cp?: number | null;
+            /**
+             * Supporting Quote
+             * @description Optional updated exact quotation
+             */
+            supporting_quote?: string | null;
+        };
+        /**
+         * EvidenceCoverageResponse
+         * @description Review-wide transparency and evidence quality metrics.
+         */
+        EvidenceCoverageResponse: {
+            /** Human Corrections Count */
+            human_corrections_count: number;
+            /** Mismatched Claims */
+            mismatched_claims: number;
+            /** Papers Needing Review */
+            papers_needing_review: number;
+            /** Papers With Verified Evidence */
+            papers_with_verified_evidence: number;
+            /** Pico Evidence Coverage Percent */
+            pico_evidence_coverage_percent: number;
+            /** Stale Claims */
+            stale_claims: number;
+            /** Total Claims */
+            total_claims: number;
+            /** Total Papers */
+            total_papers: number;
+            /** Verified Claims */
+            verified_claims: number;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /**
+         * EvidenceItemCreateRequest
+         * @description Request to create a new manual or imported evidence claim.
+         */
+        EvidenceItemCreateRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /** @description Claim category */
+            claim_type: components["schemas"]["EvidenceClaimType"];
+            /** Claim Value */
+            claim_value: string;
+            /** End Cp */
+            end_cp?: number | null;
+            /**
+             * Record Revision Id
+             * @description Target record revision ID
+             */
+            record_revision_id: string;
+            /** @default unassessed */
+            semantic_assessment: components["schemas"]["EvidenceSemanticAssessment"];
+            /**
+             * Source Field
+             * @default abstract
+             */
+            source_field: string;
+            /** Start Cp */
+            start_cp?: number | null;
+            /**
+             * Supporting Quote
+             * @description Exact passage from source
+             */
+            supporting_quote: string;
+            /** Uncertainty Note */
+            uncertainty_note?: string | null;
+        };
+        /**
+         * EvidenceItemResponse
+         * @description Full auditable representation of an evidence-backed claim or PICO item.
+         */
+        EvidenceItemResponse: {
+            /**
+             * Assessed By
+             * @description Actor who performed semantic assessment
+             */
+            assessed_by?: string | null;
+            /** @description Category: screening_rationale, population, etc. */
+            claim_type: components["schemas"]["EvidenceClaimType"];
+            /**
+             * Claim Value
+             * @description Current claim or extracted clinical value
+             */
+            claim_value: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * End Cp
+             * @description Half-open end code point offset
+             */
+            end_cp?: number | null;
+            /**
+             * Event Id
+             * @description Linked review audit event ID
+             */
+            event_id?: string | null;
+            /**
+             * Id
+             * @description Unique evidence item UUID
+             */
+            id: string;
+            /**
+             * Is Contradictory
+             * @description Flag indicating passage contradicts the claim
+             * @default false
+             */
+            is_contradictory: boolean;
+            /**
+             * Original Claim Value
+             * @description Original AI-proposed claim before human edits
+             */
+            original_claim_value?: string | null;
+            /**
+             * Paper Group Id
+             * @description Associated paper group ID if resolved
+             */
+            paper_group_id?: string | null;
+            /** @description Provenance: model_generated, deterministic, human, etc. */
+            provenance: components["schemas"]["EvidenceProvenance"];
+            /**
+             * Record Revision Id
+             * @description Immutable source record revision ID
+             */
+            record_revision_id: string;
+            /**
+             * Reviewer Correction Reason
+             * @description Rationale recorded for human override
+             */
+            reviewer_correction_reason?: string | null;
+            /**
+             * @description supports, contradicts, or insufficient
+             * @default unassessed
+             */
+            semantic_assessment: components["schemas"]["EvidenceSemanticAssessment"];
+            /**
+             * Source Field
+             * @description Source text field (e.g. abstract, title)
+             * @default abstract
+             */
+            source_field: string;
+            /**
+             * Source Fingerprint
+             * @description SHA-256 text fingerprint of source at extraction time
+             */
+            source_fingerprint: string;
+            /**
+             * Start Cp
+             * @description Zero-based start code point offset
+             */
+            start_cp?: number | null;
+            /**
+             * Supporting Quote
+             * @description Exact quoted passage from source text
+             */
+            supporting_quote: string;
+            /**
+             * Uncertainty Note
+             * @description Uncertainty or limitation notes
+             */
+            uncertainty_note?: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Validation Message
+             * @description Human-readable explanation of validation checks
+             */
+            validation_message?: string | null;
+            /** @description verified, stale, mismatched, etc. */
+            validation_status: components["schemas"]["EvidenceValidationStatus"];
+            /**
+             * Workspace Id
+             * @description Associated workspace ID
+             */
+            workspace_id: string;
+        };
+        /**
+         * EvidencePassportBundle
+         * @description Complete Evidence Passport for a literature group or paper.
+         */
+        EvidencePassportBundle: {
+            /**
+             * Abstract Text
+             * @description Source abstract text for UI highlighting
+             */
+            abstract_text?: string | null;
+            /** Group Id */
+            group_id?: string | null;
+            /** Items */
+            items?: components["schemas"]["EvidenceItemResponse"][];
+            /** Record Revision Id */
+            record_revision_id: string;
+            /**
+             * Source Fingerprint
+             * @description Current SHA-256 fingerprint of stored source text
+             */
+            source_fingerprint: string;
+            summary: components["schemas"]["EvidencePassportSummary"];
+            /**
+             * Title
+             * @description Paper title
+             */
+            title: string;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /**
+         * EvidencePassportSummary
+         * @description Aggregated transparency and validation metrics for a paper's evidence passport.
+         */
+        EvidencePassportSummary: {
+            /**
+             * Contradictory Count
+             * @default 0
+             */
+            contradictory_count: number;
+            /**
+             * Human Corrected Count
+             * @default 0
+             */
+            human_corrected_count: number;
+            /**
+             * Mismatched Count
+             * @default 0
+             */
+            mismatched_count: number;
+            /**
+             * Missing Source Count
+             * @default 0
+             */
+            missing_source_count: number;
+            /**
+             * Needs Review Count
+             * @default 0
+             */
+            needs_review_count: number;
+            /**
+             * Pico Fields With Evidence
+             * @description Count of PICO categories with verified evidence
+             * @default 0
+             */
+            pico_fields_with_evidence: number;
+            /**
+             * Stale Count
+             * @default 0
+             */
+            stale_count: number;
+            /**
+             * Total Claims
+             * @default 0
+             */
+            total_claims: number;
+            /**
+             * Verified Quotes Count
+             * @default 0
+             */
+            verified_quotes_count: number;
+        };
+        /**
+         * EvidenceProvenance
+         * @description Origin of an evidence passport item.
+         * @enum {string}
+         */
+        EvidenceProvenance: "model_generated" | "deterministic_extraction" | "imported_annotation" | "human_created" | "human_corrected" | "human_confirmed";
+        /**
+         * EvidenceRevalidateResponse
+         * @description Outcome of revalidating evidence claims against updated source text.
+         */
+        EvidenceRevalidateResponse: {
+            /** Items Revalidated */
+            items_revalidated: number;
+            /** Mismatched Count */
+            mismatched_count: number;
+            /** Needs Review Count */
+            needs_review_count: number;
+            /** Stale Count */
+            stale_count: number;
+            /** Verified Count */
+            verified_count: number;
+        };
+        /**
+         * EvidenceSemanticAssessment
+         * @description Semantic support evaluation assessing whether quotation logically establishes claim.
+         * @enum {string}
+         */
+        EvidenceSemanticAssessment: "supports" | "contradicts" | "insufficient" | "unassessed";
+        /**
+         * EvidenceValidationStatus
+         * @description Deterministic structural and textual validation status of an evidence item.
+         * @enum {string}
+         */
+        EvidenceValidationStatus: "verified" | "stale" | "mismatched" | "missing_source" | "insufficient_evidence" | "needs_review";
         /**
          * ExportRequest
          * @description Request to export confirmed included studies.
@@ -1135,6 +1826,7 @@ export interface components {
             conflicts?: components["schemas"]["ReviewConflictResponse"][];
             /** Events */
             events?: components["schemas"]["ReviewEventResponse"][];
+            evidence_bundle?: components["schemas"]["EvidencePassportBundle"] | null;
             group: components["schemas"]["PaperGroupSummary"];
             /** Members */
             members: components["schemas"]["RecordRevisionResponse"][];
@@ -1320,6 +2012,11 @@ export interface components {
             /** @description Root AST node representing query structure */
             ast: components["schemas"]["QueryASTNode-Input"];
             /**
+             * Change Description
+             * @description Optional description of intent or changes for this search version
+             */
+            change_description?: string | null;
+            /**
              * Criteria Version Id
              * @description Associated criteria version UUID
              */
@@ -1334,6 +2031,11 @@ export interface components {
              * @description Previous query version UUID if an edit
              */
             parent_id?: string | null;
+            /**
+             * Restored From Version Id
+             * @description Prior query version ID if restored from an earlier search state
+             */
+            restored_from_version_id?: string | null;
             /**
              * Sources
              * @description List of target databases
@@ -1352,6 +2054,8 @@ export interface components {
         QueryVersionResponse: {
             /** @description Root AST node representing query structure */
             ast: components["schemas"]["QueryASTNode-Output"];
+            /** Change Description */
+            change_description?: string | null;
             /**
              * Content Hash
              * @description SHA-256 hash of query AST and parameters
@@ -1370,6 +2074,8 @@ export interface components {
             id: string;
             /** Parent Id */
             parent_id?: string | null;
+            /** Restored From Version Id */
+            restored_from_version_id?: string | null;
             /** Sequence */
             sequence: number;
             /** Sources */
@@ -1379,6 +2085,131 @@ export interface components {
             /** Workspace Id */
             workspace_id: string;
         };
+        /**
+         * RadarConfirmRequest
+         * @description Payload to confirm an extracted PICO value as verified.
+         */
+        RadarConfirmRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * RadarCorrectRequest
+         * @description Payload to correct a PICO value with reviewer rationale.
+         */
+        RadarCorrectRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /** Claim Value */
+            claim_value: string;
+            /** End Cp */
+            end_cp?: number | null;
+            /**
+             * Reason
+             * @description Mandatory rationale for human correction
+             */
+            reason: string;
+            /** Start Cp */
+            start_cp?: number | null;
+            /** Supporting Quote */
+            supporting_quote?: string | null;
+        };
+        /**
+         * RadarEvidenceStatus
+         * @description Missing-evidence radar classification for PICO information.
+         * @enum {string}
+         */
+        RadarEvidenceStatus: "supported" | "uncertain" | "not_found" | "conflicting" | "stale" | "not_assessed";
+        /**
+         * RadarFieldDetail
+         * @description Detailed PICO element evidence status and supporting passage.
+         */
+        RadarFieldDetail: {
+            claim_type: components["schemas"]["EvidenceClaimType"];
+            /** Claim Value */
+            claim_value?: string | null;
+            /** End Cp */
+            end_cp?: number | null;
+            /** Evidence Id */
+            evidence_id?: string | null;
+            /** Field Label */
+            field_label: string;
+            human_review_status: components["schemas"]["RadarHumanReviewStatus"];
+            /**
+             * Is Contradictory
+             * @default false
+             */
+            is_contradictory: boolean;
+            /** Original Claim Value */
+            original_claim_value?: string | null;
+            radar_status: components["schemas"]["RadarEvidenceStatus"];
+            /** Reviewer Correction Reason */
+            reviewer_correction_reason?: string | null;
+            /** Reviewer Notes */
+            reviewer_notes?: string | null;
+            /** @default unassessed */
+            semantic_assessment: components["schemas"]["EvidenceSemanticAssessment"];
+            /**
+             * Source Field
+             * @description Examined source text container (e.g. abstract)
+             * @default abstract
+             */
+            source_field: string;
+            /** Start Cp */
+            start_cp?: number | null;
+            /** Supporting Quote */
+            supporting_quote?: string | null;
+            /** Uncertainty Note */
+            uncertainty_note?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /** Validation Message */
+            validation_message?: string | null;
+            /** @default needs_review */
+            validation_status: components["schemas"]["EvidenceValidationStatus"];
+        };
+        /**
+         * RadarFlagConflictRequest
+         * @description Payload to flag conflicting evidence for a PICO element.
+         */
+        RadarFlagConflictRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /** Competing Quote */
+            competing_quote?: string | null;
+            /** Conflict Explanation */
+            conflict_explanation: string;
+        };
+        /**
+         * RadarFlagUncertainRequest
+         * @description Payload to flag a PICO element as ambiguous or uncertain.
+         */
+        RadarFlagUncertainRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /** Uncertainty Note */
+            uncertainty_note: string;
+        };
+        /**
+         * RadarHumanReviewStatus
+         * @description Human review dimension for PICO claims.
+         * @enum {string}
+         */
+        RadarHumanReviewStatus: "unreviewed" | "confirmed" | "corrected";
         /**
          * RankedGroupItem
          * @description Priority scoring item for screening workbench ordering.
@@ -1547,6 +2378,107 @@ export interface components {
             workspace_id: string;
         };
         /**
+         * ReviewRadarArticleRow
+         * @description Single article row in review-level coverage matrix.
+         */
+        ReviewRadarArticleRow: {
+            /** Authors */
+            authors?: string[];
+            comparator_status: components["schemas"]["RadarEvidenceStatus"];
+            /** Comparator Value */
+            comparator_value?: string | null;
+            /** Doi */
+            doi?: string | null;
+            effective_decision: components["schemas"]["EffectiveDecisionState"];
+            /** Group Id */
+            group_id: string;
+            /**
+             * Has Source Text
+             * @default true
+             */
+            has_source_text: boolean;
+            intervention_status: components["schemas"]["RadarEvidenceStatus"];
+            /** Intervention Value */
+            intervention_value?: string | null;
+            /** Journal */
+            journal?: string | null;
+            /**
+             * Needs Review
+             * @default false
+             */
+            needs_review: boolean;
+            outcome_status: components["schemas"]["RadarEvidenceStatus"];
+            /** Outcome Value */
+            outcome_value?: string | null;
+            /** Pmid */
+            pmid?: string | null;
+            population_status: components["schemas"]["RadarEvidenceStatus"];
+            /** Population Value */
+            population_value?: string | null;
+            /**
+             * Priority Rank
+             * @default 0
+             */
+            priority_rank: number;
+            /** Title */
+            title: string;
+            /** Year */
+            year?: number | null;
+        };
+        /**
+         * ReviewRadarDimensionSummary
+         * @description Aggregated coverage metrics for one PICO dimension across review.
+         */
+        ReviewRadarDimensionSummary: {
+            /** Conflicting Count */
+            conflicting_count: number;
+            dimension: components["schemas"]["EvidenceClaimType"];
+            /** Human Confirmed Count */
+            human_confirmed_count: number;
+            /** Human Corrected Count */
+            human_corrected_count: number;
+            /** Not Assessed Count */
+            not_assessed_count: number;
+            /** Not Found Count */
+            not_found_count: number;
+            /** Pending Review Count */
+            pending_review_count: number;
+            /** Stale Count */
+            stale_count: number;
+            /** Supported Count */
+            supported_count: number;
+            /** Supported Percent */
+            supported_percent: number;
+            /** Total Assessed */
+            total_assessed: number;
+            /** Uncertain Count */
+            uncertain_count: number;
+        };
+        /**
+         * ReviewRadarResponse
+         * @description Review-wide Missing-Evidence Radar matrix and dimension statistics.
+         */
+        ReviewRadarResponse: {
+            /** Articles With Source Text */
+            articles_with_source_text: number;
+            /** Articles Without Source Text */
+            articles_without_source_text: number;
+            /** Dimension Summaries */
+            dimension_summaries: {
+                [key: string]: components["schemas"]["ReviewRadarDimensionSummary"];
+            };
+            /** Needs Review Total */
+            needs_review_total: number;
+            /** Rows */
+            rows: components["schemas"]["ReviewRadarArticleRow"][];
+            /** Total Articles */
+            total_articles: number;
+            /** Total Fields Supported Percent */
+            total_fields_supported_percent: number;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /**
          * ScreenResult
          * @description Overall screening verdict with granular per-criterion audit trails.
          */
@@ -1605,6 +2537,152 @@ export interface components {
             revision_id: string;
             /** Status */
             status: string;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /**
+         * SearchEvolutionCategory
+         * @description Categorization of records in a search evolution comparison.
+         * @enum {string}
+         */
+        SearchEvolutionCategory: "newly_discovered" | "repeated" | "missing_from_newer" | "metadata_changed" | "conflict";
+        /**
+         * SearchEvolutionDiffResponse
+         * @description Detailed diff comparing two search versions across all records.
+         */
+        SearchEvolutionDiffResponse: {
+            /** Records */
+            records: components["schemas"]["SearchEvolutionRecordDiff"][];
+            summary: components["schemas"]["SearchEvolutionDiffSummary"];
+        };
+        /**
+         * SearchEvolutionDiffSummary
+         * @description Aggregated counts and metrics comparing two search versions.
+         */
+        SearchEvolutionDiffSummary: {
+            /** Base Sequence */
+            base_sequence: number;
+            /** Base Version Id */
+            base_version_id: string;
+            /** Conflicts Count */
+            conflicts_count: number;
+            /** Metadata Changed Count */
+            metadata_changed_count: number;
+            /** Missing From Newer Count */
+            missing_from_newer_count: number;
+            /** Newly Discovered Count */
+            newly_discovered_count: number;
+            /** Repeated Count */
+            repeated_count: number;
+            /** Screened Target Count */
+            screened_target_count: number;
+            /** Target Sequence */
+            target_sequence: number;
+            /** Target Version Id */
+            target_version_id: string;
+            /** Total Base Records */
+            total_base_records: number;
+            /** Total Target Records */
+            total_target_records: number;
+            /** Unscreened Target Count */
+            unscreened_target_count: number;
+        };
+        /**
+         * SearchEvolutionMetadataFieldDiff
+         * @description Field-level diff between two versions of record metadata.
+         */
+        SearchEvolutionMetadataFieldDiff: {
+            /** Base Value */
+            base_value?: string | null;
+            /** Field Name */
+            field_name: string;
+            /** Target Value */
+            target_value?: string | null;
+        };
+        /**
+         * SearchEvolutionRecordDiff
+         * @description Diff representation of a source record across search versions.
+         */
+        SearchEvolutionRecordDiff: {
+            /** Authors */
+            authors?: string[];
+            /** Base Record Revision Id */
+            base_record_revision_id?: string | null;
+            category: components["schemas"]["SearchEvolutionCategory"];
+            /** Doi */
+            doi?: string | null;
+            /** External Id */
+            external_id: string;
+            /** Field Diffs */
+            field_diffs?: components["schemas"]["SearchEvolutionMetadataFieldDiff"][];
+            /** Journal */
+            journal?: string | null;
+            /**
+             * Metadata Changed Since Screening
+             * @default false
+             */
+            metadata_changed_since_screening: boolean;
+            /** Pmid */
+            pmid?: string | null;
+            screening_decision?: components["schemas"]["EffectiveDecisionState"] | null;
+            /** Screening Preserved From Version Id */
+            screening_preserved_from_version_id?: string | null;
+            /** Screening Reason */
+            screening_reason?: string | null;
+            source: components["schemas"]["SourceNamespace"];
+            /** Source Record Id */
+            source_record_id: string;
+            /** Target Record Revision Id */
+            target_record_revision_id?: string | null;
+            /** Title */
+            title: string;
+            /** Year */
+            year?: number | null;
+        };
+        /**
+         * SearchEvolutionVersionSummary
+         * @description Timeline summary of a query version and its executed search runs.
+         */
+        SearchEvolutionVersionSummary: {
+            /** Change Description */
+            change_description?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** End Date */
+            end_date?: string | null;
+            /** Executions */
+            executions?: components["schemas"]["SearchExecutionResponse"][];
+            /** Id */
+            id: string;
+            /**
+             * New Records Count
+             * @default 0
+             */
+            new_records_count: number;
+            /** Parent Id */
+            parent_id?: string | null;
+            /**
+             * Repeated Records Count
+             * @default 0
+             */
+            repeated_records_count: number;
+            /** Restored From Version Id */
+            restored_from_version_id?: string | null;
+            /** Screened Records */
+            screened_records: number;
+            /** Sequence */
+            sequence: number;
+            /** Sources */
+            sources: components["schemas"]["SourceNamespace"][];
+            /** Start Date */
+            start_date?: string | null;
+            /** Total Records */
+            total_records: number;
+            /** Unscreened Records */
+            unscreened_records: number;
             /** Workspace Id */
             workspace_id: string;
         };
@@ -1668,6 +2746,33 @@ export interface components {
             status: components["schemas"]["JobState"];
             /** Synonym Setting */
             synonym_setting: boolean;
+        };
+        /**
+         * SearchRestoreRequest
+         * @description Request payload to safely restore a prior search configuration.
+         */
+        SearchRestoreRequest: {
+            /**
+             * Actor Id
+             * @default researcher
+             */
+            actor_id: string;
+            /**
+             * Reason
+             * @description Optional reason for restoring this search version
+             */
+            reason?: string | null;
+        };
+        /**
+         * SearchRestoreResponse
+         * @description Response after restoring an earlier search version.
+         */
+        SearchRestoreResponse: {
+            /** Message */
+            message: string;
+            /** Restored From Version Id */
+            restored_from_version_id: string;
+            restored_query: components["schemas"]["QueryVersionResponse"];
         };
         /**
          * SourceNamespace
@@ -2284,6 +3389,417 @@ export interface operations {
             };
         };
     };
+    export_evidence_csv_route_api_v1_workspaces__workspace_id__evidence_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_evidence_summary_route_api_v1_workspaces__workspace_id__evidence_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceCoverageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_evidence_item_route_api_v1_workspaces__workspace_id__evidence__evidence_id__correct_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvidenceCorrectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_group_evidence_passport_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidencePassportBundle"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_evidence_item_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvidenceItemCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revalidate_paper_evidence_route_api_v1_workspaces__workspace_id__groups__group_id__evidence_revalidate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceRevalidateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_group_radar_detail_api_v1_workspaces__workspace_id__groups__group_id__pico_radar_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+                field_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RadarConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__correct_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+                field_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RadarCorrectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flag_conflict_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__flag_conflict_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+                field_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RadarFlagConflictRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flag_uncertain_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__flag_uncertain_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+                field_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RadarFlagUncertainRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revalidate_group_radar_field_api_v1_workspaces__workspace_id__groups__group_id__pico_radar__field_type__revalidate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                group_id: string;
+                field_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     trigger_import_job_api_v1_workspaces__workspace_id__imports_post: {
         parameters: {
             query?: never;
@@ -2306,6 +3822,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workspace_radar_overview_api_v1_workspaces__workspace_id__pico_radar_get: {
+        parameters: {
+            query?: {
+                dimension_filter?: string | null;
+                status_filter?: string | null;
+                needs_review_only?: boolean;
+                query?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewRadarResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2570,6 +4124,139 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScreeningRankResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_workspace_search_versions_api_v1_workspaces__workspace_id__search_versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchEvolutionVersionSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diff_workspace_search_versions_api_v1_workspaces__workspace_id__search_versions__target_version_id__diff_get: {
+        parameters: {
+            query?: {
+                base_version_id?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+                target_version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchEvolutionDiffResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workspace_search_version_api_v1_workspaces__workspace_id__search_versions__version_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchEvolutionVersionSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_workspace_search_version_api_v1_workspaces__workspace_id__search_versions__version_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchRestoreResponse"];
                 };
             };
             /** @description Validation Error */

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Search, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Search, ArrowRight, CheckCircle2, Clock } from "lucide-react";
 import { CriteriaEditor } from "../review-setup/CriteriaEditor";
 import { QueryBuilder } from "./QueryBuilder";
 import { ImportWorkflow } from "../runs/ImportWorkflow";
@@ -29,15 +29,24 @@ export const QueryBuilderPage: React.FC = () => {
           </p>
         </div>
 
-        {completedJob && (
+        <div className="flex items-center gap-2">
           <Link
-            to={`/reviews/${workspaceId}/records`}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition"
+            to={`/reviews/${workspaceId}/search-evolution`}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white rounded-lg text-xs font-medium transition border border-slate-700"
           >
-            <span>Proceed to Screening Queue</span>
-            <ArrowRight className="w-4 h-4" />
+            <Clock className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Search Evolution</span>
           </Link>
-        )}
+          {completedJob && (
+            <Link
+              to={`/reviews/${workspaceId}/records`}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition"
+            >
+              <span>Proceed to Screening Queue</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
+        </div>
       </div>
 
       {completedJob && (

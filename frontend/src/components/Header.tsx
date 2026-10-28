@@ -13,6 +13,8 @@ import {
   Sparkles,
   Sun,
   Moon,
+  Clock,
+  HelpCircle,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
@@ -52,6 +54,8 @@ export const Header: React.FC = () => {
     { to: "/reviews/ws-synth-001/ml-ranking", label: "ML Prioritization", icon: Brain },
     { to: "/reviews/ws-synth-001/duplicates", label: "Deduplication", icon: Copy },
     { to: "/reviews/ws-synth-001/history", label: "Audit Lineage", icon: History },
+    { to: "/reviews/ws-synth-001/radar", label: "PICO Radar", icon: HelpCircle },
+    { to: "/reviews/ws-synth-001/search-evolution", label: "Search Evolution", icon: Clock },
   ];
 
   return (

@@ -45,6 +45,36 @@ export type RankedGroupItem = components["schemas"]["RankedGroupItem"];
 export type MLRankingRequest = components["schemas"]["MLRankingRequest"];
 export type MLRankingResponse = components["schemas"]["MLRankingResponse"];
 export type MLRankedItem = components["schemas"]["MLRankedItem"];
+export type EvidenceItemResponse = components["schemas"]["EvidenceItemResponse"];
+export type EvidencePassportBundle = components["schemas"]["EvidencePassportBundle"];
+export type EvidencePassportSummary = components["schemas"]["EvidencePassportSummary"];
+export type EvidenceCorrectionRequest = components["schemas"]["EvidenceCorrectionRequest"];
+export type EvidenceItemCreateRequest = components["schemas"]["EvidenceItemCreateRequest"];
+export type EvidenceRevalidateResponse = components["schemas"]["EvidenceRevalidateResponse"];
+export type EvidenceCoverageResponse = components["schemas"]["EvidenceCoverageResponse"];
+export type EvidenceClaimType = components["schemas"]["EvidenceClaimType"];
+export type EvidenceValidationStatus = components["schemas"]["EvidenceValidationStatus"];
+export type EvidenceSemanticAssessment = components["schemas"]["EvidenceSemanticAssessment"];
+export type EvidenceProvenance = components["schemas"]["EvidenceProvenance"];
+export type SearchEvolutionVersionSummary = components["schemas"]["SearchEvolutionVersionSummary"];
+export type SearchEvolutionDiffResponse = components["schemas"]["SearchEvolutionDiffResponse"];
+export type SearchEvolutionDiffSummary = components["schemas"]["SearchEvolutionDiffSummary"];
+export type SearchEvolutionRecordDiff = components["schemas"]["SearchEvolutionRecordDiff"];
+export type SearchEvolutionMetadataFieldDiff = components["schemas"]["SearchEvolutionMetadataFieldDiff"];
+export type SearchEvolutionCategory = components["schemas"]["SearchEvolutionCategory"];
+export type SearchRestoreRequest = components["schemas"]["SearchRestoreRequest"];
+export type SearchRestoreResponse = components["schemas"]["SearchRestoreResponse"];
+export type ArticleRadarResponse = components["schemas"]["ArticleRadarResponse"];
+export type ReviewRadarResponse = components["schemas"]["ReviewRadarResponse"];
+export type RadarFieldDetail = components["schemas"]["RadarFieldDetail"];
+export type ReviewRadarDimensionSummary = components["schemas"]["ReviewRadarDimensionSummary"];
+export type ReviewRadarArticleRow = components["schemas"]["ReviewRadarArticleRow"];
+export type RadarEvidenceStatus = components["schemas"]["RadarEvidenceStatus"];
+export type RadarHumanReviewStatus = components["schemas"]["RadarHumanReviewStatus"];
+export type RadarConfirmRequest = components["schemas"]["RadarConfirmRequest"];
+export type RadarCorrectRequest = components["schemas"]["RadarCorrectRequest"];
+export type RadarFlagUncertainRequest = components["schemas"]["RadarFlagUncertainRequest"];
+export type RadarFlagConflictRequest = components["schemas"]["RadarFlagConflictRequest"];
 export type RestoreMode = "exact_snapshot" | "latest_decisions";
 
 export interface SnapshotRestoreRequest {
@@ -264,6 +294,124 @@ export const api = {
         }
       );
     },
+  },
+  evidence: {
+    getBundle: (workspaceId: string, groupId: string) =>
+      request<EvidencePassportBundle>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/evidence`),
+    correctItem: (workspaceId: string, evidenceId: string, payload: EvidenceCorrectionRequest) =>
+      request<EvidenceItemResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/evidence/${encodeURIComponent(evidenceId)}/correct`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    createItem: (workspaceId: string, groupId: string, payload: EvidenceItemCreateRequest) =>
+      request<EvidenceItemResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/evidence`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    revalidateGroup: (workspaceId: string, groupId: string) =>
+      request<EvidenceRevalidateResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/evidence/revalidate`,
+        {
+          method: "POST",
+        }
+      ),
+    getSummary: (workspaceId: string) =>
+      request<EvidenceCoverageResponse>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/evidence/summary`),
+    exportUrl: (workspaceId: string) => `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/evidence/export`,
+  },
+  searchEvolution: {
+    listVersions: (workspaceId: string) =>
+      request<SearchEvolutionVersionSummary[]>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/search-versions`),
+    getVersion: (workspaceId: string, versionId: string) =>
+      request<SearchEvolutionVersionSummary>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/search-versions/${encodeURIComponent(versionId)}`),
+    getDiff: (workspaceId: string, targetVersionId: string, baseVersionId?: string) => {
+      const q = baseVersionId ? `?base_version_id=${encodeURIComponent(baseVersionId)}` : "";
+      return request<SearchEvolutionDiffResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/search-versions/${encodeURIComponent(targetVersionId)}/diff${q}`
+      );
+    },
+    restoreVersion: (workspaceId: string, versionId: string, payload: SearchRestoreRequest) =>
+      request<SearchRestoreResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/search-versions/${encodeURIComponent(versionId)}/restore`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+  },
+  radar: {
+    getOverview: (
+      workspaceId: string,
+      params?: {
+        dimension_filter?: string;
+        status_filter?: string;
+        needs_review_only?: boolean;
+        query?: string;
+        limit?: number;
+        offset?: number;
+      }
+    ) => {
+      const q = new URLSearchParams();
+      if (params?.dimension_filter) q.set("dimension_filter", params.dimension_filter);
+      if (params?.status_filter) q.set("status_filter", params.status_filter);
+      if (params?.needs_review_only) q.set("needs_review_only", "true");
+      if (params?.query) q.set("query", params.query);
+      if (params?.limit) q.set("limit", String(params.limit));
+      if (params?.offset) q.set("offset", String(params.offset));
+      const qs = q.toString() ? `?${q.toString()}` : "";
+      return request<ReviewRadarResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/pico-radar${qs}`
+      );
+    },
+    getArticleRadar: (workspaceId: string, groupId: string) =>
+      request<ArticleRadarResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/pico-radar`
+      ),
+    confirmField: (workspaceId: string, groupId: string, fieldType: string, payload: RadarConfirmRequest) =>
+      request<ArticleRadarResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/pico-radar/${encodeURIComponent(fieldType)}/confirm`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    correctField: (workspaceId: string, groupId: string, fieldType: string, payload: RadarCorrectRequest) =>
+      request<ArticleRadarResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/pico-radar/${encodeURIComponent(fieldType)}/correct`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    flagUncertain: (workspaceId: string, groupId: string, fieldType: string, payload: RadarFlagUncertainRequest) =>
+      request<ArticleRadarResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/pico-radar/${encodeURIComponent(fieldType)}/flag-uncertain`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    flagConflict: (workspaceId: string, groupId: string, fieldType: string, payload: RadarFlagConflictRequest) =>
+      request<ArticleRadarResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/pico-radar/${encodeURIComponent(fieldType)}/flag-conflict`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      ),
+    revalidateField: (workspaceId: string, groupId: string, fieldType: string) =>
+      request<ArticleRadarResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/groups/${encodeURIComponent(groupId)}/pico-radar/${encodeURIComponent(fieldType)}/revalidate`,
+        {
+          method: "POST",
+        }
+      ),
   },
 };
 
