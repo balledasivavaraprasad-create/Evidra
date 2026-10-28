@@ -33,4 +33,4 @@ fi
 
 # 4. Start Uvicorn HTTP server
 echo "[4/4] Launching FastAPI application on 0.0.0.0:${PORT}..."
-exec "${UV_RUN[@]}" uvicorn app.main:app --host 0.0.0.0 --port "${PORT}" --workers "${WORKERS:-2}" --proxy-headers --forwarded-allow-ips="*"
+exec "${UV_RUN[@]}" uvicorn app.main:app --host 0.0.0.0 --port "${PORT}" --workers "${WORKERS:-1}" --proxy-headers --forwarded-allow-ips="*"

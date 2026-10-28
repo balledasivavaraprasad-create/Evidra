@@ -3228,6 +3228,12 @@
           "representative_revision": {
             "$ref": "#/components/schemas/RecordRevisionResponse"
           },
+          "row_version": {
+            "default": 1,
+            "description": "Optimistic locking row version",
+            "title": "Row Version",
+            "type": "integer"
+          },
           "workspace_id": {
             "title": "Workspace Id",
             "type": "string"
