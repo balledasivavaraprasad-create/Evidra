@@ -33,6 +33,8 @@ from app.contracts.models import (
     ExportResponse,
     ImportJobCreate,
     JobResponse,
+    MLRankingRequest,
+    MLRankingResponse,
     PaperGroupDetail,
     PaperGroupSummary,
     PicoOverrideRequest,
@@ -56,6 +58,7 @@ from app.db.models import (
     WorkspaceModel,
 )
 from app.db.session import get_db
+from app.ml_feature.service import execute_ml_ranking
 from app.services.corpus import (
     get_paper_group_detail,
     list_paper_groups_in_revision,
@@ -700,6 +703,62 @@ def get_screening_rank(
     """Compute ML-prioritized screening order for workbench triage without automatic exclusions."""
     req = payload or ScreeningRankRequest()
     return rank_screening_groups(db=db, workspace_id=workspace_id, request=req)
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/revisions/{revision_id}/ml-ranking",
+    tags=["Machine Learning"],
+    summary="Compute ML review prioritization for corpus revision",
+    response_model=MLRankingResponse,
+    responses={
+        200: {"model": MLRankingResponse, "description": "Computed or cached ML prioritized ranking"},
+        404: {"model": ErrorEnvelope, "description": "Workspace or corpus revision not found"},
+        413: {"model": ErrorEnvelope, "description": "Corpus revision too large"},
+    },
+)
+def compute_ml_ranking(
+    workspace_id: str,
+    revision_id: str,
+    payload: MLRankingRequest | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> MLRankingResponse:
+    """Compute, cache, or retrieve prioritized screening queue using verified scikit-learn model."""
+    req = payload or MLRankingRequest()
+    return execute_ml_ranking(
+        db=db,
+        workspace_id=workspace_id,
+        revision_id=revision_id,
+        request=req,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/revisions/{revision_id}/ml-ranking",
+    tags=["Machine Learning"],
+    summary="Get ML review prioritization for corpus revision",
+    response_model=MLRankingResponse,
+    responses={
+        200: {"model": MLRankingResponse, "description": "Prioritized ranking order"},
+        404: {"model": ErrorEnvelope, "description": "Workspace or corpus revision not found"},
+    },
+)
+def get_ml_ranking(
+    workspace_id: str,
+    revision_id: str,
+    limit: int = 100,
+    offset: int = 0,
+    force_recompute: bool = False,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> MLRankingResponse:
+    """Get paginated ML-prioritized queue for a corpus revision."""
+    req = MLRankingRequest(limit=limit, offset=offset, force_recompute=force_recompute)
+    return execute_ml_ranking(
+        db=db,
+        workspace_id=workspace_id,
+        revision_id=revision_id,
+        request=req,
+    )
+
 
 
 @app.post(

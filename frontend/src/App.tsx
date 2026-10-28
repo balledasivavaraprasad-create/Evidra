@@ -11,6 +11,7 @@ import { QueryBuilderPage } from "./features/search/QueryBuilderPage";
 import { ReviewQueuePage } from "./features/review-queue/ReviewQueuePage";
 import { DuplicatesPage } from "./features/duplicates/DuplicatesPage";
 import { HistoryPage } from "./features/history/HistoryPage";
+import { MLReviewPage } from "./features/ml-review/MLReviewPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,9 +37,11 @@ export const App: React.FC = () => {
                 <Route path="/reviews/:id/search" element={<QueryBuilderPage />} />
                 <Route path="/reviews/:id/setup" element={<QueryBuilderPage />} />
                 <Route path="/reviews/:id/records" element={<ReviewQueuePage />} />
+                <Route path="/reviews/:id/ml-ranking" element={<MLReviewPage />} />
                 <Route path="/reviews/:id/duplicates" element={<DuplicatesPage />} />
                 <Route path="/reviews/:id/history" element={<HistoryPage />} />
                 <Route path="/review-queue" element={<ReviewQueuePage />} />
+                <Route path="/ml-ranking" element={<MLReviewPage />} />
                 <Route path="/duplicates" element={<DuplicatesPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

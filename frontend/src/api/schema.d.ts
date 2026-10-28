@@ -404,6 +404,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspace_id}/revisions/{revision_id}/ml-ranking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get ML review prioritization for corpus revision
+         * @description Get paginated ML-prioritized queue for a corpus revision.
+         */
+        get: operations["get_ml_ranking_api_v1_workspaces__workspace_id__revisions__revision_id__ml_ranking_get"];
+        put?: never;
+        /**
+         * Compute ML review prioritization for corpus revision
+         * @description Compute, cache, or retrieve prioritized screening queue using verified scikit-learn model.
+         */
+        post: operations["compute_ml_ranking_api_v1_workspaces__workspace_id__revisions__revision_id__ml_ranking_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspace_id}/screening/rank": {
         parameters: {
             query?: never;
@@ -996,6 +1020,112 @@ export interface components {
          * @enum {string}
          */
         JobState: "queued" | "running" | "waiting_human" | "succeeded" | "partial" | "failed" | "cancelled";
+        /**
+         * MLRankedItem
+         * @description Prioritized literature item with continuous probability and rank.
+         */
+        MLRankedItem: {
+            /** Abstract Text */
+            abstract_text?: string | null;
+            /** Effective Status */
+            effective_status?: string | null;
+            /** Group Id */
+            group_id?: string | null;
+            /**
+             * Priority Label
+             * @description 'HIGH', 'MEDIUM', 'LOW', or 'UNSCORED'
+             * @default MEDIUM
+             */
+            priority_label: string;
+            /**
+             * Rank
+             * @description 1-indexed priority rank
+             */
+            rank: number;
+            /** Reason */
+            reason?: string | null;
+            /** Record Id */
+            record_id: string;
+            /**
+             * Score
+             * @description Model priority score; higher = prioritize review
+             */
+            score: number;
+            /**
+             * State
+             * @description 'SCORED', 'UNAVAILABLE', or 'OUT_OF_SCOPE'
+             */
+            state: string;
+            /** Title */
+            title: string;
+        };
+        /**
+         * MLRankingRequest
+         * @description Request to compute or retrieve ML-prioritized queue for a corpus revision.
+         */
+        MLRankingRequest: {
+            /**
+             * Criteria Version Id
+             * @description Optional criteria version constraint
+             */
+            criteria_version_id?: string | null;
+            /**
+             * Force Recompute
+             * @description Bypass machine result cache and force recompute
+             * @default false
+             */
+            force_recompute: boolean;
+            /**
+             * Limit
+             * @description Max items to return
+             * @default 100
+             */
+            limit: number;
+            /**
+             * Offset
+             * @description Pagination offset
+             * @default 0
+             */
+            offset: number;
+            /**
+             * Review Question
+             * @description Optional custom review question override
+             */
+            review_question?: string | null;
+        };
+        /**
+         * MLRankingResponse
+         * @description Prioritized review queue response for a corpus revision.
+         */
+        MLRankingResponse: {
+            /** Computed At */
+            computed_at: string;
+            /** Criteria Version Id */
+            criteria_version_id?: string | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /** Items */
+            items?: components["schemas"]["MLRankedItem"][];
+            /** Model Version */
+            model_version: string;
+            /** Reason */
+            reason?: string | null;
+            /** Revision Id */
+            revision_id: string;
+            /** Scope */
+            scope: string;
+            /** Scored Count */
+            scored_count: number;
+            /**
+             * Status
+             * @description 'COMPLETED', 'CACHED', 'UNAVAILABLE', 'EMPTY', or 'ERROR'
+             */
+            status: string;
+            /** Total Records */
+            total_records: number;
+            /** Workspace Id */
+            workspace_id: string;
+        };
         /**
          * PaperGroupDetail
          * @description Detailed view of a paper group including members, machine results, and audit events.
@@ -2306,6 +2436,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorpusRevisionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ml_ranking_api_v1_workspaces__workspace_id__revisions__revision_id__ml_ranking_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                force_recompute?: boolean;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Prioritized ranking order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLRankingResponse"];
+                };
+            };
+            /** @description Workspace or corpus revision not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compute_ml_ranking_api_v1_workspaces__workspace_id__revisions__revision_id__ml_ranking_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MLRankingRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Computed or cached ML prioritized ranking */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLRankingResponse"];
+                };
+            };
+            /** @description Workspace or corpus revision not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Corpus revision too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Validation Error */
