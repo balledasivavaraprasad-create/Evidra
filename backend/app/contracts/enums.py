@@ -86,6 +86,14 @@ class GroupLineageOp(str, Enum):
     MERGE = "merge"
     SPLIT = "split"
     EXTEND = "extend"
+    RETAIN = "retain"
+
+
+class RestoreMode(str, Enum):
+    """Restore mode for corpus snapshots."""
+
+    EXACT_SNAPSHOT = "exact_snapshot"
+    LATEST_DECISIONS = "latest_decisions"
 
 
 class BooleanOperator(str, Enum):

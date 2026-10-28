@@ -19,6 +19,7 @@ from app.contracts.enums import (
     JobKind,
     JobState,
     PicoLabel,
+    RestoreMode,
     ScreeningEvidenceSource,
     SourceNamespace,
 )
@@ -468,6 +469,16 @@ class CorpusRevisionResponse(BaseModel):
     record_count: int = Field(default=0)
 
 
+class SnapshotRestoreRequest(BaseModel):
+    """Request to restore a workspace to an immutable corpus revision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    snapshot_id: str
+    mode: RestoreMode = RestoreMode.EXACT_SNAPSHOT
+    expected_workspace_version: int | None = None
+
+
 class CorpusDiffResponse(BaseModel):
     """Diff comparing two immutable corpus snapshots."""
 
@@ -481,6 +492,13 @@ class CorpusDiffResponse(BaseModel):
     split_groups: int = 0
     changed_decisions: int = 0
     conflicts_count: int = 0
+    added_records: int = 0
+    removed_records: int = 0
+    retained_records: int = 0
+    representative_changes: int = 0
+    invalidation_fingerprint: str = ""
+    added_record_ids: list[str] = Field(default_factory=list)
+    removed_record_ids: list[str] = Field(default_factory=list)
 
 
 class JobResponse(BaseModel):

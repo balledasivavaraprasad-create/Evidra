@@ -66,6 +66,12 @@ from app.services.review_decisions import (
     resolve_group_conflict,
     save_pico_annotations,
 )
+from app.services.snapshots import (
+    compute_corpus_diff,
+)
+from app.services.snapshots import (
+    restore_corpus_snapshot as svc_restore_corpus_snapshot,
+)
 from app.settings import settings
 from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
@@ -582,10 +588,13 @@ def resolve_group_conflict_route(
     summary="Diff two corpus snapshots",
     response_model=CorpusDiffResponse,
 )
-def diff_corpus_revisions(revision_id: str, base_revision_id: str) -> CorpusDiffResponse:
+def diff_corpus_revisions(
+    revision_id: str,
+    base_revision_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> CorpusDiffResponse:
     """Calculate diff between two corpus snapshots (Implemented in D05)."""
-    stub_not_implemented("diff_corpus_revisions")
-    raise NotImplementedError
+    return compute_corpus_diff(db=db, base_revision_id=base_revision_id, target_revision_id=revision_id)
 
 
 @app.post(
@@ -594,10 +603,17 @@ def diff_corpus_revisions(revision_id: str, base_revision_id: str) -> CorpusDiff
     summary="Restore exact historical snapshot",
     response_model=CorpusRevisionResponse,
 )
-def restore_corpus_snapshot(workspace_id: str, snapshot_id: str) -> CorpusRevisionResponse:
+def restore_corpus_snapshot(
+    workspace_id: str,
+    snapshot_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> CorpusRevisionResponse:
     """Restore exact historical corpus snapshot without re-fetching APIs (Implemented in D05)."""
-    stub_not_implemented("restore_corpus_snapshot")
-    raise NotImplementedError
+    return svc_restore_corpus_snapshot(
+        db=db,
+        workspace_id=workspace_id,
+        snapshot_id=snapshot_id,
+    )
 
 
 @app.post(

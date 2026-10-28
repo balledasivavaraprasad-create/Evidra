@@ -148,13 +148,18 @@ def test_workspace_creation_and_persistence(client: TestClient, db_session: Sess
 
 def test_declared_route_stubs_return_501(client: TestClient):
     """Unimplemented /api/v1 operations must return structured 501 instead of unhandled crashes."""
-    response = client.get(
-        "/api/v1/revisions/rev-test-1/diff?base_revision_id=rev-base-1"
+    response = client.post(
+        "/api/v1/workspaces/ws-test-1/assistant",
+        json={
+            "task": "explain_screening",
+            "target_id": "grp-test-1",
+            "user_prompt": "Why was this included?",
+        },
     )
     assert response.status_code == 501
     error = response.json()
     assert error["code"] == "NOT_IMPLEMENTED"
-    assert "diff_corpus_revisions" in error["message"]
+    assert "query_assistant" in error["message"]
 
 
 def test_db_source_record_unique_constraint(db_session: Session):

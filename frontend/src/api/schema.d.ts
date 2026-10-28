@@ -518,6 +518,13 @@ export interface components {
              * @default 0
              */
             added_groups: number;
+            /** Added Record Ids */
+            added_record_ids?: string[];
+            /**
+             * Added Records
+             * @default 0
+             */
+            added_records: number;
             /** Base Revision Id */
             base_revision_id: string;
             /**
@@ -531,6 +538,11 @@ export interface components {
              */
             conflicts_count: number;
             /**
+             * Invalidation Fingerprint
+             * @default
+             */
+            invalidation_fingerprint: string;
+            /**
              * Merged Groups
              * @default 0
              */
@@ -540,6 +552,23 @@ export interface components {
              * @default 0
              */
             removed_groups: number;
+            /** Removed Record Ids */
+            removed_record_ids?: string[];
+            /**
+             * Removed Records
+             * @default 0
+             */
+            removed_records: number;
+            /**
+             * Representative Changes
+             * @default 0
+             */
+            representative_changes: number;
+            /**
+             * Retained Records
+             * @default 0
+             */
+            retained_records: number;
             /**
              * Split Groups
              * @default 0

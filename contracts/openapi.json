@@ -121,6 +121,18 @@
             "title": "Added Groups",
             "type": "integer"
           },
+          "added_record_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Added Record Ids",
+            "type": "array"
+          },
+          "added_records": {
+            "default": 0,
+            "title": "Added Records",
+            "type": "integer"
+          },
           "base_revision_id": {
             "title": "Base Revision Id",
             "type": "string"
@@ -135,6 +147,11 @@
             "title": "Conflicts Count",
             "type": "integer"
           },
+          "invalidation_fingerprint": {
+            "default": "",
+            "title": "Invalidation Fingerprint",
+            "type": "string"
+          },
           "merged_groups": {
             "default": 0,
             "title": "Merged Groups",
@@ -143,6 +160,28 @@
           "removed_groups": {
             "default": 0,
             "title": "Removed Groups",
+            "type": "integer"
+          },
+          "removed_record_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Removed Record Ids",
+            "type": "array"
+          },
+          "removed_records": {
+            "default": 0,
+            "title": "Removed Records",
+            "type": "integer"
+          },
+          "representative_changes": {
+            "default": 0,
+            "title": "Representative Changes",
+            "type": "integer"
+          },
+          "retained_records": {
+            "default": 0,
+            "title": "Retained Records",
             "type": "integer"
           },
           "split_groups": {
