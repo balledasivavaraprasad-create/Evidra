@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ErrorState, LoadingRegion, SkeletonStatRow, SkeletonTable } from "../../components/Feedback";
 import { Scale } from "lucide-react";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -13,7 +14,7 @@ export const DevilsAdvocateDashboard: React.FC = () => {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(routeWorkspaceId || "");
   const [data, setData] = useState<DevilsAdvocateDashboardResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   // Filters
   const [activeTab, setActiveTab] = useState<"all" | "high_vuln" | "pending" | "conceded" | "upheld" | "dismissed">("all");
@@ -43,8 +44,8 @@ export const DevilsAdvocateDashboard: React.FC = () => {
         high_vulnerability_only: activeTab === "high_vuln",
       });
       setData(res);
-    } catch (err: any) {
-      setError(err?.message || "Failed to load Devil's Advocate dashboard.");
+    } catch (err: unknown) {
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -94,7 +95,7 @@ export const DevilsAdvocateDashboard: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <Link
-            to={activeWorkspaceId ? `/reviews/${activeWorkspaceId}` : "/reviews"}
+            to={activeWorkspaceId ? `/reviews/${activeWorkspaceId}/records` : "/reviews"}
             className="px-3.5 py-2 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors"
           >
             ← Back to Workbench
@@ -109,6 +110,11 @@ export const DevilsAdvocateDashboard: React.FC = () => {
       </div>
 
       {/* Metrics Ribbon */}
+      {loading && !data && (
+        <LoadingRegion label="Loading challenge metrics">
+          <SkeletonStatRow count={5} />
+        </LoadingRegion>
+      )}
       {data && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
@@ -219,14 +225,11 @@ export const DevilsAdvocateDashboard: React.FC = () => {
 
       {/* Main Ledger Table */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400">
-          <div className="inline-block animate-spin w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full mr-3" />
-          Loading challenged exclusion records...
-        </div>
-      ) : error ? (
-        <div className="text-center py-12 text-rose-400 bg-slate-900 border border-slate-800 rounded-xl">
-          {error}
-        </div>
+        <LoadingRegion label="Loading challenged exclusions">
+          <SkeletonTable rows={4} cols={5} />
+        </LoadingRegion>
+      ) : error != null ? (
+        <ErrorState error={error} onRetry={fetchDashboard} what="Challenged exclusions" />
       ) : !data || !data.challenges || data.challenges.length === 0 ? (
         <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-xl text-slate-400">
           <Scale className="w-8 h-8 mx-auto mb-3 text-slate-500" strokeWidth={1.5} aria-hidden="true" />

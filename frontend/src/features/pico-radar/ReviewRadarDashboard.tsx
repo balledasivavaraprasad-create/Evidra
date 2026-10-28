@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useTransition } from "react";
+import { ErrorState, LoadingRegion, SkeletonCard, SkeletonStatRow, SkeletonTable } from "../../components/Feedback";
 import { useParams, Link } from "react-router-dom";
 import {
   Sparkles,
@@ -32,7 +33,7 @@ export const ReviewRadarDashboard: React.FC = () => {
 
   const [data, setData] = useState<ReviewRadarResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   // Filters & Search
   const [query, setQuery] = useState("");
@@ -61,7 +62,7 @@ export const ReviewRadarDashboard: React.FC = () => {
       });
       setData(res);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load Missing-Evidence Radar dashboard");
+      setError(err);
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +84,7 @@ export const ReviewRadarDashboard: React.FC = () => {
       const res = await api.radar.getArticleRadar(activeWorkspaceId, groupId);
       setActiveArticleRadar(res);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load article radar");
+      setError(err);
     } finally {
       setIsLoadingArticleRadar(false);
     }
@@ -223,15 +224,17 @@ export const ReviewRadarDashboard: React.FC = () => {
           </div>
         </div>
 
-        {error && (
-          <div className="mt-4 p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300 rounded-lg text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{error}</span>
-          </div>
+        {error != null && data && !isLoading && (
+          <ErrorState compact className="mt-4" error={error} onRetry={loadDashboard} what="PICO coverage" />
         )}
       </div>
 
       {/* Summary Metrics Ribbon */}
+      {isLoading && !data && (
+        <LoadingRegion label="Loading PICO coverage">
+          <SkeletonStatRow count={4} />
+        </LoadingRegion>
+      )}
       {data && (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs text-slate-400">
@@ -372,10 +375,11 @@ export const ReviewRadarDashboard: React.FC = () => {
 
       {/* Evidence Coverage Matrix Table */}
       {isLoading ? (
-        <div className="p-12 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
-          <RotateCcw className="w-4 h-4 animate-spin text-cyan-400" />
-          <span>Aggregating review-wide PICO evidence radar...</span>
-        </div>
+        <LoadingRegion label="Loading article coverage">
+          <SkeletonTable rows={3} cols={7} />
+        </LoadingRegion>
+      ) : error != null && !data ? (
+        <ErrorState error={error} onRetry={loadDashboard} what="PICO coverage" />
       ) : !data || data.rows.length === 0 ? (
         <div className="p-12 text-center bg-slate-900/60 border border-slate-800 rounded-xl text-slate-400 text-xs">
           No articles match the current radar filter criteria.
@@ -463,10 +467,10 @@ export const ReviewRadarDashboard: React.FC = () => {
             </div>
 
             {isLoadingArticleRadar ? (
-              <div className="p-12 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
-                <RotateCcw className="w-4 h-4 animate-spin text-cyan-400" />
-                <span>Loading article PICO radar...</span>
-              </div>
+              <LoadingRegion label="Loading this article's PICO coverage" className="p-6 space-y-4">
+                <SkeletonStatRow count={4} />
+                <SkeletonCard lines={3} />
+              </LoadingRegion>
             ) : activeArticleRadar ? (
               <ArticleRadarWidget
                 radar={activeArticleRadar}

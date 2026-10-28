@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { ErrorState, LoadingRegion, SampleDataNotice, SkeletonListDetail } from "../../components/Feedback";
 import { useParams, Link } from "react-router-dom";
 import {
   Brain,
@@ -21,7 +22,7 @@ import {
   type MLRankingResponse,
   type MLRankedItem,
   type PaperGroupSummary,
-  ApiError,
+  isServiceUnreachable,
 } from "../../api/client";
 import { MOCK_ML_RANKING, MOCK_GROUPS } from "../../api/fixtures";
 
@@ -37,6 +38,9 @@ export const MLReviewPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [recomputing, setRecomputing] = useState<boolean>(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [usingSampleData, setUsingSampleData] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   const [humanDecisions, setHumanDecisions] = useState<Record<string, string>>({});
 
@@ -58,11 +62,15 @@ export const MLReviewPage: React.FC = () => {
         setSelectedRecordId(items[0].record_id);
       }
     } catch (err: unknown) {
-      if (err instanceof ApiError) {
-        setErrorBanner(`ML Ranking error (${err.status}): ${err.message}`);
-      } else {
-        // Fallback to fixture data in local/test environment
+      if (isServiceUnreachable(err)) {
+        // Backend not running: clearly labelled sample ranking
+        setUsingSampleData(true);
         setRankingData(MOCK_ML_RANKING as unknown as MLRankingResponse);
+      } else if (force) {
+        // A failed recompute keeps the last good ranking on screen
+        setErrorBanner(err instanceof Error ? err.message : "The ranking couldn't be recomputed.");
+      } else {
+        setLoadError(err);
       }
     } finally {
       setLoading(false);
@@ -75,6 +83,7 @@ export const MLReviewPage: React.FC = () => {
     async function init() {
       try {
         setLoading(true);
+        setLoadError(null);
         const revs = await api.revisions.list(workspaceId);
         if (!mounted) return;
 
@@ -82,24 +91,29 @@ export const MLReviewPage: React.FC = () => {
           const activeRevId = revs[0].id;
           setRevisionId(activeRevId);
 
-          // Also fetch baseline groups
+          // Also fetch baseline groups (the ranking still works without them)
           try {
             const grps = await api.revisions.listGroups(activeRevId);
             if (mounted && grps) setBaselineGroups(grps);
           } catch {
-            if (mounted) setBaselineGroups(MOCK_GROUPS);
+            if (mounted) setBaselineGroups([]);
           }
 
           await fetchRanking(activeRevId);
         } else {
-          // Fallback to mock for offline demonstration
-          setRankingData(MOCK_ML_RANKING as unknown as MLRankingResponse);
-          setBaselineGroups(MOCK_GROUPS);
+          // No processed corpus yet: show the empty state, not sample data
+          setRankingData(null);
+          setBaselineGroups([]);
         }
-      } catch {
-        if (mounted) {
+        if (mounted) setUsingSampleData(false);
+      } catch (err: unknown) {
+        if (!mounted) return;
+        if (isServiceUnreachable(err)) {
+          setUsingSampleData(true);
           setRankingData(MOCK_ML_RANKING as unknown as MLRankingResponse);
           setBaselineGroups(MOCK_GROUPS);
+        } else {
+          setLoadError(err);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -110,7 +124,7 @@ export const MLReviewPage: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [workspaceId, fetchRanking]);
+  }, [workspaceId, fetchRanking, reloadKey]);
 
   // Priority count statistics
   const stats = useMemo(() => {
@@ -205,7 +219,7 @@ export const MLReviewPage: React.FC = () => {
         >
           <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-medium">Model Notice</p>
+            <p className="font-medium">The ranking couldn't be updated</p>
             <p className="text-amber-300/90 text-xs mt-0.5">{errorBanner}</p>
           </div>
           <button
@@ -299,12 +313,15 @@ export const MLReviewPage: React.FC = () => {
         </div>
       </div>
 
+      {usingSampleData && <SampleDataNotice onRetry={() => setReloadKey((k) => k + 1)} />}
+
       {/* Main Review Grid */}
       {loading ? (
-        <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500">
-          <RotateCcw className="w-8 h-8 animate-spin text-indigo-500" />
-          <p className="text-sm">Running verified ML inference pipeline...</p>
-        </div>
+        <LoadingRegion label="Ranking records">
+          <SkeletonListDetail />
+        </LoadingRegion>
+      ) : loadError != null ? (
+        <ErrorState error={loadError} onRetry={() => setReloadKey((k) => k + 1)} what="The ML ranking" />
       ) : displayedItems.length === 0 ? (
         <div className="p-12 text-center rounded-2xl border border-slate-800 bg-slate-900/20">
           <Info className="w-10 h-10 text-slate-600 mx-auto mb-3" />

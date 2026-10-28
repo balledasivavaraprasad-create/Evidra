@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ErrorState, LoadingRegion, Skeleton, SkeletonCard } from "../../components/Feedback";
 import { AlertTriangle } from "lucide-react";
 import {
   api,
@@ -25,7 +26,7 @@ export const DuplicateGenealogyView: React.FC<DuplicateGenealogyViewProps> = ({
 }) => {
   const [data, setData] = useState<DuplicateGroupGenealogyResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   // Dialog states
   const [reconcileModalOpen, setReconcileModalOpen] = useState(false);
@@ -51,9 +52,8 @@ export const DuplicateGenealogyView: React.FC<DuplicateGenealogyViewProps> = ({
     try {
       const resp = await api.genealogy.getGroupGenealogy(workspaceId, groupId);
       setData(resp);
-    } catch (err: any) {
-      console.error("Failed to load genealogy:", err);
-      setError(err?.message || "Failed to load duplicate genealogy");
+    } catch (err: unknown) {
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -132,27 +132,26 @@ export const DuplicateGenealogyView: React.FC<DuplicateGenealogyViewProps> = ({
 
   if (loading) {
     return (
-      <div className="p-8 text-center text-slate-400 font-mono text-sm">
-        <span className="inline-block animate-spin mr-2">🔄</span>
-        Loading duplicate genealogy and provenance...
-      </div>
+      <LoadingRegion label="Loading duplicate history" className="space-y-4">
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-28 rounded-lg" />
+          <Skeleton className="h-8 w-28 rounded-lg" />
+          <Skeleton className="h-8 w-28 rounded-lg" />
+        </div>
+        <SkeletonCard lines={3} />
+        <SkeletonCard lines={2} />
+      </LoadingRegion>
     );
   }
 
-  if (error || !data) {
+  if (error != null || !data) {
     return (
-      <div className="p-6 bg-red-950/40 border border-red-800 rounded-xl text-red-300 text-xs font-mono">
-        <div className="font-bold flex items-center gap-2">
-          <span>❌</span> Error loading duplicate genealogy
-        </div>
-        <p className="mt-1 text-slate-400">{error || "No data returned"}</p>
-        <button
-          onClick={fetchGenealogy}
-          className="mt-3 px-3 py-1.5 bg-red-800/60 hover:bg-red-700 text-white rounded text-xs"
-        >
-          Retry
-        </button>
-      </div>
+      <ErrorState
+        compact
+        error={error ?? "No duplicate history was returned for this group."}
+        onRetry={fetchGenealogy}
+        what="Duplicate history"
+      />
     );
   }
 

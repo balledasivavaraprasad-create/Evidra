@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ApiError } from "../api/client";
+import { ApiError, FRIENDLY_ERRORS } from "../api/client";
 import { MOCK_GROUPS } from "../api/fixtures";
 
 describe("Frontend API Client and Contracts", () => {
@@ -22,9 +22,18 @@ describe("Frontend API Client and Contracts", () => {
   it("handles fallback envelope values gracefully", () => {
     const error = ApiError.fromEnvelope(500, {});
     expect(error.status).toBe(500);
-    expect(error.code).toBe("UNKNOWN_ERROR");
-    expect(error.message).toBe("An unexpected error occurred");
-    expect(error.retryable).toBe(false);
+    expect(error.code).toBe("SERVER_ERROR");
+    expect(error.message).toBe(FRIENDLY_ERRORS.server);
+    expect(error.retryable).toBe(true);
+  });
+
+  it("uses FastAPI's plain detail message when no envelope message exists", () => {
+    const custom = ApiError.fromEnvelope(422, { detail: "Workspace title is required" } as never);
+    expect(custom.message).toBe("Workspace title is required");
+
+    const notFound = ApiError.fromEnvelope(404, { detail: "Not Found" } as never);
+    expect(notFound.code).toBe("NOT_FOUND");
+    expect(notFound.message).toBe(FRIENDLY_ERRORS.notFound);
   });
 
   it("provides valid mock fixtures adhering to domain schema", () => {

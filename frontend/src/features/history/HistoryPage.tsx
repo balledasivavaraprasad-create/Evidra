@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useTransition } from "react";
+import { ErrorState, LoadingRegion, SkeletonCard, SkeletonStatRow, SkeletonTable, SkeletonTimeline } from "../../components/Feedback";
 import { useParams } from "react-router-dom";
 import {
   History,
@@ -41,7 +42,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
   const [revisions, setRevisions] = useState<CorpusRevisionResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Restore state
@@ -75,8 +76,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline
         setConflictedGroups(groups);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load revision history";
-      setError(msg);
+      setError(err);
     } finally {
       setIsLoading(false);
     }
@@ -235,25 +235,15 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline
         </div>
       )}
 
-      {/* Loading & Error States */}
-      {isLoading && (
-        <div className="glass-panel p-8 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
-          <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
-          <span>Loading corpus snapshots...</span>
-        </div>
+      {/* Loading & Error States (the Search Evolution tab handles its own) */}
+      {isLoading && activeTab !== "search_evolution" && (
+        <LoadingRegion label="Loading review snapshots">
+          {activeTab === "timeline" ? <SkeletonTimeline /> : <SkeletonCard lines={4} />}
+        </LoadingRegion>
       )}
 
-      {error && (
-        <div className="glass-panel p-6 border-red-500/30 text-center space-y-2">
-          <AlertTriangle className="w-6 h-6 text-red-400 mx-auto" />
-          <p className="text-sm font-semibold text-white">{error}</p>
-          <button
-            onClick={loadData}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-cyan-400 hover:bg-slate-700"
-          >
-            Retry
-          </button>
-        </div>
+      {!isLoading && error != null && activeTab !== "search_evolution" && (
+        <ErrorState error={error} onRetry={loadData} what="Review history" />
       )}
 
       {/* TAB: SEARCH EVOLUTION */}
@@ -262,7 +252,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline
       )}
 
       {/* TAB 1: TIMELINE */}
-      {!isLoading && !error && activeTab === "timeline" && (
+      {!isLoading && error == null && activeTab === "timeline" && (
         <div className="space-y-4">
           {revisions.length === 0 ? (
             <div className="glass-panel p-12 text-center text-slate-400 space-y-3">
@@ -394,7 +384,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline
       )}
 
       {/* TAB 2: STRUCTURED DIFF VISUALIZER */}
-      {!isLoading && !error && activeTab === "diff" && (
+      {!isLoading && error == null && activeTab === "diff" && (
         <div className="space-y-6">
           {/* Comparison selector */}
           <div className="glass-panel p-6 border-slate-800 space-y-4">
@@ -443,10 +433,10 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline
 
           {/* Diff Result Display */}
           {isDiffLoading && (
-            <div className="glass-panel p-8 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
-              <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
-              <span>Computing structured diff across snapshots...</span>
-            </div>
+            <LoadingRegion label="Comparing snapshots" className="space-y-4">
+              <SkeletonStatRow count={6} />
+              <SkeletonTable rows={3} cols={4} />
+            </LoadingRegion>
           )}
 
           {!isDiffLoading && diffResult && (
@@ -540,7 +530,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline
       )}
 
       {/* TAB 3: ACTIVE CONFLICTS */}
-      {!isLoading && !error && activeTab === "conflicts" && (
+      {!isLoading && error == null && activeTab === "conflicts" && (
         <div className="space-y-4">
           <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-800/40 text-amber-300 text-xs flex items-center gap-3">
             <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />

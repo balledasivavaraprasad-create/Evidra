@@ -128,11 +128,17 @@ export class ApiError extends Error {
   }
 
   static fromEnvelope(status: number, envelope: Partial<ErrorEnvelope>): ApiError {
+    // FastAPI's built-in errors use {"detail": "..."} instead of the Evidra envelope
+    const rawDetail = (envelope as { detail?: unknown }).detail;
+    const detail =
+      typeof rawDetail === "string" && !["Not Found", "Internal Server Error"].includes(rawDetail) ? rawDetail : null;
+    const fallback =
+      status === 404 ? FRIENDLY_ERRORS.notFound : status >= 500 ? FRIENDLY_ERRORS.server : "The request couldn't be completed.";
     return new ApiError(
       status,
-      envelope.code || "UNKNOWN_ERROR",
-      envelope.message || "An unexpected error occurred",
-      envelope.retryable ?? false,
+      envelope.code || (status === 404 ? "NOT_FOUND" : status >= 500 ? "SERVER_ERROR" : "UNKNOWN_ERROR"),
+      envelope.message || detail || fallback,
+      envelope.retryable ?? status >= 500,
       envelope.details
     );
   }
@@ -140,16 +146,34 @@ export class ApiError extends Error {
 
 const API_BASE = "";
 
+/** Plain-language messages for failures that carry no useful server message. */
+export const FRIENDLY_ERRORS = {
+  unreachable: "Evidra can't reach the review service. Start the backend, then try again.",
+  server: "The review service hit an unexpected problem while loading this. Try again; if it keeps happening, check the backend terminal for details.",
+  notFound: "This item doesn't exist in the current review. It may have been removed or belongs to another workspace.",
+} as const;
+
+/** True when the backend could not be reached at all (stopped, crashed or proxy can't connect). */
+export function isServiceUnreachable(err: unknown): boolean {
+  return err instanceof ApiError && err.code === "SERVICE_UNREACHABLE";
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...options.headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...options.headers,
+      },
+    });
+  } catch {
+    // Network failure: backend down, wrong port or no connection
+    throw new ApiError(0, "SERVICE_UNREACHABLE", FRIENDLY_ERRORS.unreachable, true);
+  }
 
   const contentType = response.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
@@ -158,6 +182,17 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     if (isJson) {
       const errorData = (await response.json()) as ErrorEnvelope;
       throw ApiError.fromEnvelope(response.status, errorData);
+    }
+    // Non-JSON errors come from the dev proxy or an unhandled crash, never from the API's own
+    // error envelope, so replace the bare status text with something a reviewer can act on.
+    if (response.status === 502 || response.status === 503 || response.status === 504) {
+      throw new ApiError(response.status, "SERVICE_UNREACHABLE", FRIENDLY_ERRORS.unreachable, true);
+    }
+    if (response.status >= 500) {
+      throw new ApiError(response.status, "SERVER_ERROR", FRIENDLY_ERRORS.server, true);
+    }
+    if (response.status === 404) {
+      throw new ApiError(404, "NOT_FOUND", FRIENDLY_ERRORS.notFound);
     }
     const text = await response.text();
     throw new ApiError(response.status, "HTTP_ERROR", text || response.statusText);

@@ -18,7 +18,8 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
-import { api, type PaperGroupSummary, type PaperGroupDetail, type PicoSpan, ApiError } from "../../api/client";
+import { api, type PaperGroupSummary, type PaperGroupDetail, type PicoSpan, ApiError, isServiceUnreachable } from "../../api/client";
+import { ErrorState, LoadingRegion, SampleDataNotice, SkeletonCard, SkeletonListDetail, SkeletonStatRow } from "../../components/Feedback";
 import { MOCK_GROUPS } from "../../api/fixtures";
 import { PicoViewer } from "../pico/PicoViewer";
 import { AssistantPanel } from "./AssistantPanel";
@@ -43,8 +44,13 @@ export const ReviewQueuePage: React.FC = () => {
   const workspaceId = workspaceParam || "ws-synth-001";
 
   const [revisionId, setRevisionId] = useState<string | null>(null);
-  const [groups, setGroups] = useState<PaperGroupSummary[]>(MOCK_GROUPS);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(MOCK_GROUPS[0].id);
+  const [groups, setGroups] = useState<PaperGroupSummary[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [usingSampleData, setUsingSampleData] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const loadData = () => setReloadKey((k) => k + 1);
   const [groupDetail, setGroupDetail] = useState<PaperGroupDetail | null>(null);
   const [filter, setFilter] = useState<"all" | "include" | "exclude" | "maybe" | "conflict">("all");
   const [loading, setLoading] = useState(false);
@@ -65,39 +71,60 @@ export const ReviewQueuePage: React.FC = () => {
   // Active Tab: Reader vs Audit Timeline vs Member Copies vs AI Assistant
   const [activeTab, setActiveTab] = useState<"reader" | "radar" | "passport" | "audit" | "members" | "assistant" | "devils_advocate">("reader");
   const [articleRadar, setArticleRadar] = useState<ArticleRadarResponse | null>(null);
+  const [radarError, setRadarError] = useState<unknown>(null);
+  const loadArticleRadar = (groupId: string) => {
+    setArticleRadar(null);
+    setRadarError(null);
+    api.radar
+      .getArticleRadar(workspaceId, groupId)
+      .then(setArticleRadar)
+      .catch((err: unknown) => setRadarError(err));
+  };
 
   // Load Revisions & Groups
   useEffect(() => {
     let isMounted = true;
-    async function loadData() {
+    async function loadQueue() {
       try {
         setLoading(true);
+        setInitialLoading(true);
+        setLoadError(null);
         const revList = await api.revisions.list(workspaceId);
         if (!isMounted) return;
         if (revList && revList.length > 0) {
           const latestRev = revList[0];
           setRevisionId(latestRev.id);
           const groupList = await api.revisions.listGroups(latestRev.id);
-          if (groupList && groupList.length > 0) {
-            setGroups(groupList);
-            setSelectedGroupId(groupList[0].id);
-          }
+          if (!isMounted) return;
+          setGroups(groupList || []);
+          setSelectedGroupId(groupList && groupList.length > 0 ? groupList[0].id : "");
+        } else {
+          setGroups([]);
+          setSelectedGroupId("");
         }
-      } catch {
-        // Fall back gracefully to mock groups if backend not yet seeded
-        if (isMounted) {
+        setUsingSampleData(false);
+      } catch (err: unknown) {
+        if (!isMounted) return;
+        if (isServiceUnreachable(err)) {
+          // Backend not running: show clearly labelled sample records so the workbench can be explored
+          setUsingSampleData(true);
           setGroups(MOCK_GROUPS);
           setSelectedGroupId(MOCK_GROUPS[0].id);
+        } else {
+          setLoadError(err);
         }
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          setInitialLoading(false);
+        }
       }
     }
-    loadData();
+    loadQueue();
     return () => {
       isMounted = false;
     };
-  }, [workspaceId]);
+  }, [workspaceId, reloadKey]);
 
   // Load Selected Group Detail
   useEffect(() => {
@@ -105,6 +132,7 @@ export const ReviewQueuePage: React.FC = () => {
     async function fetchDetail() {
       if (!selectedGroupId) return;
       try {
+        if (usingSampleData) throw new Error("sample data");
         const detail = await api.groups.getDetail(selectedGroupId, revisionId || undefined);
         if (isMounted) {
           setGroupDetail(detail);
@@ -128,7 +156,13 @@ export const ReviewQueuePage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedGroupId, revisionId, groups]);
+  }, [selectedGroupId, revisionId, groups, usingSampleData]);
+
+  // Keep the PICO radar tab in step with the selected record
+  useEffect(() => {
+    if (activeTab === "radar" && selectedGroupId && !usingSampleData) loadArticleRadar(selectedGroupId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGroupId]);
 
   const selectedGroup = groups.find((g) => g.id === selectedGroupId) || groups[0];
 
@@ -352,7 +386,31 @@ export const ReviewQueuePage: React.FC = () => {
         </div>
       )}
 
+      {usingSampleData && <SampleDataNotice onRetry={loadData} />}
+
       {/* 3-Panel Review Workbench */}
+      {initialLoading ? (
+        <LoadingRegion label="Loading records to screen">
+          <SkeletonListDetail />
+        </LoadingRegion>
+      ) : loadError != null ? (
+        <ErrorState error={loadError} onRetry={loadData} what="The screening queue" />
+      ) : groups.length === 0 ? (
+        <div className="glass-panel px-6 py-12 text-center space-y-3">
+          <h2 className="font-serif text-2xl text-[var(--text-primary)]">No records to screen yet</h2>
+          <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto">
+            Run a search and import the results, then process the corpus. Each paper will appear here ready for a decision.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 pt-1">
+            <Link to={`/reviews/${workspaceId}/search`} className="btn-ghost">
+              Open the query builder
+            </Link>
+            <button type="button" onClick={handleProcessCorpus} className="btn-gold">
+              Process corpus
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[560px]">
         {/* Left Column: Paper Group List */}
         <div className="lg:col-span-4 space-y-3">
@@ -449,9 +507,7 @@ export const ReviewQueuePage: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setActiveTab("radar");
-                      if (selectedGroupId) {
-                        api.radar.getArticleRadar(workspaceId, selectedGroupId).then(setArticleRadar);
-                      }
+                      if (selectedGroupId) loadArticleRadar(selectedGroupId);
                     }}
                     className={`px-2.5 py-1 rounded transition flex items-center gap-1 ${
                       activeTab === "radar"
@@ -561,10 +617,18 @@ export const ReviewQueuePage: React.FC = () => {
                   groupId={selectedGroup.id}
                   onRadarUpdated={(updated) => setArticleRadar(updated)}
                 />
+              ) : radarError != null ? (
+                <ErrorState
+                  compact
+                  error={radarError}
+                  onRetry={() => selectedGroupId && loadArticleRadar(selectedGroupId)}
+                  what="This record's PICO coverage"
+                />
               ) : (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  Loading Missing-Evidence Radar...
-                </div>
+                <LoadingRegion label="Loading this record's PICO coverage" className="space-y-4">
+                  <SkeletonStatRow count={4} />
+                  <SkeletonCard lines={3} />
+                </LoadingRegion>
               )
             )}
 
@@ -702,6 +766,7 @@ export const ReviewQueuePage: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Mandatory Exclusion Reason Modal */}
       {excludeModalOpen && (

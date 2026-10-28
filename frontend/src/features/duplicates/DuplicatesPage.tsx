@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ErrorState, LoadingRegion, SampleDataNotice, SkeletonCard } from "../../components/Feedback";
 import { useParams } from "react-router-dom";
 import {
   Copy,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import {
   api,
+  isServiceUnreachable,
   type DedupOverrideRequest,
   type DuplicateWorkspaceSummaryResponse,
   type DuplicateWorkspaceSummaryItem,
@@ -31,7 +33,9 @@ export const DuplicatesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ViewTab>("genealogy");
   const [summaryData, setSummaryData] = useState<DuplicateWorkspaceSummaryResponse | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [usingSampleData, setUsingSampleData] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
   const [onlyConflictsFilter, setOnlyConflictsFilter] = useState(false);
 
@@ -42,15 +46,23 @@ export const DuplicatesPage: React.FC = () => {
 
   const fetchWorkspaceDuplicates = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const data = await api.genealogy.getOverview(workspaceId);
       setSummaryData(data);
+      setUsingSampleData(false);
       const grps = data.groups || [];
       if (grps.length > 0 && !selectedGroupId) {
         setSelectedGroupId(grps[0].group_id);
       }
-    } catch {
-      // Fallback mock for offline / dev demo
+    } catch (err: unknown) {
+      // A real server error is shown as an error, never hidden behind sample data
+      if (!isServiceUnreachable(err)) {
+        setLoadError(err);
+        return;
+      }
+      // Service not running: show clearly labelled sample data so the page can still be explored
+      setUsingSampleData(true);
       const mockSummary: DuplicateWorkspaceSummaryResponse = {
         workspace_id: workspaceId,
         total_duplicate_groups: 2,
@@ -191,11 +203,11 @@ export const DuplicatesPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center">
             <span className="block text-slate-400 text-[10px] font-mono uppercase">Duplicate Groups</span>
-            <span className="text-sm font-bold text-white">{summaryData?.total_duplicate_groups ?? 0}</span>
+            <span className="text-sm font-bold text-white">{summaryData ? summaryData.total_duplicate_groups : "–"}</span>
           </div>
           <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center">
             <span className="block text-slate-400 text-[10px] font-mono uppercase">Member Records</span>
-            <span className="text-sm font-bold text-indigo-300">{summaryData?.total_duplicate_records ?? 0}</span>
+            <span className="text-sm font-bold text-indigo-300">{summaryData ? summaryData.total_duplicate_records : "–"}</span>
           </div>
           <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center">
             <span className="block text-slate-400 text-[10px] font-mono uppercase">Active Conflicts</span>
@@ -271,8 +283,24 @@ export const DuplicatesPage: React.FC = () => {
         </button>
       </div>
 
+      {usingSampleData && <SampleDataNotice onRetry={fetchWorkspaceDuplicates} />}
+
       {/* Main Tab Content */}
-      {activeTab === "candidates" ? (
+      {isLoading && !summaryData ? (
+        <LoadingRegion label="Loading duplicate groups" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-3">
+            <SkeletonCard lines={1} />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+          <div className="lg:col-span-2 space-y-4">
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={3} />
+          </div>
+        </LoadingRegion>
+      ) : loadError != null && !summaryData ? (
+        <ErrorState error={loadError} onRetry={fetchWorkspaceDuplicates} what="Duplicate groups" />
+      ) : activeTab === "candidates" ? (
         <div className="space-y-6">
           {resolution && (
             <div className="p-3.5 rounded-xl bg-emerald-950/70 border border-emerald-800 text-emerald-300 text-xs font-mono flex items-center justify-between shadow-lg animate-fadeIn">

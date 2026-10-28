@@ -897,3 +897,28 @@ html.light {
     display: none;
   }
 }
+
+/* Loading skeletons: a soft sheen moving across placeholder shapes */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--border-subtle) 0%,
+    var(--border-silver) 45%,
+    var(--border-subtle) 90%
+  );
+  background-size: 220% 100%;
+  animation: skeleton-sheen 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-sheen {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

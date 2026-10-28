@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ErrorState, LoadingRegion, Skeleton, SkeletonText, errorKind } from "../../components/Feedback";
 import { Scale } from "lucide-react";
 import {
   api,
@@ -25,7 +26,7 @@ export const DevilsAdvocateCard: React.FC<DevilsAdvocateCardProps> = ({
 }) => {
   const [challenge, setChallenge] = useState<DevilsAdvocateChallengeResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
   // Disposition dialog states
@@ -44,8 +45,8 @@ export const DevilsAdvocateCard: React.FC<DevilsAdvocateCardProps> = ({
     try {
       const data = await api.devilsAdvocate.getChallenge(workspaceId, groupId);
       setChallenge(data);
-    } catch (err: any) {
-      setError(err?.message || "Failed to load Devil's Advocate challenge assessment.");
+    } catch (err: unknown) {
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -98,23 +99,28 @@ export const DevilsAdvocateCard: React.FC<DevilsAdvocateCardProps> = ({
 
   if (loading) {
     return (
-      <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl text-center text-slate-400">
-        <div className="inline-block animate-spin w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full mr-2"></div>
-        Evaluating Devil's Advocate challenge arguments...
-      </div>
+      <LoadingRegion label="Loading the devil's advocate assessment" className="glass-panel p-6 space-y-4">
+        <Skeleton className="h-5 w-1/2" />
+        <SkeletonText lines={3} />
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-24 rounded-lg" />
+          <Skeleton className="h-8 w-24 rounded-lg" />
+        </div>
+      </LoadingRegion>
     );
   }
 
-  if (error || !challenge) {
+  if (error != null && errorKind(error) !== "notFound") {
+    return <ErrorState compact error={error} onRetry={loadChallenge} what="The devil's advocate assessment" />;
+  }
+
+  if (!challenge) {
     return (
-      <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl text-center">
-        <p className="text-sm text-slate-400 mb-3">{error || "No active challenge found."}</p>
-        <button
-          onClick={loadChallenge}
-          className="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-medium border border-slate-700"
-        >
-          Retry
-        </button>
+      <div className="glass-panel p-6 text-center space-y-1">
+        <p className="text-sm font-semibold text-[var(--text-primary)]">No challenge for this record yet</p>
+        <p className="text-sm text-[var(--text-muted)]">
+          A challenge is created automatically when a record is excluded, so you can check the exclusion holds up.
+        </p>
       </div>
     );
   }
