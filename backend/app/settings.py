@@ -62,6 +62,12 @@ class Settings(BaseSettings):
     llm_enabled: bool = False
     rag_enabled: bool = False
     llm_provider: str = Field(default="mock", description="LLM provider: mock, openai, anthropic")
+    llm_base_url: str = Field(
+        default="https://generativelanguage.googleapis.com/v1beta/openai/",
+        description="OpenAI-compatible endpoint (default: Gemini)",
+    )
+    llm_api_key: str | None = Field(default=None, description="Provider API key. Server-side only; never logged or sent to the browser")
+    llm_model_alias: str = Field(default="gemini-2.5-flash", description="Approved model name used for requests")
     llm_max_budget_cents: int = Field(default=500, description="Spend limit in cents")
     langsmith_tracing: bool = False
 

@@ -16,6 +16,7 @@ from app.gateway.protocol import (
     ModelGatewayProtocol,
 )
 from app.gateway.sanitizer import detect_prompt_injection
+from app.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -23,17 +24,31 @@ ALLOWLISTED_TASKS: set[str] = {
     "pico_extraction",
     "screening_explanation",
     "corpus_qa",
+    "keyword_synonyms",
 }
 
 ALLOWLISTED_MODELS: set[str] = {
     "gemini-1.5-flash",
     "gemini-1.5-pro",
+    "gemini-2.5-flash",
     "gpt-4o-mini",
     "mock-research-model",
 }
 
+MOCK_MODEL = "mock-research-model"
+
 MAX_PROMPT_CHARS = 50_000
 MAX_MAX_TOKENS = 4_000
+
+
+def _strip_code_fence(text: str) -> str:
+    """Providers often wrap JSON in a ```json fence; the JSON inside is what we validate."""
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        stripped = stripped.split("\n", 1)[1] if "\n" in stripped else ""
+        if stripped.rstrip().endswith("```"):
+            stripped = stripped.rstrip()[:-3]
+    return stripped.strip()
 
 
 class HTTPXModelAdapter(ModelGatewayProtocol):
@@ -55,8 +70,10 @@ class HTTPXModelAdapter(ModelGatewayProtocol):
         enforce_llm_flag: bool = True,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
-        self.base_url = (base_url or os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1")).rstrip("/")
-        self.api_key = api_key or os.environ.get("LLM_API_KEY", "")
+        # An explicit argument wins, then the process environment, then settings (which also
+        # read the repo-root .env.local). The key is only ever sent to the provider.
+        self.base_url = (base_url or os.environ.get("LLM_BASE_URL") or settings.llm_base_url).rstrip("/")
+        self.api_key = api_key or os.environ.get("LLM_API_KEY") or settings.llm_api_key or ""
         self.default_model = default_model
         self.max_daily_budget_tokens = max_daily_budget_tokens
         self.enforce_llm_flag = enforce_llm_flag
@@ -66,11 +83,14 @@ class HTTPXModelAdapter(ModelGatewayProtocol):
     def is_enabled(self) -> bool:
         """Check whether LLM requests are permitted by environment policy and credentials."""
         if self.enforce_llm_flag:
-            llm_enabled = os.environ.get("LLM_ENABLED", "false").lower() in ("true", "1", "yes")
+            env_value = os.environ.get("LLM_ENABLED")
+            llm_enabled = (
+                env_value.lower() in ("true", "1", "yes") if env_value is not None else bool(settings.llm_enabled)
+            )
             if not llm_enabled:
                 return False
-        # If enabled by flag, must also have non-empty API key (or mock base URL)
-        return bool(self.api_key or "mock" in self.base_url or self.default_model == "mock-research-model")
+        # Enabled by flag: a real provider also needs its key. With no key AI is reported disabled.
+        return bool(self.api_key or "mock" in self.base_url)
 
     def get_remaining_budget(self) -> int:
         return max(0, self.max_daily_budget_tokens - self._tokens_used)
@@ -144,8 +164,19 @@ class HTTPXModelAdapter(ModelGatewayProtocol):
                 latency_ms=(time.perf_counter() - start_time) * 1000,
             )
 
+        # 6b. The mock model is for tests: never send it to a real endpoint
+        if model_name == MOCK_MODEL and "mock" not in self.base_url and self._transport is None:
+            return GatewayResponse(
+                success=False,
+                error_code=GatewayErrorCode.UNAUTHORIZED_MODEL,
+                error_message="The mock model cannot be used with a real endpoint. Set LLM_MODEL_ALIAS to an approved model.",
+                fallback_used=True,
+                latency_ms=(time.perf_counter() - start_time) * 1000,
+            )
+
         # 7. Outbound HTTP dispatch with at most 1 retry
         endpoint = f"{self.base_url}/chat/completions"
+        # The key goes in the header only; it is never logged or returned in an error message
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -180,7 +211,7 @@ class HTTPXModelAdapter(ModelGatewayProtocol):
 
                     # Parse JSON content
                     try:
-                        parsed_payload = json.loads(content_str)
+                        parsed_payload = json.loads(_strip_code_fence(content_str))
                     except (json.JSONDecodeError, ValueError, TypeError) as json_err:
                         return GatewayResponse(
                             success=False,
