@@ -12,8 +12,8 @@
 |---|---|---|
 | **Total Spans Extracted** | 11 | **11** |
 | **Invalid Span Rate** | **0.0%** | **0.0%** |
-| **Total Latency** | 0.64 ms | 0.82 ms |
-| **Latency per Record** | 0.16 ms | 0.205 ms |
+| **Total Latency** | 0.65 ms | 0.69 ms |
+| **Latency per Record** | 0.162 ms | 0.172 ms |
 | **Model Cost (USD)** | $0.0000 | $0.0000 |
 | **Guaranteed Span Slicing** | 100% Unicode exact | 100% Unicode exact |
 

@@ -7,22 +7,22 @@
   "comparisons": {
     "lexical_retrieval_only": {
       "abstention_rate": 0.0,
-      "latency_total_ms": 1.0,
-      "latency_per_query_ms": 0.201,
+      "latency_total_ms": 0.99,
+      "latency_per_query_ms": 0.199,
       "citation_verification_rate": 1.0
     },
     "one_pass_cited_rag": {
       "abstention_rate": 0.4,
       "verified_citations": 3,
-      "latency_total_ms": 2.19,
-      "latency_per_query_ms": 0.438,
+      "latency_total_ms": 2.29,
+      "latency_per_query_ms": 0.457,
       "citation_verification_rate": 1.0
     },
     "bounded_agent_loop": {
       "abstention_rate": 0.4,
       "verified_citations": 3,
-      "latency_total_ms": 1.96,
-      "latency_per_query_ms": 0.393,
+      "latency_total_ms": 1.98,
+      "latency_per_query_ms": 0.396,
       "citation_verification_rate": 1.0,
       "out_of_domain_abstention_accuracy": 1.0
     }
