@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowRight, Eye, EyeOff, Loader2, Lock, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import { api, ApiError } from "../../api/client";
 import { DashGridBackground } from "../../components/DashGridBackground";
 
@@ -29,9 +29,6 @@ export const LoginScreen: React.FC<{ onSignedIn: () => void }> = ({ onSignedIn }
       <main id="main-content" className="relative z-10 flex-1 grid place-items-center px-4 py-16">
         <div className="w-full max-w-md space-y-8">
           <div className="flex items-center justify-center gap-2.5">
-            <span className="grid place-items-center w-9 h-9 rounded-lg border border-[var(--border-gold)] bg-[var(--gold-glow)]">
-              <Sparkles className="w-4 h-4 text-[var(--accent-gold)]" strokeWidth={1.75} />
-            </span>
             <span className="font-serif text-2xl font-medium tracking-tight">Evidra</span>
           </div>
 
@@ -77,7 +74,7 @@ export const LoginScreen: React.FC<{ onSignedIn: () => void }> = ({ onSignedIn }
               )}
             </div>
 
-            <button type="submit" disabled={submitting || !password} className="btn-gold w-full disabled:opacity-50">
+            <button type="submit" disabled={submitting || !password} className="btn-ink w-full disabled:opacity-50">
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {submitting ? "Checking…" : "Open Evidra"}
               {!submitting && <ArrowRight className="w-4 h-4" />}
