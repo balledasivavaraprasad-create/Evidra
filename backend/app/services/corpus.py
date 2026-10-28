@@ -204,11 +204,22 @@ def process_corpus(
     db: Session,
     workspace_id: str,
     criteria_version_id: str | None = None,
+    incremental: bool = False,
+    stats: dict[str, int] | None = None,
 ) -> CorpusRevisionResponse:
-    """Gather records, run deterministic dedup, screen representatives, extract PICO, and publish corpus snapshot."""
+    """Gather records, run deterministic dedup, screen representatives, extract PICO, and publish corpus snapshot.
+
+    When incremental=True, reuses cached machine results and PICO annotations for records
+    whose stage fingerprints (record text hash, criteria hash, method version) have not changed.
+    """
     ws = db.query(WorkspaceModel).filter_by(id=workspace_id).first()
     if not ws:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Workspace '{workspace_id}' not found")
+
+    reused_screening = 0
+    recomputed_screening = 0
+    reused_pico = 0
+    recomputed_pico = 0
 
     # 1. Resolve criteria version
     if criteria_version_id:
@@ -432,58 +443,136 @@ def process_corpus(
         )
 
         # 7. Screen representative record
-        screen_res = screening_engine.screen_record(rep, crit_dto)
+        screen_method_version = screening_engine.method_version
         screen_fp = hashlib.sha256(
-            f"{rep.id}:{rep.content_hash}:{crit_dto.content_hash}:{screen_res.method_version}".encode()
+            f"screen:{rep.id}:{rep.content_hash}:{crit_dto.content_hash}:{screen_method_version}".encode()
         ).hexdigest()
 
-        db.add(
-            MachineResultModel(
-                id=str(uuid4()),
-                corpus_revision_id=revision_id,
-                group_id=existing_group.id,
-                record_revision_id=rep.id,
-                stage="screening",
-                input_fingerprint=screen_fp,
-                method_version=screen_res.method_version,
-                output_json=screen_res.model_dump_json(),
-                created_at=utc_now(),
+        cached_screen = None
+        if incremental:
+            cached_screen = (
+                db.query(MachineResultModel)
+                .filter_by(stage="screening", input_fingerprint=screen_fp)
+                .order_by(MachineResultModel.created_at.desc())
+                .first()
             )
-        )
 
-        # 8. Extract PICO spans for representative record
-        pico_res = pico_extractor.extract_pico_spans(rep)
-        pico_fp = hashlib.sha256(f"{rep.id}:{rep.content_hash}:{pico_res.method_version}".encode()).hexdigest()
-
-        db.add(
-            MachineResultModel(
-                id=str(uuid4()),
-                corpus_revision_id=revision_id,
-                group_id=existing_group.id,
-                record_revision_id=rep.id,
-                stage="pico",
-                input_fingerprint=pico_fp,
-                method_version=pico_res.method_version,
-                output_json=pico_res.model_dump_json(),
-                created_at=utc_now(),
-            )
-        )
-
-        # Persist baseline PICO annotations
-        for span in pico_res.spans:
+        if cached_screen:
+            reused_screening += 1
             db.add(
-                PicoAnnotationModel(
+                MachineResultModel(
                     id=str(uuid4()),
-                    event_id=None,
+                    corpus_revision_id=revision_id,
+                    group_id=existing_group.id,
                     record_revision_id=rep.id,
-                    label=span.label.value,
-                    start_cp=span.start_cp,
-                    end_cp=span.end_cp,
-                    quote=span.quote,
-                    provenance=span.provenance,
+                    stage="screening",
+                    input_fingerprint=screen_fp,
+                    method_version=cached_screen.method_version,
+                    output_json=cached_screen.output_json,
                     created_at=utc_now(),
                 )
             )
+        else:
+            recomputed_screening += 1
+            screen_res = screening_engine.screen_record(rep, crit_dto)
+            db.add(
+                MachineResultModel(
+                    id=str(uuid4()),
+                    corpus_revision_id=revision_id,
+                    group_id=existing_group.id,
+                    record_revision_id=rep.id,
+                    stage="screening",
+                    input_fingerprint=screen_fp,
+                    method_version=screen_res.method_version,
+                    output_json=screen_res.model_dump_json(),
+                    created_at=utc_now(),
+                )
+            )
+
+        # 8. Extract PICO spans for representative record
+        pico_method_version = pico_extractor.method_version
+        pico_fp = hashlib.sha256(f"pico:{rep.id}:{rep.content_hash}:{pico_method_version}".encode()).hexdigest()
+
+        cached_pico = None
+        if incremental:
+            cached_pico = (
+                db.query(MachineResultModel)
+                .filter_by(stage="pico", input_fingerprint=pico_fp)
+                .order_by(MachineResultModel.created_at.desc())
+                .first()
+            )
+
+        if cached_pico:
+            reused_pico += 1
+            db.add(
+                MachineResultModel(
+                    id=str(uuid4()),
+                    corpus_revision_id=revision_id,
+                    group_id=existing_group.id,
+                    record_revision_id=rep.id,
+                    stage="pico",
+                    input_fingerprint=pico_fp,
+                    method_version=cached_pico.method_version,
+                    output_json=cached_pico.output_json,
+                    created_at=utc_now(),
+                )
+            )
+            # Reusing existing PICO annotations for this record
+            cached_annos = (
+                db.query(PicoAnnotationModel)
+                .filter_by(record_revision_id=rep.id)
+                .all()
+            )
+            seen_spans = set()
+            for ann in cached_annos:
+                span_key = (ann.label, ann.start_cp, ann.end_cp)
+                if span_key not in seen_spans:
+                    seen_spans.add(span_key)
+                    db.add(
+                        PicoAnnotationModel(
+                            id=str(uuid4()),
+                            event_id=None,
+                            record_revision_id=rep.id,
+                            label=ann.label,
+                            start_cp=ann.start_cp,
+                            end_cp=ann.end_cp,
+                            quote=ann.quote,
+                            provenance=ann.provenance,
+                            created_at=utc_now(),
+                        )
+                    )
+        else:
+            recomputed_pico += 1
+            pico_res = pico_extractor.extract_pico_spans(rep)
+            db.add(
+                MachineResultModel(
+                    id=str(uuid4()),
+                    corpus_revision_id=revision_id,
+                    group_id=existing_group.id,
+                    record_revision_id=rep.id,
+                    stage="pico",
+                    input_fingerprint=pico_fp,
+                    method_version=pico_res.method_version,
+                    output_json=pico_res.model_dump_json(),
+                    created_at=utc_now(),
+                )
+            )
+
+            # Persist baseline PICO annotations
+            for span in pico_res.spans:
+                db.add(
+                    PicoAnnotationModel(
+                        id=str(uuid4()),
+                        event_id=None,
+                        record_revision_id=rep.id,
+                        label=span.label.value,
+                        start_cp=span.start_cp,
+                        end_cp=span.end_cp,
+                        quote=span.quote,
+                        provenance=span.provenance,
+                        created_at=utc_now(),
+                    )
+                )
 
     # 9. Project decision lineage and mark CorpusRevisionModel as PUBLISHED
     try:
@@ -505,6 +594,12 @@ def process_corpus(
         db.rollback()
         logger.exception("Failed to publish corpus revision %s", corpus_rev.id)
         raise
+
+    if stats is not None:
+        stats["reused_screening_count"] = reused_screening
+        stats["recomputed_screening_count"] = recomputed_screening
+        stats["reused_pico_count"] = reused_pico
+        stats["recomputed_pico_count"] = recomputed_pico
 
     return CorpusRevisionResponse(
         id=corpus_rev.id,

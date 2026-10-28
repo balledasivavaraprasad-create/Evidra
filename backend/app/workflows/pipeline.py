@@ -14,6 +14,7 @@ from app.workflows.nodes import (
     finalize_run_node,
     human_review_node,
     process_corpus_node,
+    restore_snapshot_node,
     validate_input_node,
 )
 from app.workflows.state import GRAPH_VERSION, ReviewGraphState
@@ -24,9 +25,11 @@ DEFAULT_CHECKPOINT_DIR = Path("backend/data/checkpoints")
 
 
 def route_after_validation(state: ReviewGraphState) -> str:
-    """Route to process_corpus if valid, or finalize_run if error."""
+    """Route to restore_snapshot if mode is restore, process_corpus if normal, or finalize_run if error."""
     if state.get("error"):
         return "finalize_run"
+    if state.get("mode") == "restore":
+        return "restore_snapshot"
     return "process_corpus"
 
 
@@ -44,6 +47,7 @@ def build_review_graph(checkpointer: SqliteSaver | None = None):
     builder = StateGraph(ReviewGraphState)
 
     builder.add_node("validate_input", validate_input_node)
+    builder.add_node("restore_snapshot", restore_snapshot_node)
     builder.add_node("process_corpus", process_corpus_node)
     builder.add_node("human_review", human_review_node)
     builder.add_node("finalize_run", finalize_run_node)
@@ -52,8 +56,13 @@ def build_review_graph(checkpointer: SqliteSaver | None = None):
     builder.add_conditional_edges(
         "validate_input",
         route_after_validation,
-        {"process_corpus": "process_corpus", "finalize_run": "finalize_run"},
+        {
+            "process_corpus": "process_corpus",
+            "restore_snapshot": "restore_snapshot",
+            "finalize_run": "finalize_run",
+        },
     )
+    builder.add_edge("restore_snapshot", "finalize_run")
     builder.add_conditional_edges(
         "process_corpus",
         route_after_corpus_processing,
@@ -71,12 +80,15 @@ def run_review_pipeline(
     workspace_id: str,
     job_id: str | None = None,
     criteria_version_id: str | None = None,
+    mode: str = "incremental",
+    restore_snapshot_id: str | None = None,
     checkpoint_db_path: str | None = None,
     db: Session | None = None,
 ) -> dict[str, Any]:
     """Execute review orchestration graph with persistent SQLite checkpointing.
 
     Uses locked, durable SQLite checkpointing and namespaced thread ID.
+    Supports modes: "incremental", "full", "restore".
     """
     db_path = checkpoint_db_path
     if not db_path:
@@ -106,6 +118,14 @@ def run_review_pipeline(
         "error": None,
         "trace_steps": ["start"],
         "graph_version": GRAPH_VERSION,
+        "mode": mode,
+        "restore_snapshot_id": restore_snapshot_id,
+        "reused_screening_count": 0,
+        "recomputed_screening_count": 0,
+        "reused_pico_count": 0,
+        "recomputed_pico_count": 0,
+        "invalidation_fingerprint": None,
+        "affected_group_ids": [],
     }
 
     with SqliteSaver.from_conn_string(db_path) as saver:
