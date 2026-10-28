@@ -102,9 +102,21 @@ type ErrorStateProps = {
   what?: string;
   compact?: boolean;
   className?: string;
+  /** A way out that isn't "try again", e.g. "Go to your reviews" */
+  actionLabel?: string;
+  onAction?: () => void;
 };
 
-export const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry, title, what, compact = false, className = "" }) => {
+export const ErrorState: React.FC<ErrorStateProps> = ({
+  error,
+  onRetry,
+  title,
+  what,
+  compact = false,
+  className = "",
+  actionLabel,
+  onAction,
+}) => {
   const kind = errorKind(error);
   const Icon = ICONS[kind];
   const heading = title ?? (kind === "server" && what ? `${what} couldn't load` : TITLES[kind]);
@@ -135,6 +147,15 @@ export const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry, title, w
             Try again
           </button>
         )}
+        {actionLabel && onAction && (
+          <button
+            type="button"
+            onClick={onAction}
+            className="inline-flex items-center gap-1.5 shrink-0 rounded-lg border border-[var(--border-silver)] px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:border-[var(--border-gold)]"
+          >
+            {actionLabel}
+          </button>
+        )}
       </div>
     );
   }
@@ -154,6 +175,11 @@ export const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry, title, w
           <button type="button" onClick={onRetry} className="btn-ghost mx-auto">
             <RotateCcw className="w-4 h-4" />
             Try again
+          </button>
+        )}
+        {actionLabel && onAction && (
+          <button type="button" onClick={onAction} className="btn-ghost mx-auto">
+            {actionLabel}
           </button>
         )}
       </div>

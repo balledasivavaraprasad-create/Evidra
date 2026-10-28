@@ -235,6 +235,9 @@ export const api = {
       }),
   },
   criteria: {
+    /** Newest saved version; rejects with a 404 ApiError when nothing has been saved yet. */
+    latest: (workspaceId: string) =>
+      request<CriteriaVersionResponse>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/criteria`),
     create: (workspaceId: string, payload: CriteriaVersionCreate) =>
       request<CriteriaVersionResponse>(`/api/v1/workspaces/${workspaceId}/criteria`, {
         method: "POST",

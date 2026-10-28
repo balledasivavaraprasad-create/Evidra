@@ -26,6 +26,7 @@ from app.contracts.models import (
     CorpusRevisionResponse,
     CriteriaVersionCreate,
     CriteriaVersionResponse,
+    CriterionDefinition,
     DecisionCommand,
     DedupOverrideRequest,
     ErrorDetail,
@@ -385,6 +386,48 @@ def create_criteria_version(
         criteria=payload.criteria,
         content_hash=crit_model.content_hash,
         created_at=crit_model.created_at,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/criteria",
+    tags=["Criteria"],
+    summary="Get the latest saved criteria version",
+    response_model=CriteriaVersionResponse,
+)
+def get_latest_criteria_version(
+    workspace_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> CriteriaVersionResponse:
+    """Return the newest saved criteria version so the UI can resume without re-saving."""
+    ws = db.query(WorkspaceModel).filter_by(id=workspace_id).first()
+    if not ws:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workspace '{workspace_id}' not found",
+        )
+
+    crit = (
+        db.query(CriteriaVersionModel)
+        .filter_by(workspace_id=workspace_id)
+        .order_by(CriteriaVersionModel.sequence.desc())
+        .first()
+    )
+    if not crit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No criteria version saved yet for workspace '{workspace_id}'",
+        )
+
+    return CriteriaVersionResponse(
+        id=crit.id,
+        workspace_id=crit.workspace_id,
+        sequence=crit.sequence,
+        question=crit.question,
+        pico_description=json.loads(crit.pico_json),
+        criteria=[CriterionDefinition(**c) for c in json.loads(crit.criteria_json)],
+        content_hash=crit.content_hash,
+        created_at=crit.created_at,
     )
 
 

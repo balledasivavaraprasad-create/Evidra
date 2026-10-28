@@ -6,6 +6,7 @@ import { AuthGate } from "./context/AuthContext";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { WorkspaceGuard } from "./components/WorkspaceGuard";
 import { DashGridBackground } from "./components/DashGridBackground";
 import { LandingPage } from "./features/landing/LandingPage";
 import { WorkspacesPage } from "./features/workspaces/WorkspacesPage";
@@ -40,17 +41,19 @@ export const App: React.FC = () => {
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/reviews" element={<WorkspacesPage />} />
-                <Route path="/reviews/:id/search" element={<QueryBuilderPage />} />
-                <Route path="/reviews/:id/setup" element={<QueryBuilderPage />} />
-                <Route path="/reviews/:id/records" element={<ReviewQueuePage />} />
-                <Route path="/reviews/:id/ml-ranking" element={<MLReviewPage />} />
-                <Route path="/reviews/:id/duplicates" element={<DuplicatesPage />} />
-                <Route path="/reviews/:id/history" element={<HistoryPage />} />
-                <Route path="/reviews/:id/radar" element={<ReviewRadarDashboard />} />
+                <Route path="/reviews/:id" element={<WorkspaceGuard />}>
+                  <Route path="search" element={<QueryBuilderPage />} />
+                  <Route path="setup" element={<QueryBuilderPage />} />
+                  <Route path="records" element={<ReviewQueuePage />} />
+                  <Route path="ml-ranking" element={<MLReviewPage />} />
+                  <Route path="duplicates" element={<DuplicatesPage />} />
+                  <Route path="history" element={<HistoryPage />} />
+                  <Route path="radar" element={<ReviewRadarDashboard />} />
+                  <Route path="devils-advocate" element={<DevilsAdvocateDashboard />} />
+                  <Route path="search-evolution" element={<HistoryPage initialTab="search_evolution" />} />
+                </Route>
                 <Route path="/radar" element={<ReviewRadarDashboard />} />
-                <Route path="/reviews/:id/devils-advocate" element={<DevilsAdvocateDashboard />} />
                 <Route path="/devils-advocate" element={<DevilsAdvocateDashboard />} />
-                <Route path="/reviews/:id/search-evolution" element={<HistoryPage initialTab="search_evolution" />} />
                 <Route path="/review-queue" element={<ReviewQueuePage />} />
                 <Route path="/ml-ranking" element={<MLReviewPage />} />
                 <Route path="/duplicates" element={<DuplicatesPage />} />
