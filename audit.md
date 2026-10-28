@@ -52,6 +52,7 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | A05: Version history, conflicts, diff and restore UI | Merged | Commit `290099d`; Level 2 frontend history timeline, corpus diff visualizer, group conflict resolution modal with mandatory rationale, exact snapshot restore backed by server snapshots with zero external calls, 21 unit tests passing, Playwright acceptance test; see [A05 handoff](prompts/handoffs/A05.md) |
 | B05: Optional classical ML ranking with leakage-safe evaluation | Merged | Commit `e8e44a4`; TF-IDF plus class-weighted LogisticRegression, zero-leakage clustered train/holdout split, SHA-256 signed model serialization and tamper rejection, fail-safe edge case fallbacks, 30.7% WSS@95 on clinical holdout, 8 unit tests passing, 125 backend tests passing; see [B05 handoff](prompts/handoffs/B05.md) |
 | C05: Optional budgeted LLM gateway and validated extraction | Merged | Commit `152d750`; direct approved-provider HTTPX adapter, protocol mock adapter, task and model allowlists, token budget reservation, prompt injection defense, validated LLM PICO extractor with exact Unicode code-point offsets and repair flow, 17 unit tests passing, 142 backend tests passing; see [C05 handoff](prompts/handoffs/C05.md) |
+| C06: Optional bounded, cited corpus RAG assistant | Merged | Commit `d08b87c`; in-memory SQLite FTS5 search index, query syntax escaping and workspace cache, bounded evidence assistant implementing AssistantPort, strict citation verification to retrieved chunks, honest abstention on out-of-domain queries, 11 unit tests passing, 153 backend tests passing; see [C06 handoff](prompts/handoffs/C06.md) |
 
 ## Actual dependency defects found during preparation
 
@@ -83,6 +84,7 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Version history, conflicts, diff and restore UI (A05: `290099d`).
 - [x] Optional classical ML ranking with leakage-safe evaluation (B05: `e8e44a4`).
 - [x] Optional budgeted LLM gateway and validated extraction (C05: `152d750`).
+- [x] Optional bounded, cited corpus RAG assistant (C06: `d08b87c`).
 - [ ] Remaining domain endpoints and auth.
 - [ ] PubMed/Europe PMC quotas, registrations and disclaimer presentation.
 - [ ] Query builder and import UI approval workflow.
