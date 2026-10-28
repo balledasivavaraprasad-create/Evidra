@@ -5,6 +5,7 @@ from app.pico.extractor import (
     RuleBasedPicoExtractor,
     extract_pico_spans,
 )
+from app.pico.llm import LLMPicoExtractor
 from app.pico.offsets import (
     codepoint_to_utf16_offset,
     span_codepoint_to_utf16,
@@ -18,6 +19,7 @@ __all__ = [
     "COMPILED_RULES",
     "DEFAULT_PROVENANCE",
     "METHOD_VERSION",
+    "LLMPicoExtractor",
     "PicoRule",
     "RuleBasedPicoExtractor",
     "codepoint_to_utf16_offset",

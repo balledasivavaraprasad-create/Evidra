@@ -1,0 +1,21 @@
+{
+  "benchmark_name": "evidra_pico_llm_comparison_v1",
+  "benchmark_sha256": "02b73cb2902a0a2157847130668828e4fa6faa42484108e38af0f083f998348c",
+  "total_cases": 4,
+  "provider_mode": "mock_verified (live provider not run: offline default)",
+  "rules_baseline": {
+    "total_spans_extracted": 11,
+    "invalid_span_rate": 0.0,
+    "latency_total_ms": 0.64,
+    "latency_per_case_ms": 0.16,
+    "estimated_cost_usd": 0.0
+  },
+  "llm_assisted": {
+    "total_spans_extracted": 11,
+    "invalid_span_rate": 0.0,
+    "latency_total_ms": 0.82,
+    "latency_per_case_ms": 0.205,
+    "estimated_cost_usd": 0.0,
+    "fallback_engaged": false
+  }
+}
