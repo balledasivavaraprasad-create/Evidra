@@ -1,0 +1,50 @@
+{
+  "benchmark_name": "evidra_pico_llm_comparison_v1",
+  "created_at": "2026-10-28",
+  "cases": [
+    {
+      "id": "case-01",
+      "title": "Randomized controlled trial of semaglutide versus placebo in adults with type 2 diabetes",
+      "abstract_text": "Background: In adults with type 2 diabetes mellitus, glycemic control is critical. Methods: A double-blind trial randomized 400 patients to subcutaneous semaglutide 1.0 mg or placebo once weekly. Primary outcome was mean reduction in HbA1c at 24 weeks.",
+      "ground_truth_spans": [
+        {"label": "P", "quote": "adults with type 2 diabetes mellitus"},
+        {"label": "I", "quote": "semaglutide 1.0 mg"},
+        {"label": "C", "quote": "placebo"},
+        {"label": "O", "quote": "reduction in HbA1c"}
+      ]
+    },
+    {
+      "id": "case-02",
+      "title": "Comparative study of metformin versus lifestyle modification in prediabetes",
+      "abstract_text": "Objective: To assess diabetes prevention. Methods: 300 adult subjects with prediabetes were allocated to oral metformin 850 mg twice daily or intensive lifestyle modification. The endpoint was progression to diabetes at 3 years.",
+      "ground_truth_spans": [
+        {"label": "P", "quote": "adult subjects with prediabetes"},
+        {"label": "I", "quote": "metformin 850 mg"},
+        {"label": "C", "quote": "intensive lifestyle modification"},
+        {"label": "O", "quote": "progression to diabetes"}
+      ]
+    },
+    {
+      "id": "case-03",
+      "title": "Efficacy of empagliflozin versus glimepiride in patients with uncontrolled type 2 diabetes",
+      "abstract_text": "Methods: In a double-blind multicenter trial, 500 adult patients with type 2 diabetes were treated with empagliflozin 25 mg or glimepiride 4 mg daily. Change in HbA1c and body weight were measured at 52 weeks.",
+      "ground_truth_spans": [
+        {"label": "P", "quote": "adult patients with type 2 diabetes"},
+        {"label": "I", "quote": "empagliflozin 25 mg"},
+        {"label": "C", "quote": "glimepiride 4 mg"},
+        {"label": "O", "quote": "Change in HbA1c"}
+      ]
+    },
+    {
+      "id": "case-04",
+      "title": "Dapagliflozin in patients with heart failure and reduced ejection fraction",
+      "abstract_text": "Background: SGLT2 inhibitors improve cardiovascular outcomes. Patients with chronic heart failure were randomized to dapagliflozin 10 mg or matching placebo. Primary outcome was cardiovascular mortality or hospitalization.",
+      "ground_truth_spans": [
+        {"label": "P", "quote": "Patients with chronic heart failure"},
+        {"label": "I", "quote": "dapagliflozin 10 mg"},
+        {"label": "C", "quote": "matching placebo"},
+        {"label": "O", "quote": "cardiovascular mortality"}
+      ]
+    }
+  ]
+}
