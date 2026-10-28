@@ -61,18 +61,19 @@ describe("plain-language API errors", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it("does not trigger the password screen for a wrong password at login", async () => {
+  it("does not trigger the sign-in prompt for wrong credentials at login", async () => {
     const listener = vi.fn();
     const fakeWindow = new EventTarget();
     vi.stubGlobal("window", fakeWindow);
     fakeWindow.addEventListener(AUTH_REQUIRED_EVENT, listener);
     vi.stubGlobal(
       "fetch",
-      respond(401, JSON.stringify({ code: "INVALID_PASSWORD", message: "That password isn't right. Try again." }), "application/json"),
+      respond(401, JSON.stringify({ code: "INVALID_CREDENTIALS", message: "Wrong email or password." }), "application/json"),
     );
-    const err = await api.auth.login("nope").catch((e) => e);
+    const err = await api.auth.login({ email: "ada@example.com", password: "nope" }).catch((e) => e);
     fakeWindow.removeEventListener(AUTH_REQUIRED_EVENT, listener);
-    expect(err.message).toBe("That password isn't right. Try again.");
+    expect(err.code).toBe("INVALID_CREDENTIALS");
+    expect(err.message).toBe("Wrong email or password.");
     expect(listener).not.toHaveBeenCalled();
   });
 });

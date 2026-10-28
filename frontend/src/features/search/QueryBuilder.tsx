@@ -1,79 +1,105 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Search, Plus, Trash2, Calendar, Database, Play, AlertCircle, FileCode, CheckSquare } from "lucide-react";
 import {
   api,
   type BooleanOperator,
+  type QueryASTNodeInput,
   type QueryVersionResponse,
   type SearchExecutionResponse,
   type SourceNamespace,
 } from "../../api/client";
 import {
+  astToGroups,
   astToReadableString,
   compileClauseToAST,
   isValidDateFormat,
   type QueryGroupClause,
 } from "./astCompiler";
+import { executionLabel, selectedIds, sortExecutions, upsertExecution, withSelection } from "./executions";
 
 /** Shown while there is no saved review question to attach the query to. */
 export const SAVE_QUESTION_HINT = "Save the review question first.";
+
+const SEARCHABLE_SOURCES: SourceNamespace[] = ["pubmed", "europepmc"];
 
 interface QueryBuilderProps {
   workspaceId: string;
   /** The saved review question this query belongs to. Saving and searching stay off until it exists. */
   criteriaVersionId?: string | null;
+  /** The latest saved search; the builder starts from it and treats it as the active query. */
+  savedQuery?: QueryVersionResponse | null;
+  /** The saved counts of that search; ticked ones are those with selected_for_import. */
+  savedExecutions?: SearchExecutionResponse[];
   onQuerySaved?: (query: QueryVersionResponse) => void;
+  /** Called with the ticked execution ids whenever counts are added, ticked, unticked or reset. */
   onExecutionSelected?: (selectedIds: string[]) => void;
-  /** Starting terms, one inner list per OR-group (defaults to the metformin example) */
+  /** Starting terms for a review with no saved query, one inner list per OR-group (from the PICO). */
   initialTerms?: string[][];
+}
+
+function starterGroups(terms: string[][] | undefined): QueryGroupClause[] {
+  const source = terms && terms.length > 0 ? terms : [[""]];
+  return source.map((group, gi) => ({
+    id: `grp-${gi + 1}`,
+    operator: "OR" as BooleanOperator,
+    clauses: (group.length ? group : [""]).map((term, ci) => ({ id: `c-${gi + 1}-${ci + 1}`, field: "all" as const, term })),
+  }));
+}
+
+/** Rebuild the editor from the saved search; tooNested means its AST has no group form to show. */
+function startingPoint(savedQuery: QueryVersionResponse | null | undefined, initialTerms: string[][] | undefined) {
+  const parsed = savedQuery ? astToGroups(savedQuery.ast as QueryASTNodeInput) : null;
+  if (parsed) {
+    return {
+      rootOperator: parsed.rootOperator,
+      groups: parsed.groups.length > 0 ? parsed.groups : starterGroups(undefined),
+      tooNested: false,
+    };
+  }
+  return { rootOperator: "AND" as BooleanOperator, groups: starterGroups(initialTerms), tooNested: !!savedQuery };
+}
+
+function messageOf(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
 }
 
 export const QueryBuilder: React.FC<QueryBuilderProps> = ({
   workspaceId,
   criteriaVersionId,
+  savedQuery,
+  savedExecutions,
   onQuerySaved,
   onExecutionSelected,
   initialTerms,
 }) => {
-  const [rootOperator, setRootOperator] = useState<BooleanOperator>("AND");
-  const [groups, setGroups] = useState<QueryGroupClause[]>(() =>
-    initialTerms && initialTerms.length > 0
-      ? initialTerms.map((terms, gi) => ({
-          id: `grp-${gi + 1}`,
-          operator: "OR" as BooleanOperator,
-          clauses: (terms.length ? terms : [""]).map((term, ci) => ({ id: `c-${gi + 1}-${ci + 1}`, field: "all", term })),
-        }))
-      : [
-    {
-      id: "grp-1",
-      operator: "OR",
-      clauses: [
-        { id: "c-1", field: "all", term: "metformin" },
-        { id: "c-2", field: "all", term: "glucophage" },
-      ],
-    },
-    {
-      id: "grp-2",
-      operator: "OR",
-      clauses: [
-        { id: "c-3", field: "all", term: "type 2 diabetes" },
-        { id: "c-4", field: "all", term: "T2D" },
-      ],
-    },
-  ]
-  );
+  const [start] = useState(() => startingPoint(savedQuery, initialTerms));
+  const [rootOperator, setRootOperator] = useState<BooleanOperator>(start.rootOperator);
+  const [groups, setGroups] = useState<QueryGroupClause[]>(start.groups);
 
-  const [startDate, setStartDate] = useState("2020");
-  const [endDate, setEndDate] = useState("2026");
-  const [selectedSources, setSelectedSources] = useState<SourceNamespace[]>(["pubmed", "europepmc"]);
+  const [startDate, setStartDate] = useState(savedQuery ? (savedQuery.start_date ?? "") : "2020");
+  const [endDate, setEndDate] = useState(savedQuery ? (savedQuery.end_date ?? "") : "2026");
+  const [selectedSources, setSelectedSources] = useState<SourceNamespace[]>(() => {
+    const saved = (savedQuery?.sources ?? []).filter((s) => SEARCHABLE_SOURCES.includes(s));
+    return saved.length > 0 ? saved : SEARCHABLE_SOURCES;
+  });
 
   const [savingQuery, setSavingQuery] = useState(false);
-  const [activeQuery, setActiveQuery] = useState<QueryVersionResponse | null>(null);
+  const [activeQuery, setActiveQuery] = useState<QueryVersionResponse | null>(savedQuery ?? null);
   const [error, setError] = useState<string | null>(null);
 
-  // Search Executions
+  // Search executions: the list is the single source of truth, ticks live on its rows
   const [executingSource, setExecutingSource] = useState<string | null>(null);
-  const [executions, setExecutions] = useState<SearchExecutionResponse[]>([]);
-  const [selectedExecIds, setSelectedExecIds] = useState<string[]>([]);
+  const [executions, setExecutions] = useState<SearchExecutionResponse[]>(() => sortExecutions(savedExecutions ?? []));
+  const executionsRef = useRef(executions);
+  const [countErrors, setCountErrors] = useState<Partial<Record<SourceNamespace, string>>>({});
+  const [pendingTicks, setPendingTicks] = useState<ReadonlySet<string>>(new Set());
+  const [tickErrors, setTickErrors] = useState<Record<string, string>>({});
+
+  const commitExecutions = (next: SearchExecutionResponse[]) => {
+    executionsRef.current = next;
+    setExecutions(next);
+    onExecutionSelected?.(selectedIds(next));
+  };
 
   const compiledAST = compileClauseToAST(groups, rootOperator);
   const readableQueryString = astToReadableString(compiledAST);
@@ -168,13 +194,16 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
         criteria_version_id: criteriaVersionId,
         parent_id: activeQuery?.id || null,
       });
-      setActiveQuery(qResp);
-      if (onQuerySaved) {
-        onQuerySaved(qResp);
+      // Counts belong to one saved version; a new version starts with none, as it does after a reload
+      if (qResp.id !== activeQuery?.id) {
+        commitExecutions([]);
+        setCountErrors({});
+        setTickErrors({});
       }
+      setActiveQuery(qResp);
+      onQuerySaved?.(qResp);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to persist structured query version";
-      setError(msg);
+      setError(messageOf(err, "Failed to persist structured query version"));
     } finally {
       setSavingQuery(false);
     }
@@ -186,43 +215,51 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
       return;
     }
     if (!activeQuery) {
-      setError("Please save the query version before executing search counts.");
+      setCountErrors((prev) => ({ ...prev, [source]: "Save the query version before counting." }));
       return;
     }
 
     setExecutingSource(source);
-    setError(null);
+    setCountErrors((prev) => ({ ...prev, [source]: undefined }));
 
     try {
       const execResp = await api.queries.executeSearch(activeQuery.id, {
         source,
         synonym_expansion: false,
       });
-
-      setExecutions((prev) => [execResp, ...prev]);
-      // Auto select new execution
-      const newSelected = [...selectedExecIds, execResp.id];
-      setSelectedExecIds(newSelected);
-      if (onExecutionSelected) {
-        onExecutionSelected(newSelected);
-      }
+      // The same saved query counted again returns its recorded row: replace it, never add a second
+      commitExecutions(upsertExecution(executionsRef.current, execResp));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : `Failed to execute search count on ${source}`;
-      setError(msg);
+      setCountErrors((prev) => ({ ...prev, [source]: messageOf(err, `Failed to execute search count on ${source}`) }));
     } finally {
       setExecutingSource(null);
     }
   };
 
-  const toggleExecutionSelection = (id: string) => {
-    const next = selectedExecIds.includes(id)
-      ? selectedExecIds.filter((x) => x !== id)
-      : [...selectedExecIds, id];
-    setSelectedExecIds(next);
-    if (onExecutionSelected) {
-      onExecutionSelected(next);
+  const toggleExecutionSelection = async (id: string) => {
+    const row = executionsRef.current.find((e) => e.id === id);
+    if (!row || pendingTicks.has(id)) return;
+    const next = !row.selected_for_import;
+
+    setPendingTicks((prev) => new Set(prev).add(id));
+    setTickErrors((prev) => ({ ...prev, [id]: "" }));
+    commitExecutions(withSelection(executionsRef.current, id, next)); // optimistic
+    try {
+      const saved = await api.queries.setExecutionSelected(id, next);
+      commitExecutions(upsertExecution(executionsRef.current, saved));
+    } catch (err: unknown) {
+      commitExecutions(withSelection(executionsRef.current, id, !next)); // roll back this row only
+      setTickErrors((prev) => ({ ...prev, [id]: messageOf(err, "Couldn't save this choice. Try again.") }));
+    } finally {
+      setPendingTicks((prev) => {
+        const rest = new Set(prev);
+        rest.delete(id);
+        return rest;
+      });
     }
   };
+
+  const tickedCount = selectedIds(executions).length;
 
   return (
     <div className="card p-6 border border-slate-700/60 bg-slate-900/40 rounded-xl mb-6">
@@ -243,6 +280,16 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
         <div className="mb-4 p-3 bg-red-950/40 border border-red-800/60 rounded-lg text-sm text-red-300 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {start.tooNested && (
+        <div role="status" className="mb-4 p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg text-sm text-amber-200 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>
+            The saved search is nested more deeply than this editor can show, so the groups below are a fresh start from
+            your PICO terms. Counting still uses the saved search ({astToReadableString(savedQuery?.ast as QueryASTNodeInput)}).
+          </span>
         </div>
       )}
 
@@ -419,19 +466,27 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
           {savingQuery ? "Saving Query Version..." : "Save Query Version"}
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
           {selectedSources.map((src) => (
-            <button
-              key={src}
-              type="button"
-              disabled={!criteriaReady || !activeQuery || executingSource === src}
-              aria-describedby={criteriaReady ? undefined : "query-criteria-hint"}
-              onClick={() => handleRunSearchCount(src)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-lg text-xs font-medium transition disabled:opacity-40"
-            >
-              <Play className="w-3 h-3 text-emerald-400" />
-              <span>{executingSource === src ? `Counting ${src}...` : `Count on ${src}`}</span>
-            </button>
+            <div key={src} className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                disabled={!criteriaReady || !activeQuery || executingSource === src}
+                aria-describedby={
+                  countErrors[src] ? `count-error-${src}` : criteriaReady ? undefined : "query-criteria-hint"
+                }
+                onClick={() => handleRunSearchCount(src)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-lg text-xs font-medium transition disabled:opacity-40"
+              >
+                <Play className="w-3 h-3 text-emerald-400" />
+                <span>{executingSource === src ? `Counting ${src}...` : `Count on ${src}`}</span>
+              </button>
+              {countErrors[src] && (
+                <p id={`count-error-${src}`} role="alert" className="max-w-[16rem] text-right text-[11px] text-red-300">
+                  {countErrors[src]}
+                </p>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -447,54 +502,62 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-white">Search Executions Comparison</h3>
             <span className="text-xs text-slate-400">
-              {selectedExecIds.length} of {executions.length} selected for import
+              {tickedCount} of {executions.length} selected for import
             </span>
           </div>
 
           <div className="space-y-2.5">
             {executions.map((exec) => {
-              const isSelected = selectedExecIds.includes(exec.id);
+              const isSelected = exec.selected_for_import;
+              const pending = pendingTicks.has(exec.id);
               return (
-                <div
-                  key={exec.id}
-                  onClick={() => toggleExecutionSelection(exec.id)}
-                  className={`p-3 rounded-lg border flex items-center justify-between cursor-pointer transition ${
-                    isSelected
-                      ? "bg-slate-800/80 border-indigo-500/50"
-                      : "bg-slate-950/40 border-slate-800 opacity-60"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => {}}
-                      className="rounded border-slate-700 text-indigo-600 focus:ring-0"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white uppercase">{exec.source}</span>
-                        <span className="text-[11px] text-slate-400">
-                          {new Date(exec.counted_at).toLocaleTimeString()}
-                        </span>
-                        {exec.partial && (
-                          <span className="text-[10px] px-1.5 py-0.2 bg-amber-950 text-amber-300 rounded">
-                            Truncated / Capped
+                <div key={exec.id}>
+                  <label
+                    className={`p-3 rounded-lg border flex items-center justify-between cursor-pointer transition ${
+                      isSelected
+                        ? "bg-slate-800/80 border-indigo-500/50"
+                        : "bg-slate-950/40 border-slate-800 opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={pending}
+                        onChange={() => toggleExecutionSelection(exec.id)}
+                        aria-label={`Import ${executionLabel(exec)}`}
+                        className="rounded border-slate-700 text-indigo-600 focus:ring-0"
+                      />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white uppercase">{exec.source}</span>
+                          <span className="text-[11px] text-slate-400">
+                            {new Date(exec.counted_at).toLocaleTimeString()}
                           </span>
-                        )}
+                          {exec.partial && (
+                            <span className="text-[10px] px-1.5 py-0.2 bg-amber-950 text-amber-300 rounded">
+                              Truncated / Capped
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 font-mono mt-0.5 break-all">
+                          {exec.exact_query}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-400 font-mono mt-0.5 break-all">
-                        {exec.exact_query}
-                      </p>
                     </div>
-                  </div>
 
-                  <div className="text-right shrink-0 ml-4">
-                    <div className="text-sm font-bold text-emerald-400">
-                      {exec.hit_count.toLocaleString()} hits
+                    <div className="text-right shrink-0 ml-4">
+                      <div className="text-sm font-bold text-emerald-400">
+                        {exec.hit_count.toLocaleString()} hits
+                      </div>
+                      <span className="text-[10px] text-slate-500">{executionLabel(exec)}</span>
                     </div>
-                    <span className="text-[10px] text-slate-500">ID: {exec.id.slice(0, 8)}</span>
-                  </div>
+                  </label>
+                  {tickErrors[exec.id] && (
+                    <p role="alert" className="mt-1 text-[11px] text-red-300">
+                      {tickErrors[exec.id]}
+                    </p>
+                  )}
                 </div>
               );
             })}

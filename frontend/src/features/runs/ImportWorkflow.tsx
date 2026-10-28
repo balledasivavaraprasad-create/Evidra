@@ -1,52 +1,76 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Download, CheckCircle2, AlertTriangle, XCircle, RotateCcw, Clock, Ban } from "lucide-react";
 import { api, type JobResponse } from "../../api/client";
+import { loadLatestImportJob } from "../search/setupData";
+
+const TERMINAL_STATES = ["succeeded", "partial", "failed", "cancelled"];
 
 interface ImportWorkflowProps {
   workspaceId: string;
   selectedExecutionIds: string[];
+  /**
+   * The latest import job as the server has it, when the caller already loaded it. Leave undefined
+   * to have this component load it on mount; null means there is none.
+   */
+  initialJob?: JobResponse | null;
+  /** Called whenever the tracked job changes, so the page can show where the import stands. */
+  onJobChange?: (job: JobResponse) => void;
+  /** Called when an import finishes successfully while this page is open (not for a job already done on load). */
   onImportComplete?: (job: JobResponse) => void;
 }
 
 export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
   workspaceId,
   selectedExecutionIds,
+  initialJob,
+  onJobChange,
   onImportComplete,
 }) => {
   const [cap, setCap] = useState<number>(200);
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
-  const [activeJob, setActiveJob] = useState<JobResponse | null>(null);
+  const [activeJob, setActiveJob] = useState<JobResponse | null>(initialJob ?? null);
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const pollTimerRef = useRef<number | null>(null);
   const backoffDelayRef = useRef<number>(1000);
+  // A job that was already finished when it was loaded must not fire the "just finished" callback
+  const alreadyFinishedRef = useRef<string | null>(
+    initialJob && TERMINAL_STATES.includes(initialJob.state) ? initialJob.id : null,
+  );
 
-  // Restore active job from sessionStorage if available
+  // Resume the latest import from the server, so a reload shows it (and keeps polling if still running)
   useEffect(() => {
-    const savedJobId = sessionStorage.getItem(`active_import_job_${workspaceId}`);
-    if (savedJobId && !activeJob) {
-      api.jobs
-        .get(savedJobId)
-        .then((job) => {
-          setActiveJob(job);
-        })
-        .catch(() => {
-          sessionStorage.removeItem(`active_import_job_${workspaceId}`);
-        });
-    }
+    if (initialJob !== undefined) return;
+    let mounted = true;
+    loadLatestImportJob(workspaceId)
+      .then((job) => {
+        if (!mounted || !job) return;
+        if (TERMINAL_STATES.includes(job.state)) alreadyFinishedRef.current = job.id;
+        setActiveJob(job);
+      })
+      .catch((err: unknown) => {
+        if (mounted) setError(err instanceof Error ? err.message : "Couldn't load your latest import");
+      });
+    return () => {
+      mounted = false;
+    };
   }, [workspaceId]);
+
+  useEffect(() => {
+    if (activeJob) onJobChange?.(activeJob);
+  }, [activeJob]);
 
   // Polling loop with backoff
   useEffect(() => {
     if (!activeJob) return;
 
-    const isTerminal = ["succeeded", "partial", "failed", "cancelled"].includes(activeJob.state);
+    const isTerminal = TERMINAL_STATES.includes(activeJob.state);
     if (isTerminal) {
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
-      sessionStorage.removeItem(`active_import_job_${workspaceId}`);
-      if (onImportComplete && activeJob.state === "succeeded") {
+      if (onImportComplete && activeJob.state === "succeeded" && alreadyFinishedRef.current !== activeJob.id) {
+        alreadyFinishedRef.current = activeJob.id;
         onImportComplete(activeJob);
       }
       return;
@@ -90,7 +114,6 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
       });
 
       setActiveJob(job);
-      sessionStorage.setItem(`active_import_job_${workspaceId}`, job.id);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to queue import job";
       setError(msg);
@@ -117,7 +140,6 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
     setActiveJob(null);
     setIdempotencyKey(crypto.randomUUID());
     setError(null);
-    sessionStorage.removeItem(`active_import_job_${workspaceId}`);
   };
 
   return (
@@ -225,7 +247,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
               </button>
             )}
 
-            {["succeeded", "partial", "failed", "cancelled"].includes(activeJob.state) && (
+            {TERMINAL_STATES.includes(activeJob.state) && (
               <button
                 type="button"
                 onClick={resetForm}

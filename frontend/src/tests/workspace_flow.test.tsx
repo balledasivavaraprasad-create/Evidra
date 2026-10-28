@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToString } from "react-dom/server";
 import {
-  DEMO_WORKSPACE_ID,
   forgetWorkspaceId,
   getRememberedWorkspaceId,
   reconcileRememberedWorkspace,
@@ -14,6 +13,8 @@ import pageSource from "../features/search/QueryBuilderPage.tsx?raw";
 import builderSource from "../features/search/QueryBuilder.tsx?raw";
 
 const KEY = "evidra-current-workspace";
+// The seeded demo review is gone; this id only appears in the one-letter PICO key mapping test
+const SEEDED_ID = "ws-synth-001";
 
 function stubStorage(initial: Record<string, string> = {}) {
   const store = new Map(Object.entries(initial));
@@ -41,25 +42,31 @@ describe("remembered review is checked against the server's list", () => {
     expect(store.get(KEY)).toBe("ws-mine");
   });
 
-  it("clears a remembered review that is gone and falls back to the demo", () => {
+  it("clears a remembered review that is gone; there is no demo to fall back to", () => {
     const store = stubStorage({ [KEY]: "ws-wiped" });
-    expect(reconcileRememberedWorkspace(["ws-other"])).toBe(DEMO_WORKSPACE_ID);
+    expect(reconcileRememberedWorkspace(["ws-other"])).toBeNull();
     expect(store.has(KEY)).toBe(false);
-    expect(getRememberedWorkspaceId()).toBe(DEMO_WORKSPACE_ID);
+    expect(getRememberedWorkspaceId()).toBeNull();
   });
 
   it("clears it when the server has no reviews at all (empty database after a restart)", () => {
     const store = stubStorage({ [KEY]: "ws-wiped" });
-    expect(reconcileRememberedWorkspace([])).toBe(DEMO_WORKSPACE_ID);
+    expect(reconcileRememberedWorkspace([])).toBeNull();
     expect(store.has(KEY)).toBe(false);
   });
 
-  it("uses the demo when nothing was remembered", () => {
+  it("returns null when nothing was remembered", () => {
     stubStorage();
-    expect(reconcileRememberedWorkspace(["ws-other"])).toBe(DEMO_WORKSPACE_ID);
+    expect(reconcileRememberedWorkspace(["ws-other"])).toBeNull();
   });
 
-  it("falls back to the demo when storage is unavailable", () => {
+  it("does not remember another account's review: only the signed-in user's list counts", () => {
+    const store = stubStorage({ [KEY]: "ws-of-previous-user" });
+    expect(reconcileRememberedWorkspace(["ws-mine"])).toBeNull();
+    expect(store.has(KEY)).toBe(false);
+  });
+
+  it("returns null when storage is unavailable", () => {
     vi.stubGlobal("localStorage", {
       getItem: () => {
         throw new Error("blocked");
@@ -71,7 +78,7 @@ describe("remembered review is checked against the server's list", () => {
         throw new Error("blocked");
       },
     });
-    expect(reconcileRememberedWorkspace(["ws-mine"])).toBe(DEMO_WORKSPACE_ID);
+    expect(reconcileRememberedWorkspace(["ws-mine"])).toBeNull();
     expect(() => rememberWorkspaceId("ws-mine")).not.toThrow();
     expect(() => forgetWorkspaceId()).not.toThrow();
   });
@@ -85,10 +92,10 @@ describe("remembered review is checked against the server's list", () => {
   });
 });
 
-describe("loading the demo's saved review question", () => {
+describe("loading a saved question stored under one-letter PICO keys", () => {
   const saved = {
     id: "crit-synth-001",
-    workspace_id: DEMO_WORKSPACE_ID,
+    workspace_id: SEEDED_ID,
     sequence: 1,
     question: "In adults with type 2 diabetes, how does metformin affect HbA1c?",
     pico_description: { P: "Adults with T2D", I: "Metformin", C: "Placebo", O: "HbA1c" },
@@ -103,9 +110,9 @@ describe("loading the demo's saved review question", () => {
     const fetchMock = json(200, saved);
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await loadSavedCriteria(DEMO_WORKSPACE_ID);
+    const result = await loadSavedCriteria(SEEDED_ID);
 
-    expect(fetchMock.mock.calls[0][0]).toMatch(new RegExp(`/api/v1/workspaces/${DEMO_WORKSPACE_ID}/criteria$`));
+    expect(fetchMock.mock.calls[0][0]).toMatch(new RegExp(`/api/v1/workspaces/${SEEDED_ID}/criteria$`));
     expect(fetchMock.mock.calls[0][1]?.method ?? "GET").toBe("GET");
     expect(result?.id).toBe("crit-synth-001");
     expect(result?.question).toBe(saved.question);
@@ -113,7 +120,7 @@ describe("loading the demo's saved review question", () => {
 
   it("maps the seed's one-letter PICO keys to the names the editor reads", async () => {
     vi.stubGlobal("fetch", json(200, saved));
-    const result = await loadSavedCriteria(DEMO_WORKSPACE_ID);
+    const result = await loadSavedCriteria(SEEDED_ID);
     expect(result?.pico_description).toEqual({
       population: "Adults with T2D",
       intervention: "Metformin",
@@ -124,12 +131,12 @@ describe("loading the demo's saved review question", () => {
 
   it("returns null when nothing has been saved yet (404)", async () => {
     vi.stubGlobal("fetch", json(404, { error: { code: "NOT_FOUND", message: "No criteria version saved yet" } }));
-    await expect(loadSavedCriteria(DEMO_WORKSPACE_ID)).resolves.toBeNull();
+    await expect(loadSavedCriteria(SEEDED_ID)).resolves.toBeNull();
   });
 
   it("does not hide a real failure", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
-    await expect(loadSavedCriteria(DEMO_WORKSPACE_ID)).rejects.toMatchObject({ code: "SERVICE_UNREACHABLE" });
+    await expect(loadSavedCriteria(SEEDED_ID)).rejects.toMatchObject({ code: "SERVICE_UNREACHABLE" });
   });
 });
 
@@ -171,10 +178,11 @@ describe("reloading the setup page of a review that is not the demo", () => {
     expect(save![0].match(/^<button\b[^>]*>/)![0]).not.toMatch(/\sdisabled=""/);
   });
 
-  it("the page loads saved criteria for every review, not only the demo", () => {
-    // Regression guard: the loader used to be skipped for anything but ws-synth-001
-    expect(pageSource).not.toMatch(/workspaceId\s*!==\s*DEMO_WORKSPACE_ID/);
-    expect(pageSource).toContain("loadSavedCriteria(workspaceId)");
+  it("the page loads everything from the server for every review, with no demo or placeholder id", () => {
+    expect(pageSource).toContain("loadSetupData(workspaceId)");
+    for (const gone of ["DEMO_WORKSPACE_ID", "ws-default", "isDemo", "EMPTY_PICO", "ws-synth-001"]) {
+      expect(pageSource).not.toContain(gone);
+    }
   });
 });
 
@@ -223,7 +231,8 @@ describe("a link to a review that no longer exists", () => {
     expect(markup).toContain('role="alert"');
     expect(markup).toContain("This review doesn't exist");
     expect(markup).toContain("ws-gone");
-    expect(markup).toContain("Go to your reviews");
+    expect(markup).toContain("in your account");
+    expect(markup).toContain("Go to your dashboard");
     expect(markup).not.toMatch(/Not Found|HTTP 404/i);
   });
 });
