@@ -48,7 +48,37 @@ def main():
             if not state['integration']:
                 raise RuntimeError('e2e must not be invoked before integration activation')
             run(['npm', 'run', 'build'], frontend, env)
-            run(['npm', 'run', 'test:e2e'], frontend, env)
+
+            import time
+            import urllib.request
+
+            serve_cmd = ['uv', 'run', '--locked', 'python', 'app/testing/serve.py']
+            server_env = {**env, 'APP_ENV': 'test', 'SOURCE_MODE': 'fixture'}
+            print('+ ' + ' '.join(serve_cmd) + ' (background)', flush=True)
+            server_proc = subprocess.Popen(serve_cmd, cwd=backend, env=server_env)
+            try:
+                ready = False
+                for _ in range(60):
+                    try:
+                        with urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=1) as resp:
+                            if resp.status == 200:
+                                ready = True
+                                break
+                    except Exception:
+                        time.sleep(0.5)
+
+                if not ready:
+                    raise RuntimeError('Test server failed to respond on 127.0.0.1:8000/health/ready')
+
+                e2e_env = {**env, 'CI_INTEGRATION': 'true', 'PLAYWRIGHT_BASE_URL': 'http://127.0.0.1:4173'}
+                run(['npm', 'run', 'test:e2e'], frontend, e2e_env)
+            finally:
+                server_proc.terminate()
+                try:
+                    server_proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    server_proc.kill()
+                    server_proc.wait()
         else:
             raise ValueError(f'Unsupported check group: {mode}')
 

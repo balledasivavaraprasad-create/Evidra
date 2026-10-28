@@ -14,27 +14,27 @@ export const DuplicatesPage: React.FC = () => {
   // Candidate pair (seeded from synthetic benchmark)
   const candidate = {
     record_a: {
-      id: "rec-synth-0001",
+      id: "src-synth-001",
       source: "PubMed (PMID: 38100001)",
-      title: "Efficacy of metformin versus placebo in type 2 diabetes: a randomized controlled trial",
+      title: "Metformin improves glycemic control in adult patients with type 2 diabetes: a randomized controlled trial.",
       authors: "Miller AB, Davis KR, Chen L",
-      year: 2024,
-      doi: "10.1056/nejmoa2024001",
+      year: 2023,
+      doi: "10.1001/dc.2023.01",
       abstract:
-        "In adults with type 2 diabetes, metformin is commonly used as first-line therapy. A randomized double-blind placebo-controlled trial evaluated metformin versus placebo over 24 weeks. Results demonstrated significant HbA1c reduction without severe adverse events.",
+        "Objective: Evaluate oral metformin versus placebo in adults with type 2 diabetes. Methods: 150 patients received metformin 1000mg daily. Results: HbA1c decreased significantly. Conclusion: Metformin is effective.",
     },
     record_b: {
-      id: "rec-synth-0002",
+      id: "src-synth-002",
       source: "Europe PMC (PMC1099901)",
-      title: "Efficacy of metformin versus placebo in type 2 diabetes: a randomized controlled trial",
+      title: "Metformin improves glycemic control in adult patients with type 2 diabetes: a randomized controlled trial.",
       authors: "Miller A.B., Davis K.R., Chen L.",
-      year: 2024,
-      doi: "10.1056/nejmoa2024001",
+      year: 2023,
+      doi: "10.1001/dc.2023.01",
       abstract:
-        "In adults with type 2 diabetes, metformin is commonly used as first-line therapy. A randomized double-blind placebo-controlled trial evaluated metformin versus placebo over 24 weeks. Results demonstrated significant HbA1c reduction without severe adverse events.",
+        "Objective: Evaluate oral metformin versus placebo in adults with type 2 diabetes. Methods: 150 patients received metformin 1000mg daily. Results: HbA1c decreased significantly. Conclusion: Metformin is effective.",
     },
     similarity: 1.0,
-    evidence: "Exact DOI match (10.1056/nejmoa2024001) + Exact normalized title + Author initials match",
+    evidence: "Exact DOI match (10.1001/dc.2023.01) + Exact normalized title + Author initials match",
   };
 
   const handleDecision = async (action: "confirm" | "reject") => {
