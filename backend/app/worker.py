@@ -1,6 +1,7 @@
 """Background worker process executing durable asynchronous jobs."""
 import logging
 import os
+import threading
 import time
 from uuid import uuid4
 
@@ -8,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from app.contracts.enums import JobKind, JobState
 from app.db.session import SessionLocal, get_db
-from app.main import app
 from app.services.imports import run_import_job
 from app.services.jobs import acquire_next_job, get_job_by_id
 
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 def _get_worker_session(db: Session | None = None) -> tuple[Session, bool]:
     if db is not None:
         return db, False
+    from app.main import app
     if get_db in app.dependency_overrides:
         gen = app.dependency_overrides[get_db]()
         return next(gen), False
@@ -93,24 +94,36 @@ def poll_and_execute_next(worker_id: str | None = None, db: Session | None = Non
             session.close()
 
 
-def run_worker_daemon(poll_interval: float = 1.0, max_iterations: int | None = None) -> None:
-    """Continuously poll for and execute background jobs."""
+def run_worker_daemon(
+    poll_interval: float = 1.0,
+    max_iterations: int | None = None,
+    stop_event: threading.Event | None = None,
+) -> None:
+    """Continuously poll for and execute background jobs until stopped."""
     worker_id = f"worker-daemon-{os.getpid()}"
     logger.info("Starting Evidra background worker %s", worker_id)
     iterations = 0
 
-    while True:
+    while not (stop_event and stop_event.is_set()):
         try:
             executed = poll_and_execute_next(worker_id)
             if not executed:
-                time.sleep(poll_interval)
+                if stop_event:
+                    stop_event.wait(poll_interval)
+                else:
+                    time.sleep(poll_interval)
         except Exception:
             logger.exception("Error in worker loop")
-            time.sleep(poll_interval)
+            if stop_event:
+                stop_event.wait(poll_interval)
+            else:
+                time.sleep(poll_interval)
 
         iterations += 1
         if max_iterations is not None and iterations >= max_iterations:
             break
+
+    logger.info("Evidra background worker %s stopped", worker_id)
 
 
 if __name__ == "__main__":

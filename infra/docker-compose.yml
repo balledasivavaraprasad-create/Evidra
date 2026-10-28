@@ -21,6 +21,8 @@ services:
       - DATABASE_URL=sqlite:////app/data/review.sqlite
       - CHECKPOINT_DATABASE_URL=sqlite:////app/data/checkpoints.sqlite
       - SOURCE_RATE_LIMIT_PER_SECOND=3.0
+      - WORKERS=1
+      - RUN_WORKER_IN_PROCESS=true
       - LLM_ENABLED=false
       - RAG_ENABLED=false
     volumes:

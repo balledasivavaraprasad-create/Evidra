@@ -37,6 +37,7 @@ block, which mounts 1 GB at `/app/data`. Render will ask for a card. See Render'
 | --- | --- |
 | Change the password | Service > Environment > `SITE_PASSWORD` > Save. Everyone is signed out. |
 | Stop loading demo data | Set `SEED_DEMO` to `false`. Existing data is kept. |
+| Background job worker | `RUN_WORKER_IN_PROCESS=true` runs the worker daemon inside FastAPI's lifespan (requires `WORKERS=1`). Defaults to `true` in production. |
 | Turn off auto-deploy | Service > Settings > Auto-Deploy. |
 | Use your own domain | Service > Settings > Custom Domains. |
 

@@ -32,6 +32,8 @@ services:
         value: "true"
       - key: PORT
         value: "8000"
+      - key: RUN_WORKER_IN_PROCESS
+        value: "true"
       - key: WORKERS
         value: "1"
       - key: LLM_ENABLED
