@@ -12,6 +12,7 @@ import {
   type WorkspaceResponse,
 } from "../../api/client";
 import { DEMO_WORKSPACE_ID } from "../../context/currentWorkspace";
+import { loadSavedCriteria } from "./savedCriteria";
 
 type StepKey = "question" | "search" | "import" | "screen";
 
@@ -43,6 +44,7 @@ export const QueryBuilderPage: React.FC = () => {
   const [workspace, setWorkspace] = useState<WorkspaceResponse | null>(null);
   const [workspaceChecked, setWorkspaceChecked] = useState(false);
   const [criteriaVersion, setCriteriaVersion] = useState<CriteriaVersionResponse | null>(null);
+  const [criteriaChecked, setCriteriaChecked] = useState(false);
   const [activeQuery, setActiveQuery] = useState<QueryVersionResponse | null>(null);
   const [selectedExecIds, setSelectedExecIds] = useState<string[]>([]);
   const [completedJob, setCompletedJob] = useState<JobResponse | null>(null);
@@ -67,6 +69,25 @@ export const QueryBuilderPage: React.FC = () => {
       })
       .finally(() => {
         if (mounted) setWorkspaceChecked(true);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [workspaceId]);
+
+  // Pick up the latest saved question so a reload keeps it and the search stays unlocked.
+  // A review with nothing saved yet keeps the empty form.
+  useEffect(() => {
+    let mounted = true;
+    loadSavedCriteria(workspaceId)
+      .then((saved) => {
+        if (mounted && saved) setCriteriaVersion(saved);
+      })
+      .catch(() => {
+        /* offline or older backend: the question can still be written and saved by hand */
+      })
+      .finally(() => {
+        if (mounted) setCriteriaChecked(true);
       });
     return () => {
       mounted = false;
@@ -196,7 +217,7 @@ export const QueryBuilderPage: React.FC = () => {
 
       {/* 1. Review question & criteria */}
       <section ref={sectionRefs.question} tabIndex={-1} aria-label="Step 1: review question" className="scroll-mt-24 outline-none">
-        {workspaceChecked && (
+        {workspaceChecked && criteriaChecked && (
           <CriteriaEditor
             key={workspace?.id ?? workspaceId}
             workspaceId={workspaceId}
@@ -213,16 +234,11 @@ export const QueryBuilderPage: React.FC = () => {
 
       {/* 2. Boolean query & provider counts */}
       <section ref={sectionRefs.search} tabIndex={-1} aria-label="Step 2: search" className="scroll-mt-24 outline-none space-y-3">
-        {!criteriaVersion && (
-          <p className="text-sm text-[var(--text-muted)] px-1">
-            Save the review question first. The search uses it to check each result against your criteria.
-          </p>
-        )}
         <QueryBuilder
           key={useOwnDefaults ? `q-${criteriaVersion?.id ?? "new"}` : "q-demo"}
           initialTerms={useOwnDefaults ? termsFromPico(criteriaVersion) : undefined}
           workspaceId={workspaceId}
-          criteriaVersionId={criteriaVersion?.id || "crit-ver-default"}
+          criteriaVersionId={criteriaVersion?.id ?? null}
           onQuerySaved={(q) => setActiveQuery(q)}
           onExecutionSelected={(ids) => {
             setSelectedExecIds(ids);

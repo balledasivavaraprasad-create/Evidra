@@ -660,6 +660,9 @@ def list_paper_groups_in_revision(
         if status_filter and effective_status != status_filter:
             continue
 
+        grp_record = db.query(PaperGroupModel).filter_by(id=group_id).first()
+        group_row_version = grp_record.row_version if grp_record and grp_record.row_version is not None else 1
+
         summaries.append(
             PaperGroupSummary(
                 id=group_id,
@@ -670,6 +673,7 @@ def list_paper_groups_in_revision(
                 has_conflict=has_conflict,
                 has_human_decision=human_event is not None,
                 last_decision_at=human_event.created_at if human_event else None,
+                row_version=group_row_version,
             )
         )
 
@@ -745,6 +749,7 @@ def get_paper_group_detail(
         has_conflict=has_conflict,
         has_human_decision=human_event is not None,
         last_decision_at=human_event.created_at if human_event else None,
+        row_version=group.row_version if group and group.row_version is not None else 1,
     )
 
     # PICO result

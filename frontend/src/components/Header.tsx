@@ -4,7 +4,7 @@ import { LogOut, Sun, Moon } from "lucide-react";
 import { api } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
-import { getRememberedWorkspaceId, rememberWorkspaceId, workspaceIdFromPath } from "../context/currentWorkspace";
+import { getRememberedWorkspaceId, reconcileRememberedWorkspace, workspaceIdFromPath } from "../context/currentWorkspace";
 
 const buildNavGroups = (ws: string): Array<Array<{ to: string; label: string; title: string }>> => [
   [
@@ -29,10 +29,25 @@ export const Header: React.FC = () => {
   const { authRequired, signOut } = useAuth();
 
   // Menu links follow the review you're working in
+  // (WorkspaceGuard remembers a review once the server confirms it exists.)
   const urlWorkspace = workspaceIdFromPath(location.pathname);
+  // On load, drop a remembered review the server no longer has (e.g. after a restart wiped it)
+  const [, setReconciled] = useState(0);
   useEffect(() => {
-    if (urlWorkspace) rememberWorkspaceId(urlWorkspace);
-  }, [urlWorkspace]);
+    let mounted = true;
+    api.workspaces
+      .list()
+      .then((list) => {
+        reconcileRememberedWorkspace(list.map((w) => w.id));
+        if (mounted) setReconciled((n) => n + 1);
+      })
+      .catch(() => {
+        /* service unreachable: keep what is remembered until it can be checked */
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const navGroups = buildNavGroups(`/reviews/${encodeURIComponent(urlWorkspace ?? getRememberedWorkspaceId())}`);
   const [backendStatus, setBackendStatus] = useState<"checking" | "ready" | "offline">("checking");
 

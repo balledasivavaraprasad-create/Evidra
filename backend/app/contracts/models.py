@@ -431,6 +431,7 @@ class PaperGroupSummary(BaseModel):
     has_conflict: bool = Field(default=False)
     has_human_decision: bool = Field(default=False)
     last_decision_at: datetime | None = None
+    row_version: int = Field(default=1, description="Optimistic locking row version")
 
 
 class PaperGroupDetail(BaseModel):

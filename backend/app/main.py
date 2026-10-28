@@ -1,7 +1,10 @@
 import hashlib
 import json
+import logging
 import os
 import shutil
+import threading
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +30,7 @@ from app.contracts.models import (
     CorpusRevisionResponse,
     CriteriaVersionCreate,
     CriteriaVersionResponse,
+    CriterionDefinition,
     DecisionCommand,
     DedupOverrideRequest,
     ErrorDetail,
@@ -100,7 +104,8 @@ from app.services.evidence_passport import (
 )
 from app.services.exports import export_corpus_studies
 from app.services.imports import trigger_import
-from app.services.jobs import cancel_job, get_job_by_id, to_job_response
+from app.services.jobs import cancel_job, get_job_by_id, recover_stuck_jobs, to_job_response
+from app.worker import _get_worker_session, run_worker_daemon
 from app.services.genealogy import (
     get_duplicate_group_genealogy,
     get_workspace_duplicate_overview,
@@ -147,6 +152,70 @@ from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
 from app.sources.translator import translate_query
 
+logger = logging.getLogger(__name__)
+
+_worker_thread: threading.Thread | None = None
+_worker_stop_event: threading.Event | None = None
+_worker_lock = threading.Lock()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _worker_thread, _worker_stop_event
+    if settings.run_worker_in_process:
+        try:
+            workers_count = int(os.environ.get("WORKERS", "1"))
+        except ValueError:
+            workers_count = 1
+
+        if workers_count > 1:
+            logger.warning(
+                "WORKERS is set to %d (> 1). In-process worker is active; "
+                "in-process mode requires WORKERS=1 for a single worker instance.",
+                workers_count,
+            )
+
+        with _worker_lock:
+            if _worker_thread is None or not _worker_thread.is_alive():
+                # 1. Recover any stuck RUNNING jobs after container/worker restart
+                session, should_close = _get_worker_session()
+                try:
+                    recovered = recover_stuck_jobs(session)
+                    if recovered > 0:
+                        logger.info("Recovered %d stuck RUNNING jobs on startup", recovered)
+                except Exception:
+                    logger.exception("Failed to recover stuck jobs on startup")
+                finally:
+                    if should_close:
+                        session.close()
+
+                # 2. Start worker daemon in background thread
+                _worker_stop_event = threading.Event()
+                _worker_thread = threading.Thread(
+                    target=run_worker_daemon,
+                    kwargs={"poll_interval": 0.5, "stop_event": _worker_stop_event},
+                    name="evidra-in-process-worker",
+                    daemon=True,
+                )
+                _worker_thread.start()
+                logger.info("Started in-process background worker thread")
+
+    yield
+
+    with _worker_lock:
+        if _worker_stop_event is not None:
+            logger.info("Signaling in-process background worker to stop...")
+            _worker_stop_event.set()
+        if _worker_thread is not None and _worker_thread.is_alive():
+            _worker_thread.join(timeout=5.0)
+            if _worker_thread.is_alive():
+                logger.warning("In-process background worker thread did not stop within 5s timeout")
+            else:
+                logger.info("In-process background worker thread stopped cleanly")
+        _worker_thread = None
+        _worker_stop_event = None
+
+
 app = FastAPI(
     title=settings.app_title,
     version=settings.app_version,
@@ -154,6 +223,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    lifespan=lifespan,
 )
 
 # Shared-password gate (no-op unless AUTH_MODE=password). Added before CORS so CORS stays outermost.
@@ -404,6 +474,48 @@ def create_criteria_version(
         criteria=payload.criteria,
         content_hash=crit_model.content_hash,
         created_at=crit_model.created_at,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/criteria",
+    tags=["Criteria"],
+    summary="Get the latest saved criteria version",
+    response_model=CriteriaVersionResponse,
+)
+def get_latest_criteria_version(
+    workspace_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> CriteriaVersionResponse:
+    """Return the newest saved criteria version so the UI can resume without re-saving."""
+    ws = db.query(WorkspaceModel).filter_by(id=workspace_id).first()
+    if not ws:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workspace '{workspace_id}' not found",
+        )
+
+    crit = (
+        db.query(CriteriaVersionModel)
+        .filter_by(workspace_id=workspace_id)
+        .order_by(CriteriaVersionModel.sequence.desc())
+        .first()
+    )
+    if not crit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No criteria version saved yet for workspace '{workspace_id}'",
+        )
+
+    return CriteriaVersionResponse(
+        id=crit.id,
+        workspace_id=crit.workspace_id,
+        sequence=crit.sequence,
+        question=crit.question,
+        pico_description=json.loads(crit.pico_json),
+        criteria=[CriterionDefinition(**c) for c in json.loads(crit.criteria_json)],
+        content_hash=crit.content_hash,
+        created_at=crit.created_at,
     )
 
 
