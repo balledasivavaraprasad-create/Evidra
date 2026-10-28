@@ -23,13 +23,13 @@ from app.contracts.enums import (
 )
 from app.contracts.models import CriterionEvidence, ScreenResult
 from app.db.models import GroupMemberModel, ReviewEventModel
+from app.demo_data import seed_synthetic_slr_workspace
 from app.services.devils_advocate import get_or_generate_challenge
 from app.services.genealogy import (
     get_duplicate_group_genealogy,
     get_workspace_duplicate_overview,
 )
 from app.services.search_evolution import list_search_versions
-from app.testing.serve import seed_synthetic_slr_workspace
 
 
 def _criterion(verdict: CriterionVerdict, explanation: str) -> CriterionEvidence:

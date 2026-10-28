@@ -1,0 +1,37 @@
+# Render Blueprint for Evidra: one Docker web service with a persistent disk for SQLite.
+# Create it from the Render dashboard: New > Blueprint > pick this repository.
+# You will be asked for SITE_PASSWORD (the password people type to open the site).
+services:
+  - type: web
+    name: evidra
+    runtime: docker
+    dockerfilePath: ./infra/Dockerfile
+    dockerContext: .
+    # Smallest paid instance: persistent disks are not available on the free plan.
+    plan: 0.5c-512mb
+    region: singapore
+    healthCheckPath: /health/ready
+    autoDeployTrigger: commit
+    disk:
+      name: evidra-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: AUTH_MODE
+        value: password
+      - key: SITE_PASSWORD
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SEED_DEMO
+        value: "true"
+      - key: PORT
+        value: "8000"
+      - key: WORKERS
+        value: "1"
+      - key: LLM_ENABLED
+        value: "false"
+      - key: RAG_ENABLED
+        value: "false"

@@ -140,6 +140,7 @@ from app.services.snapshots import (
 from app.services.snapshots import (
     restore_corpus_snapshot as svc_restore_corpus_snapshot,
 )
+from app.auth import PasswordGateMiddleware, auth_router
 from app.settings import settings
 from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
@@ -153,6 +154,10 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
+
+# Shared-password gate (no-op unless AUTH_MODE=password). Added before CORS so CORS stays outermost.
+app.add_middleware(PasswordGateMiddleware)
+app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,

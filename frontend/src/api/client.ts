@@ -151,7 +151,13 @@ export const FRIENDLY_ERRORS = {
   unreachable: "Evidra can't reach the review service. Start the backend, then try again.",
   server: "The review service hit an unexpected problem while loading this. Try again; if it keeps happening, check the backend terminal for details.",
   notFound: "This item doesn't exist in the current review. It may have been removed or belongs to another workspace.",
+  authRequired: "Enter the site password to continue.",
 } as const;
+
+/** Fired on window when the server says this browser needs to sign in (AUTH_MODE=password). */
+export const AUTH_REQUIRED_EVENT = "evidra:auth-required";
+
+export type AuthSession = components["schemas"]["AuthSessionResponse"];
 
 /** True when the backend could not be reached at all (stopped, crashed or proxy can't connect). */
 export function isServiceUnreachable(err: unknown): boolean {
@@ -181,7 +187,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   if (!response.ok) {
     if (isJson) {
       const errorData = (await response.json()) as ErrorEnvelope;
-      throw ApiError.fromEnvelope(response.status, errorData);
+      const err = ApiError.fromEnvelope(response.status, errorData);
+      if (err.status === 401 && err.code === "AUTH_REQUIRED" && typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(AUTH_REQUIRED_EVENT));
+      }
+      throw err;
     }
     // Non-JSON errors come from the dev proxy or an unhandled crash, never from the API's own
     // error envelope, so replace the bare status text with something a reviewer can act on.
@@ -206,6 +216,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
+  auth: {
+    session: () => request<AuthSession>("/api/v1/auth/session"),
+    login: (password: string) =>
+      request<void>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ password }) }),
+    logout: () => request<void>("/api/v1/auth/logout", { method: "POST" }),
+  },
   health: {
     live: () => request<{ status: string; app: string; version: string; env: string }>("/health/live"),
     ready: () => request<{ status: string; database: string }>("/health/ready"),
