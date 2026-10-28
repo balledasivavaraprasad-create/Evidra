@@ -63,6 +63,7 @@ def test_review_graph_invalid_workspace_fails_visibly(db_session: Session):
         result = run_review_pipeline(
             workspace_id="non-existent-workspace-id",
             checkpoint_db_path=checkpoint_path,
+            db=db_session,
         )
 
         assert result["stage"] == "failed"

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import tempfile
 import uuid
+from pathlib import Path
 
 import pytest
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -40,10 +41,11 @@ class TestWorkflowSecurityBoundaries:
     def test_forged_workspace_fails_closed(self, db_session):
         """Graph refuses execution on unknown/forged workspace and records failure."""
         fake_ws_id = f"ws-forged-{uuid.uuid4().hex}"
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as tmp:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            checkpoint_path = str(Path(tmp_dir) / "checkpoints.sqlite")
             result = run_review_pipeline(
                 workspace_id=fake_ws_id,
-                checkpoint_db_path=tmp.name,
+                checkpoint_db_path=checkpoint_path,
                 db=db_session,
             )
             assert result.get("error") is not None
@@ -53,14 +55,15 @@ class TestWorkflowSecurityBoundaries:
     def test_resume_non_existent_thread_fails_gracefully(self, db_session, isolated_workspace):
         """Resuming a review thread that was never started or interrupted fails cleanly."""
         with (
-            tempfile.NamedTemporaryFile(suffix=".sqlite") as tmp,
+            tempfile.TemporaryDirectory() as tmp_dir,
             pytest.raises(ValueError, match="No active checkpoint found to resume"),
         ):
+            checkpoint_path = str(Path(tmp_dir) / "checkpoints.sqlite")
             resume_review_pipeline(
                 workspace_id=isolated_workspace.id,
                 domain_event_id="evt-forged-001",
                 approved=True,
-                checkpoint_db_path=tmp.name,
+                checkpoint_db_path=checkpoint_path,
                 db=db_session,
             )
 
@@ -76,11 +79,13 @@ class TestWorkflowSecurityBoundaries:
         db_session.add(ws_b)
         db_session.commit()
 
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as tmp, SqliteSaver.from_conn_string(tmp.name) as checkpointer:
-            graph = build_review_graph(checkpointer=checkpointer)
-            # Verify thread IDs are strictly namespaced
-            thread_b = {"configurable": {"thread_id": f"review-thread-{ws_b.id}"}}
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            checkpoint_path = str(Path(tmp_dir) / "checkpoints.sqlite")
+            with SqliteSaver.from_conn_string(checkpoint_path) as checkpointer:
+                graph = build_review_graph(checkpointer=checkpointer)
+                # Verify thread IDs are strictly namespaced
+                thread_b = {"configurable": {"thread_id": f"review-thread-{ws_b.id}"}}
 
-            # Reading state for thread B before any run returns None
-            state_b = graph.get_state(thread_b)
-            assert state_b.values == {}
+                # Reading state for thread B before any run returns None
+                state_b = graph.get_state(thread_b)
+                assert state_b.values == {}

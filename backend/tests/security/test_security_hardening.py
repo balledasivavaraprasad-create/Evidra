@@ -3,10 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.contracts.models import AssistantRequest, ScreeningRankRequest
-from app.main import app
 from app.settings import Settings
-
-client = TestClient(app)
 
 
 def test_production_settings_rejects_insecure_defaults():
@@ -45,7 +42,7 @@ def test_production_settings_accepts_hardened_config():
     assert valid.auth_mode == "production"
 
 
-def test_assistant_endpoint_fails_closed_when_disabled(monkeypatch):
+def test_assistant_endpoint_fails_closed_when_disabled(client: TestClient, monkeypatch):
     from app import settings as s_mod
     monkeypatch.setattr(s_mod.settings, "llm_enabled", False)
     monkeypatch.setattr(s_mod.settings, "rag_enabled", False)
@@ -61,7 +58,7 @@ def test_assistant_endpoint_fails_closed_when_disabled(monkeypatch):
     assert "query_assistant" in data["message"].lower() or "disabled" in data["message"].lower()
 
 
-def test_screening_rank_endpoint_does_not_mutate_decisions(db_session):
+def test_screening_rank_endpoint_does_not_mutate_decisions(client: TestClient, db_session):
     from app.db.models import WorkspaceModel
     ws = WorkspaceModel(title="Security WS", created_by="tester")
     db_session.add(ws)
@@ -73,4 +70,3 @@ def test_screening_rank_endpoint_does_not_mutate_decisions(db_session):
     data = response.json()
     assert data["workspace_id"] == ws.id
     assert "status" in data
-
