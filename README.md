@@ -125,14 +125,15 @@ Evidra is organized into 4 parallel work streams governed by [24 implementation 
 
 ### Hosted demo on Render
 
-See [docs/deploy-render.md](docs/deploy-render.md): set up from `render.yaml`, private behind a shared site password, with the demo review preloaded.
+See [docs/deploy-render.md](docs/deploy-render.md): set up from `render.yaml` with user accounts (`AUTH_MODE=accounts`), review data in Neon Postgres (`DATABASE_URL`), and optional Google sign-in (`GOOGLE_CLIENT_ID`).
 
 ### 2. Single-Host Docker Deployment (Fastest)
 ```bash
-# Build and run the entire unified system (Backend API + Frontend SPA + SQLite WAL)
-# Production mode needs a secret key and the shared site password people will type to open it
+# Build and run the entire unified system (Backend API + Frontend SPA + Neon Postgres)
+# Production mode needs a secret key and a Postgres connection string (AUTH_MODE=accounts is set for you)
 export SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
-export SITE_PASSWORD='choose-a-password'
+export DATABASE_URL='postgresql://USER:PASSWORD@HOST/DB?sslmode=require'   # Neon pooled connection string
+# export GOOGLE_CLIENT_ID='...apps.googleusercontent.com'                  # optional: enables "Continue with Google"
 docker compose -f infra/docker-compose.yml up --build
 
 # Verify readiness

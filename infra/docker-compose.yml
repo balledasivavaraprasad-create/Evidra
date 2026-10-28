@@ -11,14 +11,16 @@ services:
       - "8000:8000"
     environment:
       - APP_ENV=production
-      # Production refuses AUTH_MODE=local; the shared-password gate keeps the demo private.
-      - AUTH_MODE=password
-      # Set both in infra/.env or your shell (never commit real values):
+      # Production refuses AUTH_MODE=local: people sign up and sign in, and see only their own reviews.
+      - AUTH_MODE=accounts
+      # Set these in infra/.env or your shell (never commit real values):
       - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY to a random string of at least 32 characters}
-      - SITE_PASSWORD=${SITE_PASSWORD:?Set SITE_PASSWORD to the password people will type to open the site}
-      - SEED_DEMO=${SEED_DEMO:-true}
+      # Neon pooled connection string, e.g. postgresql://USER:PASSWORD@HOST/DB?sslmode=require
+      - DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL to your Neon Postgres (pooled) connection string}
+      # Optional: enables "Continue with Google" on the sign-in page
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - SEED_DEMO=${SEED_DEMO:-false}
       - DATA_DIR=/app/data
-      - DATABASE_URL=sqlite:////app/data/review.sqlite
       - CHECKPOINT_DATABASE_URL=sqlite:////app/data/checkpoints.sqlite
       - SOURCE_RATE_LIMIT_PER_SECOND=3.0
       - WORKERS=1
