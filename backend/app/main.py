@@ -410,8 +410,11 @@ def health_ready(db: Session = Depends(get_db)) -> JSONResponse:  # noqa: B008
 )
 def get_capabilities() -> CapabilitiesResponse:
     """Return runtime system capabilities (safe public boolean flags from settings)."""
+    from app.gateway.adapter import HTTPXModelAdapter
+
     return CapabilitiesResponse(
-        llm_enabled=bool(settings.llm_enabled),
+        # On only when it is switched on AND a key is set; otherwise the UI says it is off
+        llm_enabled=bool(settings.llm_enabled) and HTTPXModelAdapter(default_model=settings.llm_model_alias).is_enabled(),
         rag_enabled=bool(settings.rag_enabled),
     )
 
@@ -1204,8 +1207,17 @@ def query_assistant(
             detail=f"Workspace '{workspace_id}' has no corpus revision to query",
         )
 
+    from app.gateway.adapter import HTTPXModelAdapter
+    from app.services.evidence import SqliteEvidenceRepository
     from app.workflows.assistant import BoundedEvidenceAssistant
-    assistant = BoundedEvidenceAssistant()
+
+    # The key and model come from settings (server side only); with no key the adapter reports AI
+    # as disabled and the assistant answers from the paper's own text.
+    assistant = BoundedEvidenceAssistant(
+        retrieval_repo=SqliteEvidenceRepository(db),
+        gateway=HTTPXModelAdapter(default_model=settings.llm_model_alias),
+        model_alias=settings.llm_model_alias,
+    )
     return assistant.answer_query(
         workspace_id=workspace_id,
         corpus_revision_id=rev.id,

@@ -95,6 +95,18 @@
             "title": "Confidence Rationale",
             "type": "string"
           },
+          "model_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the AI model could not answer (bad key, quota, timeout...), in plain words; null if it did",
+            "title": "Model Error"
+          },
           "proposal_text": {
             "title": "Proposal Text",
             "type": "string"

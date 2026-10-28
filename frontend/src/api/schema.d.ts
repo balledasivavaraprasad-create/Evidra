@@ -1294,6 +1294,11 @@ export interface components {
             citations?: components["schemas"]["RetrievalChunk"][];
             /** Confidence Rationale */
             confidence_rationale: string;
+            /**
+             * Model Error
+             * @description Why the AI model could not answer (bad key, quota, timeout...), in plain words; null if it did
+             */
+            model_error?: string | null;
             /** Proposal Text */
             proposal_text: string;
             /**

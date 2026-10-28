@@ -700,6 +700,10 @@ class AssistantProposal(BaseModel):
     citations: list[RetrievalChunk] = Field(default_factory=list)
     confidence_rationale: str
     requires_human_approval: bool = True
+    model_error: str | None = Field(
+        default=None,
+        description="Why the AI model could not answer (bad key, quota, timeout...), in plain words; null if it did",
+    )
 
 
 # ============================================================================
