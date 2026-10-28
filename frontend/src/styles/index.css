@@ -1,4 +1,10 @@
 /* Evidra Design System — Ultra-Luxe Evidence Observatory */
+@import "tailwindcss";
+
+/* ThemeContext toggles .dark / .light on <html>; components use dark: and light: prefixes */
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant light (&:where(.light, .light *));
+
 @layer base {
   :root {
     /* Default Luxury Dark Mode (Obsidian, Silver, Gold) */
@@ -60,6 +66,8 @@
   }
 }
 
+/* Layered so Tailwind utilities (layer: utilities) override these defaults */
+@layer base {
 * {
   box-sizing: border-box;
   margin: 0;
@@ -79,7 +87,9 @@ body {
 code, pre, .font-mono {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
+}
 
+@layer components {
 /* Frosted Glass Look (Apple / Luxury Aesthetic) */
 .glass-panel {
   background: var(--bg-card);
@@ -149,6 +159,7 @@ code, pre, .font-mono {
 
 .skip-link:focus {
   top: 1rem;
+}
 }
 
 /* Sleek Scrollbar */
