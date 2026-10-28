@@ -10,6 +10,7 @@ from collections.abc import Callable, Mapping
 
 from app.contracts.models import CriterionDefinition
 from app.screening.defaults import DEFAULT_CRITERIA_DEFINITIONS
+from app.terms import POPULATION_LEAD_RE, trim_stop_words
 
 # One-letter and long PICO keys both accepted
 _PICO_KEYS: tuple[tuple[str, str, str], ...] = (
@@ -20,23 +21,6 @@ _PICO_KEYS: tuple[tuple[str, str, str], ...] = (
 )
 
 _SPLIT_RE = re.compile(r"[,;/()]|\s+or\s+", re.IGNORECASE)
-
-# Function words only: a keyword made of nothing else is dropped, and they are trimmed off its ends
-_STOP_WORDS = frozenset(
-    {
-        "a", "an", "the", "of", "in", "on", "at", "to", "by", "for", "with", "without", "and", "or",
-        "as", "from", "than", "versus", "vs", "among", "amongst", "who", "whom", "that", "which",
-        "is", "are", "was", "were", "be", "been", "having", "have", "has", "had", "any", "all",
-        "other", "another", "either", "both", "such", "using", "use", "treated", "treatment",
-    }
-)
-
-# "patients with", "adults with" ... in front of the actual condition
-_POPULATION_LEAD_RE = re.compile(
-    r"^(?:(?:adult|adults|patient|patients|people|persons?|individuals?|participants?|subjects?|"
-    r"children|men|women|elderly|older adults|humans?)\s+(?:with|having|who have|diagnosed with|suffering from|at risk of)\s+)+",
-    re.IGNORECASE,
-)
 
 # "hospitalization for heart failure" is also written "heart failure hospitalization"
 _SWAP_RE = re.compile(r"^(?P<head>.+?)\s+(?:for|of|in|from|due to)\s+(?P<tail>.+)$", re.IGNORECASE)
@@ -54,15 +38,6 @@ GENERIC_RULE_IDS = (
 SynonymProvider = Callable[[str, list[str]], list[str]]
 
 
-def _trim_stop_words(term: str) -> str:
-    words = term.split()
-    while words and words[0].lower() in _STOP_WORDS:
-        words.pop(0)
-    while words and words[-1].lower() in _STOP_WORDS:
-        words.pop()
-    return " ".join(words)
-
-
 def split_keywords(field: str | None, *, population: bool = False) -> list[str]:
     """Turn one PICO field into search keywords.
 
@@ -75,7 +50,7 @@ def split_keywords(field: str | None, *, population: bool = False) -> list[str]:
     out: list[str] = []
 
     def add(term: str) -> None:
-        term = _trim_stop_words(re.sub(r"\s+", " ", term).strip(" .:-–—\"'"))
+        term = trim_stop_words(re.sub(r"\s+", " ", term).strip(" .:-–—\"'"))
         if term and term.lower() not in seen:
             seen.add(term.lower())
             out.append(term)
@@ -83,9 +58,9 @@ def split_keywords(field: str | None, *, population: bool = False) -> list[str]:
     for raw in _SPLIT_RE.split(field or ""):
         term = raw.strip()
         if population:
-            term = _POPULATION_LEAD_RE.sub("", term)
+            term = POPULATION_LEAD_RE.sub("", term)
         add(term)
-        swap = _SWAP_RE.match(_trim_stop_words(term))
+        swap = _SWAP_RE.match(trim_stop_words(term))
         if swap and not population:
             add(f"{swap.group('tail')} {swap.group('head')}")
     return out

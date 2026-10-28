@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderToString } from "react-dom/server";
+import { api } from "../api/client";
 import type {
   CriteriaVersionResponse,
   JobResponse,
@@ -12,6 +13,9 @@ import { QueryBuilder } from "../features/search/QueryBuilder";
 import { ImportWorkflow } from "../features/runs/ImportWorkflow";
 import {
   executionLabel,
+  isImportable,
+  isTicked,
+  nothingFoundMessage,
   selectedIds,
   sortExecutions,
   upsertExecution,
@@ -387,5 +391,51 @@ describe("loading the setup page's data", () => {
       [failing]: () => new Response("Internal Server Error", { status: 500, headers: { "content-type": "text/plain" } }),
     });
     await expect(loadSetupData("ws-1")).rejects.toMatchObject({ status: 500 });
+  });
+});
+
+describe("a count that finds nothing", () => {
+  const found = exec("aaaaaaaa11111111", { hit_count: 1200 });
+  // Older saved data could still say "ticked" for a 0-hit count
+  const empty = exec("bbbbbbbb22222222", { source: "europepmc", hit_count: 0, selected_for_import: true });
+
+  it("is never counted as ticked for import", () => {
+    expect(isImportable(empty)).toBe(false);
+    expect(isTicked(empty)).toBe(false);
+    expect(selectedIds([found, empty])).toEqual([found.id]);
+  });
+
+  it("is named after its source", () => {
+    expect(nothingFoundMessage("europepmc")).toBe("Nothing found on Europe PMC");
+    expect(nothingFoundMessage("pubmed")).toBe("Nothing found on PubMed");
+  });
+
+  it("shows as unticked, locked and labelled in the list", () => {
+    const markup = renderToString(
+      <QueryBuilder workspaceId="ws-1" criteriaVersionId="crit-1" savedQuery={savedQuery} savedExecutions={[found, empty]} />,
+    ).replace(/<!-- -->/g, "");
+    const tag = inputTag(markup, /Import europepmc · 22222222/);
+    expect(tag).not.toMatch(/\schecked=""/);
+    expect(tag).toMatch(/\sdisabled=""/);
+    expect(markup).toContain("Nothing found on Europe PMC");
+    expect(markup).toContain("1 of 2 selected for import");
+    expect(inputTag(markup, /Import pubmed · 11111111/)).toMatch(/\schecked=""/);
+  });
+});
+
+describe("a source that does not answer", () => {
+  it("surfaces the server's plain message instead of a generic failure", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({ code: "SOURCE_UNAVAILABLE", message: "Europe PMC didn't respond: the request timed out", retryable: true }),
+          { status: 502, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+    const err = await api.queries.executeSearch("qv-1", { source: "europepmc", synonym_expansion: false }).catch((e) => e);
+    expect(err.message).toBe("Europe PMC didn't respond: the request timed out");
+    expect(err.code).toBe("SOURCE_UNAVAILABLE");
   });
 });

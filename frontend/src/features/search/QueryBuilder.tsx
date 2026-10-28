@@ -15,7 +15,16 @@ import {
   isValidDateFormat,
   type QueryGroupClause,
 } from "./astCompiler";
-import { executionLabel, selectedIds, sortExecutions, upsertExecution, withSelection } from "./executions";
+import {
+  executionLabel,
+  isImportable,
+  isTicked,
+  nothingFoundMessage,
+  selectedIds,
+  sortExecutions,
+  upsertExecution,
+  withSelection,
+} from "./executions";
 
 /** Shown while there is no saved review question to attach the query to. */
 export const SAVE_QUESTION_HINT = "Save the review question first.";
@@ -92,6 +101,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
   const [executions, setExecutions] = useState<SearchExecutionResponse[]>(() => sortExecutions(savedExecutions ?? []));
   const executionsRef = useRef(executions);
   const [countErrors, setCountErrors] = useState<Partial<Record<SourceNamespace, string>>>({});
+  const [countNotes, setCountNotes] = useState<Partial<Record<SourceNamespace, string>>>({});
   const [pendingTicks, setPendingTicks] = useState<ReadonlySet<string>>(new Set());
   const [tickErrors, setTickErrors] = useState<Record<string, string>>({});
 
@@ -198,6 +208,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
       if (qResp.id !== activeQuery?.id) {
         commitExecutions([]);
         setCountErrors({});
+        setCountNotes({});
         setTickErrors({});
       }
       setActiveQuery(qResp);
@@ -221,6 +232,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
 
     setExecutingSource(source);
     setCountErrors((prev) => ({ ...prev, [source]: undefined }));
+    setCountNotes((prev) => ({ ...prev, [source]: undefined }));
 
     try {
       const execResp = await api.queries.executeSearch(activeQuery.id, {
@@ -229,6 +241,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
       });
       // The same saved query counted again returns its recorded row: replace it, never add a second
       commitExecutions(upsertExecution(executionsRef.current, execResp));
+      if (!isImportable(execResp)) setCountNotes((prev) => ({ ...prev, [source]: nothingFoundMessage(source) }));
     } catch (err: unknown) {
       setCountErrors((prev) => ({ ...prev, [source]: messageOf(err, `Failed to execute search count on ${source}`) }));
     } finally {
@@ -238,8 +251,8 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
 
   const toggleExecutionSelection = async (id: string) => {
     const row = executionsRef.current.find((e) => e.id === id);
-    if (!row || pendingTicks.has(id)) return;
-    const next = !row.selected_for_import;
+    if (!row || pendingTicks.has(id) || !isImportable(row)) return;
+    const next = !isTicked(row);
 
     setPendingTicks((prev) => new Set(prev).add(id));
     setTickErrors((prev) => ({ ...prev, [id]: "" }));
@@ -473,7 +486,13 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
                 type="button"
                 disabled={!criteriaReady || !activeQuery || executingSource === src}
                 aria-describedby={
-                  countErrors[src] ? `count-error-${src}` : criteriaReady ? undefined : "query-criteria-hint"
+                  countErrors[src]
+                    ? `count-error-${src}`
+                    : countNotes[src]
+                      ? `count-note-${src}`
+                      : criteriaReady
+                        ? undefined
+                        : "query-criteria-hint"
                 }
                 onClick={() => handleRunSearchCount(src)}
                 className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-lg text-xs font-medium transition disabled:opacity-40"
@@ -481,6 +500,11 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
                 <Play className="w-3 h-3 text-emerald-400" />
                 <span>{executingSource === src ? `Counting ${src}...` : `Count on ${src}`}</span>
               </button>
+              {countNotes[src] && !countErrors[src] && (
+                <p id={`count-note-${src}`} role="status" className="max-w-[16rem] text-right text-[11px] text-amber-300">
+                  {countNotes[src]}
+                </p>
+              )}
               {countErrors[src] && (
                 <p id={`count-error-${src}`} role="alert" className="max-w-[16rem] text-right text-[11px] text-red-300">
                   {countErrors[src]}
@@ -508,7 +532,8 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
 
           <div className="space-y-2.5">
             {executions.map((exec) => {
-              const isSelected = exec.selected_for_import;
+              const isSelected = isTicked(exec);
+              const nothing = !isImportable(exec);
               const pending = pendingTicks.has(exec.id);
               return (
                 <div key={exec.id}>
@@ -523,7 +548,8 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        disabled={pending}
+                        disabled={pending || nothing}
+                        title={nothing ? "Nothing was found, so there is nothing to import" : undefined}
                         onChange={() => toggleExecutionSelection(exec.id)}
                         aria-label={`Import ${executionLabel(exec)}`}
                         className="rounded border-slate-700 text-indigo-600 focus:ring-0"
@@ -534,6 +560,11 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
                           <span className="text-[11px] text-slate-400">
                             {new Date(exec.counted_at).toLocaleTimeString()}
                           </span>
+                          {nothing && (
+                            <span className="text-[10px] px-1.5 py-0.2 bg-slate-800 text-slate-300 rounded">
+                              {nothingFoundMessage(exec.source)}
+                            </span>
+                          )}
                           {exec.partial && (
                             <span className="text-[10px] px-1.5 py-0.2 bg-amber-950 text-amber-300 rounded">
                               Truncated / Capped

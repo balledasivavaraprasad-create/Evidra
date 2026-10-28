@@ -92,6 +92,11 @@ def set_execution_selection(db: Session, execution_id: str, selected: bool) -> S
     row = db.get(SearchExecutionModel, execution_id)
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search count not found")
+    if selected and row.hit_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This count found nothing, so there is nothing to import from it.",
+        )
     row.selected_for_import = selected
     db.commit()
     return SearchExecutionResponse.model_validate(row)

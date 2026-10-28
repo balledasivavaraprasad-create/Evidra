@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -168,6 +169,7 @@ from app.auth import (
 )
 from app.services.access import enforce_review_access
 from app.settings import settings
+from app.sources.errors import SourceUnavailableError, describe_source_error
 from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
 from app.sources.translator import translate_query
@@ -278,6 +280,13 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         details=None,
     )
     return JSONResponse(status_code=exc.status_code, content=envelope.model_dump())
+
+
+@app.exception_handler(SourceUnavailableError)
+async def source_unavailable_handler(request: Request, exc: SourceUnavailableError) -> JSONResponse:
+    """A literature source is down or slow: a plain 502 the reviewer can read, safe to retry."""
+    envelope = ErrorEnvelope(code="SOURCE_UNAVAILABLE", message=str(exc), retryable=True, details=None)
+    return JSONResponse(status_code=status.HTTP_502_BAD_GATEWAY, content=envelope.model_dump())
 
 
 @app.exception_handler(RequestValidationError)
@@ -761,12 +770,15 @@ def execute_search_count(
         synonym_expansion=payload.synonym_expansion,
     )
 
-    if payload.source == SourceNamespace.PUBMED:
-        adapter = PubMedAdapter()
-        res = adapter.search_count(q_row.id, exact_query, payload.cap)
-    elif payload.source == SourceNamespace.EUROPEPMC:
-        adapter = EuropePMCAdapter()
-        res = adapter.search_count(q_row.id, exact_query, payload.synonym_expansion, payload.cap)
+    if payload.source in (SourceNamespace.PUBMED, SourceNamespace.EUROPEPMC):
+        try:
+            if payload.source == SourceNamespace.PUBMED:
+                res = PubMedAdapter().search_count(q_row.id, exact_query, payload.cap)
+            else:
+                res = EuropePMCAdapter().search_count(q_row.id, exact_query, payload.synonym_expansion, payload.cap)
+        except (httpx.HTTPError, ValueError, KeyError) as exc:
+            logger.warning("Count on %s failed: %s", payload.source.value, type(exc).__name__)
+            raise SourceUnavailableError(payload.source.value, describe_source_error(exc)) from exc
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -791,11 +803,13 @@ def execute_search_count(
         partial=res.partial,
         cap=res.cap,
         raw_hash=res.raw_hash,
+        # Nothing found means nothing to import: never tick a 0-hit count
+        selected_for_import=res.hit_count > 0,
     )
     db.add(exec_model)
     db.commit()
     db.refresh(exec_model)
-    return res
+    return res.model_copy(update={"selected_for_import": exec_model.selected_for_import})
 
 
 @app.post(
