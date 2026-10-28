@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Scale } from "lucide-react";
 import {
   api,
   DevilsAdvocateChallengeResponse,
@@ -123,7 +124,7 @@ export const DevilsAdvocateCard: React.FC<DevilsAdvocateCardProps> = ({
       case "reconsider_exclusion":
         return {
           bg: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-          label: "⚠️ Reconsider Exclusion Recommended",
+          label: "Reconsider exclusion",
           desc: "Substantial evidence identified that challenges this exclusion.",
         };
       case "needs_human_review":
@@ -188,7 +189,7 @@ export const DevilsAdvocateCard: React.FC<DevilsAdvocateCardProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-              <span className="text-lg">⚖️</span> Devil's Advocate Reviewer
+              <Scale className="w-4 h-4 text-amber-400" aria-hidden="true" /> Devil's Advocate Reviewer
             </h3>
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${dispBadge.bg}`}>
               {dispBadge.label}

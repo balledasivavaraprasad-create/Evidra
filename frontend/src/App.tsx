@@ -33,7 +33,7 @@ export const App: React.FC = () => {
           <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
             <DashGridBackground />
             <Header />
-          <main id="main-content" className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <main id="main-content" className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-10">
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<LandingPage />} />

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, FolderPlus, ArrowRight, Layers, Calendar, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Plus, FolderPlus, ArrowRight, Calendar, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { api, type WorkspaceResponse } from "../../api/client";
 
 export const WorkspacesPage: React.FC = () => {
@@ -36,11 +36,11 @@ export const WorkspacesPage: React.FC = () => {
       setWorkspaces((prev) => [newWs, ...prev]);
       setTitle("");
       setDescription("");
-      setFeedback({ type: "success", message: `Workspace '${newWs.title}' created successfully on SQLite database!` });
+      setFeedback({ type: "success", message: `Created “${newWs.title}”.` });
     } catch (err: any) {
       setFeedback({
         type: "error",
-        message: err.message || "Failed to create workspace via backend API.",
+        message: err.message || "Couldn’t create the workspace. Check that the backend is running, then try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -48,19 +48,18 @@ export const WorkspacesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Review Workspaces</h1>
-          <p className="text-slate-400 text-sm">
-            Manage your systematic reviews, protocol criteria, and literature corpuses.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-10 pb-12">
+      <header className="max-w-2xl space-y-2">
+        <h1 className="text-2xl text-[var(--text-primary)]">Review workspaces</h1>
+        <p className="text-[var(--text-secondary)]">
+          Each workspace holds one systematic review: its protocol, criteria versions and literature corpus.
+        </p>
+      </header>
 
       {feedback && (
         <div
-          className={`p-4 rounded-xl flex items-center gap-3 text-xs font-mono border ${
+          role="status"
+          className={`p-4 rounded-xl flex items-center gap-3 text-sm border ${
             feedback.type === "success"
               ? "bg-emerald-950/60 text-emerald-300 border-emerald-800/80"
               : "bg-red-950/60 text-red-300 border-red-800/80"
@@ -75,86 +74,97 @@ export const WorkspacesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Create Workspace Form */}
-      <div className="glass-panel p-6 border-slate-800">
-        <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-          <FolderPlus className="w-4 h-4 text-cyan-400" />
-          <span>Create New Review Workspace</span>
-        </h2>
-        <form onSubmit={handleCreate} className="space-y-4 max-w-2xl">
-          <div>
-            <label htmlFor="ws-title" className="block text-xs font-medium text-slate-300 mb-1">
-              Review Title *
-            </label>
-            <input
-              id="ws-title"
-              type="text"
-              required
-              placeholder="e.g. In adults with T2D, how does Metformin affect HbA1c?"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-cyan-500 focus:outline-none"
-            />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Workspaces list */}
+        <section aria-labelledby="ws-list-heading" className="lg:col-span-7 xl:col-span-8 space-y-4">
+          <div className="flex items-baseline justify-between">
+            <h2 id="ws-list-heading" className="text-xl text-[var(--text-primary)]">
+              Your reviews
+            </h2>
+            <span className="text-sm text-[var(--text-muted)]">
+              {workspaces.length} {workspaces.length === 1 ? "workspace" : "workspaces"}
+            </span>
           </div>
-          <div>
-            <label htmlFor="ws-desc" className="block text-xs font-medium text-slate-300 mb-1">
-              Protocol Context & Scope (Optional)
-            </label>
-            <textarea
-              id="ws-desc"
-              rows={2}
-              placeholder="Brief context regarding question, population, and planned synthesis..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-cyan-500 focus:outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isSubmitting || !title.trim()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-medium text-xs transition"
-          >
-            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            <span>Create Workspace (POST /api/v1/workspaces)</span>
-          </button>
-        </form>
-      </div>
 
-      {/* Workspaces List */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider font-mono">
-          Available Workspaces ({workspaces.length})
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {workspaces.map((ws) => (
-            <div key={ws.id} className="glass-panel p-5 space-y-4 glass-panel-hover flex flex-col justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                    {ws.id}
-                  </span>
-                  <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(ws.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-                <h4 className="font-semibold text-white text-base leading-snug">{ws.title}</h4>
-                {ws.description && <p className="text-slate-400 text-xs line-clamp-2">{ws.description}</p>}
-              </div>
-
-              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                <span className="text-[11px] text-cyan-400 font-mono">Revision: {ws.current_revision_id || "Initial"}</span>
+          <ul className="space-y-3">
+            {workspaces.map((ws) => (
+              <li key={ws.id}>
                 <Link
                   to={`/reviews/${ws.id}/records`}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition"
+                  className="group glass-panel flex flex-col sm:flex-row sm:items-center gap-4 p-5 sm:p-6 hover:border-[var(--border-gold)]"
                 >
-                  <span>Open Workbench</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <h3 className="font-semibold text-[var(--text-primary)] text-base leading-snug">{ws.title}</h3>
+                    {ws.description && (
+                      <p className="text-sm text-[var(--text-muted)] line-clamp-2">{ws.description}</p>
+                    )}
+                    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-[var(--text-muted)]">
+                      <span className="font-mono">{ws.id}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Created {new Date(ws.created_at).toLocaleDateString()}
+                      </span>
+                      <span>Revision {ws.current_revision_id || "initial"}</span>
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--accent-gold)] shrink-0">
+                    Open workbench
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                  </span>
                 </Link>
-              </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Create form */}
+        <aside className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24">
+          <div className="glass-panel-luxury p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <span className="grid place-items-center w-9 h-9 rounded-lg border border-[var(--border-gold)] bg-[var(--gold-glow)]">
+                <FolderPlus className="w-4 h-4 text-[var(--accent-gold)]" strokeWidth={1.75} />
+              </span>
+              <h2 className="text-xl text-[var(--text-primary)]">New workspace</h2>
             </div>
-          ))}
-        </div>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="ws-title" className="block text-sm font-medium text-[var(--text-secondary)]">
+                  Review question
+                </label>
+                <input
+                  id="ws-title"
+                  type="text"
+                  required
+                  placeholder="In adults with T2D, how does metformin affect HbA1c?"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[var(--bg-base)]/60 border border-[var(--border-silver)] text-[var(--text-primary)] text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="ws-desc" className="block text-sm font-medium text-[var(--text-secondary)]">
+                  Protocol context <span className="font-normal text-[var(--text-muted)]">(optional)</span>
+                </label>
+                <textarea
+                  id="ws-desc"
+                  rows={3}
+                  placeholder="Population, comparators and planned synthesis"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[var(--bg-base)]/60 border border-[var(--border-silver)] text-[var(--text-primary)] text-sm resize-y"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting || !title.trim()}
+                className="btn-gold w-full disabled:opacity-50 disabled:filter-none"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Create workspace
+              </button>
+            </form>
+          </div>
+        </aside>
       </div>
     </div>
   );

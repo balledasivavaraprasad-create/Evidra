@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Scale } from "lucide-react";
 import { useParams, Link } from "react-router-dom";
 import {
   api,
@@ -74,12 +75,12 @@ export const DevilsAdvocateDashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="space-y-8 pb-12">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <span className="text-3xl">⚖️</span>
+            <span className="grid place-items-center w-11 h-11 rounded-xl border border-amber-500/30 bg-amber-500/10"><Scale className="w-5 h-5 text-amber-400" strokeWidth={1.75} aria-hidden="true" /></span>
             <div>
               <h1 className="text-2xl font-bold text-slate-100">
                 Devil's Advocate Reviewer
@@ -182,7 +183,7 @@ export const DevilsAdvocateDashboard: React.FC = () => {
               : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800"
           }`}
         >
-          ⚠️ High Vulnerability ({data?.high_vulnerability_count || 0})
+          High vulnerability ({data?.high_vulnerability_count || 0})
         </button>
         <button
           onClick={() => setActiveTab("pending")}
@@ -228,7 +229,7 @@ export const DevilsAdvocateDashboard: React.FC = () => {
         </div>
       ) : !data || !data.challenges || data.challenges.length === 0 ? (
         <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-xl text-slate-400">
-          <div className="text-3xl mb-2">⚖️</div>
+          <Scale className="w-8 h-8 mx-auto mb-3 text-slate-500" strokeWidth={1.5} aria-hidden="true" />
           <p className="text-base font-semibold text-slate-200">No challenged exclusions match this filter.</p>
           <p className="text-xs text-slate-500 mt-1">
             Exclusions marked in the review workbench are automatically audited here.

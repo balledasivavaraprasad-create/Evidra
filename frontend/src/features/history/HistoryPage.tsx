@@ -136,20 +136,20 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline
   return (
     <div className="space-y-6 pb-16 animate-fadeIn">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-5 border-b border-slate-800 pb-6">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+          <div className="flex items-start gap-3">
+            <div className="p-2 mt-1 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
               <History className="w-5 h-5" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <div className="space-y-1.5">
+              <h1 className="text-xl font-bold text-white flex flex-wrap items-center gap-x-3 gap-y-1">
                 Version History & Exact Snapshot Restore
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                   Level 2 Offline Core
                 </span>
               </h1>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-sm text-slate-400 max-w-[70ch]">
                 Inspect immutable review iterations, review cross-version diffs, and exact-restore previous states without re-fetching literature.
               </p>
             </div>
@@ -157,7 +157,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline
         </div>
 
         {/* Tab switcher */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 self-start md:self-auto">
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 self-start xl:self-auto shrink-0 whitespace-nowrap">
           <button
             type="button"
             onClick={() => startTransition(() => setActiveTab("timeline"))}

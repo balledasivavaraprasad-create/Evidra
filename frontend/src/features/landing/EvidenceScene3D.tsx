@@ -73,16 +73,16 @@ const EvidenceCore: React.FC<EvidenceCoreProps> = ({ scrollProgress }) => {
       {/* Ambient & Directional Lighting with Silver & Gold Sheen */}
       <ambientLight intensity={0.7} />
       <directionalLight position={[5, 8, 5]} intensity={1.5} color="#ffffff" />
-      <directionalLight position={[-5, -4, -5]} intensity={0.9} color="#d4af37" />
-      <pointLight position={[0, 0, 0]} intensity={2.0} color="#38bdf8" distance={6} />
+      <directionalLight position={[-5, -4, -5]} intensity={0.9} color="#d8b46a" />
+      <pointLight position={[0, 0, 0]} intensity={2.0} color="#8db4d9" distance={6} />
 
       {/* Central Faceted Evidence Crystal (Icosahedron) */}
       <mesh ref={coreRef} position={[0, 0, 0]}>
         <icosahedronGeometry args={[1.1, 1]} />
         <meshPhysicalMaterial
           color="#e2e8f0"
-          emissive="#0284c7"
-          emissiveIntensity={0.3}
+          emissive="#2f5f8f"
+          emissiveIntensity={0.25}
           metalness={0.85}
           roughness={0.12}
           clearcoat={1.0}
@@ -103,7 +103,7 @@ const EvidenceCore: React.FC<EvidenceCoreProps> = ({ scrollProgress }) => {
       <group ref={outerRingRef}>
         <mesh rotation={[-Math.PI / 4, 0, Math.PI / 6]}>
           <torusGeometry args={[2.8, 0.022, 16, 120]} />
-          <meshStandardMaterial color="#d4af37" metalness={0.8} roughness={0.25} />
+          <meshStandardMaterial color="#d8b46a" metalness={0.8} roughness={0.25} />
         </mesh>
       </group>
 
@@ -112,8 +112,8 @@ const EvidenceCore: React.FC<EvidenceCoreProps> = ({ scrollProgress }) => {
         <mesh key={idx} position={pos}>
           <sphereGeometry args={[0.065, 12, 12]} />
           <meshStandardMaterial
-            color={idx % 2 === 0 ? "#38bdf8" : "#fbbf24"}
-            emissive={idx % 2 === 0 ? "#0284c7" : "#d97706"}
+            color={idx % 2 === 0 ? "#8db4d9" : "#d8b46a"}
+            emissive={idx % 2 === 0 ? "#2f5f8f" : "#9a7224"}
             emissiveIntensity={0.6}
             metalness={0.7}
             roughness={0.3}
@@ -126,22 +126,22 @@ const EvidenceCore: React.FC<EvidenceCoreProps> = ({ scrollProgress }) => {
         {/* P - Population (Cyan) */}
         <mesh position={[1.8, 0.8, 0]}>
           <octahedronGeometry args={[0.2, 0]} />
-          <meshStandardMaterial color="#06b6d4" emissive="#0891b2" emissiveIntensity={0.8} />
+          <meshStandardMaterial color="#8db4d9" emissive="#2f5f8f" emissiveIntensity={0.8} />
         </mesh>
         {/* I - Intervention (Purple) */}
         <mesh position={[-1.8, 0.8, 0]}>
           <octahedronGeometry args={[0.2, 0]} />
-          <meshStandardMaterial color="#a855f7" emissive="#7e22ce" emissiveIntensity={0.8} />
+          <meshStandardMaterial color="#b79ce6" emissive="#6b4fa8" emissiveIntensity={0.8} />
         </mesh>
         {/* C - Comparison (Gold) */}
         <mesh position={[0, -1.6, 1.2]}>
           <octahedronGeometry args={[0.2, 0]} />
-          <meshStandardMaterial color="#f59e0b" emissive="#b45309" emissiveIntensity={0.8} />
+          <meshStandardMaterial color="#d8b46a" emissive="#9a7224" emissiveIntensity={0.8} />
         </mesh>
         {/* O - Outcome (Emerald) */}
         <mesh position={[0, -1.6, -1.2]}>
           <octahedronGeometry args={[0.2, 0]} />
-          <meshStandardMaterial color="#10b981" emissive="#059669" emissiveIntensity={0.8} />
+          <meshStandardMaterial color="#7cc49b" emissive="#3f7a58" emissiveIntensity={0.8} />
         </mesh>
       </group>
     </group>
@@ -179,7 +179,7 @@ export const EvidenceScene3D: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-full min-h-[380px] sm:min-h-[460px] relative overflow-hidden rounded-2xl">
+    <div className="w-full h-[380px] sm:h-[460px] relative overflow-hidden rounded-2xl">
       <Canvas
         camera={{ position: [0, 0.5, 5], fov: 45 }}
         dpr={[1, 1.5]}
