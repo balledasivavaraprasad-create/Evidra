@@ -46,6 +46,7 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | A02: Query builder and approved import experience | Merged | Commit `03a7acc`; grouped Boolean query builder, AST compilation, criteria editor, search count runner across PubMed and Europe PMC, approved ingestion workflow, durable job polling with exponential backoff and cancel, 13 frontend tests passing; see [A02 handoff](prompts/handoffs/A02.md) |
 | C-ML01: Review prioritization model and artifact security | Merged | Commit `68e4715`; offline TF-IDF ranking pipeline, strict SHA-256 artifact verification, train/test evaluation split, calibration and unit tests; see [C-ML01 handoff](prompts/handoffs/C-ML01.md) |
 | C-ML02: Full-stack ML review prioritization, UI, and E2E tests | Merged | Commit `91c8a29`; dedicated ML review UI (`frontend/src/features/ml-review/`), baseline ordering toggle, authorized ML ranking API, `MachineResultModel` caching, 13 backend tests passing, 27 frontend tests passing, Playwright E2E browser tests passing; see [C-ML02 handoff](prompts/handoffs/C-ML02.md) |
+| C-ML03: ML release verification, CPU benchmark, and evidence documentation | Merged | Commit `7a648f5`; automated release verification suite (`test_ml_release_verification.py`), sub-250ms batch CPU inference latency (0.352 ms/record), coexistence with `LLM_ENABLED=false` and `RAG_ENABLED=false`, zero GPU requirement, 17 ML tests passing, 178 backend tests passing, benchmark report and evidence documentation; see [C-ML03 handoff](prompts/handoffs/C-ML03.md) |
 | D03: Reviewer services and deterministic pipeline integration | Merged | Commit `78a8d01`; Alembic migration `002_review_services_schema`, paper groups, group snapshots, append-only review decision events, optimistic concurrency (409 on version collision), PICO offset/quote validation, dedup overrides, formula-sanitized CSV export, evidence retrieval repository, 74 backend tests passing; see [D03 handoff](prompts/handoffs/D03.md) |
 | D05: Version snapshots, decision lineage and exact restoration | Merged | Commit `ef5ff75`; Level 2 snapshot restoration, lineage projection (merge/split/extend/retain), decision carryover, merge conflict detection, structured diff, deterministic invalidation fingerprints, 8 Level 2 tests passing, 104 backend tests passing; see [D05 handoff](prompts/handoffs/D05.md) |
 | B04: Group merge/split and cross-version regression suite | Merged | Commit `14795d4`; cross-version regression suite covering bridge records, cannot-link/rejected edge preservation, single-trial distinct publication separation, split ambiguity conflicts, export blocking on unresolved conflicts, partition arrival invariance, 6 regression tests passing, 110 backend tests passing; see [B04 handoff](prompts/handoffs/B04.md) |
@@ -91,11 +92,12 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Deployment packaging, Docker single-host setup, demo script, and final release handoff (A06: `762cbd6`).
 - [x] Review prioritization model, dataset pipeline, and artifact security (C-ML01: `68e4715`).
 - [x] Full-stack ML review prioritization, UI, and E2E tests (C-ML02: `91c8a29`).
-- [x] All 24 base implementation prompts + ML foundation and full-stack integration completed, verified, and merged into main.
+- [x] ML release verification, CPU benchmark, and evidence documentation (C-ML03: `7a648f5`).
+- [x] All 24 base implementation prompts + all 3 ML Addendum prompts (all 9 dev-C tasks complete) completed, verified, and merged into main.
 
-The dependency probes have been completely replaced with full application code, test suites, and verified benchmark evaluations. All 24 base implementation prompts plus C-ML01 and C-ML02 are **100% COMPLETED, MERGED INTO MAIN, AND VERIFIED**.
+The dependency probes have been completely replaced with full application code, test suites, and verified benchmark evaluations. All 24 base implementation prompts plus the complete ML Addendum (C-ML01, C-ML02, C-ML03) are **100% COMPLETED, MERGED INTO MAIN, AND VERIFIED**. Developer C has completed all 9 assigned tasks (`C01`–`C06`, `C-ML01`–`C-ML03`).
 
-- **Total Backend Tests:** 174 passed in 3.55s.
+- **Total Backend Tests:** 178 passed in 3.98s.
 - **Total Frontend Tests:** 27 passed in 659ms.
 - **CI Stages Promoted:** Backend, Frontend, Integration, Level 2, and AI all active.
 - **Deployment Status:** Single-host Docker container packaging verified (`infra/Dockerfile`, `docker-compose.yml`, `entrypoint.sh`). Release Tag: `v1.0.0`.
