@@ -227,6 +227,7 @@ export const api = {
     ready: () => request<{ status: string; database: string }>("/health/ready"),
   },
   workspaces: {
+    list: () => request<WorkspaceResponse[]>("/api/v1/workspaces"),
     create: (payload: WorkspaceCreate) =>
       request<WorkspaceResponse>("/api/v1/workspaces", {
         method: "POST",

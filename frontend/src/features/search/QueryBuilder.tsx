@@ -19,6 +19,8 @@ interface QueryBuilderProps {
   criteriaVersionId?: string;
   onQuerySaved?: (query: QueryVersionResponse) => void;
   onExecutionSelected?: (selectedIds: string[]) => void;
+  /** Starting terms, one inner list per OR-group (defaults to the metformin example) */
+  initialTerms?: string[][];
 }
 
 export const QueryBuilder: React.FC<QueryBuilderProps> = ({
@@ -26,9 +28,17 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
   criteriaVersionId = "crit-ver-default",
   onQuerySaved,
   onExecutionSelected,
+  initialTerms,
 }) => {
   const [rootOperator, setRootOperator] = useState<BooleanOperator>("AND");
-  const [groups, setGroups] = useState<QueryGroupClause[]>([
+  const [groups, setGroups] = useState<QueryGroupClause[]>(() =>
+    initialTerms && initialTerms.length > 0
+      ? initialTerms.map((terms, gi) => ({
+          id: `grp-${gi + 1}`,
+          operator: "OR" as BooleanOperator,
+          clauses: (terms.length ? terms : [""]).map((term, ci) => ({ id: `c-${gi + 1}-${ci + 1}`, field: "all", term })),
+        }))
+      : [
     {
       id: "grp-1",
       operator: "OR",
@@ -45,7 +55,8 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
         { id: "c-4", field: "all", term: "T2D" },
       ],
     },
-  ]);
+  ]
+  );
 
   const [startDate, setStartDate] = useState("2020");
   const [endDate, setEndDate] = useState("2026");

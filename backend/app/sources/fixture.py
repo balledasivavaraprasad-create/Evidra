@@ -29,7 +29,7 @@ def get_fixture_search_count(
     raw_hash = hashlib.sha256(f"fixture-{source.value}-{exact_query}".encode()).hexdigest()
 
     return SearchExecutionResponse(
-        id=f"exec-fixture-{source.value}-{hashlib.sha256(exact_query.encode()).hexdigest()[:12]}",
+        id=f"exec-fixture-{source.value}-{hashlib.sha256((query_version_id + exact_query).encode()).hexdigest()[:12]}",
         query_version_id=query_version_id,
         source=source,
         exact_query=exact_query,

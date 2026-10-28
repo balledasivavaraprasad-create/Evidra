@@ -320,6 +320,18 @@ def create_workspace(payload: WorkspaceCreate, db: Session = Depends(get_db)) ->
     return WorkspaceResponse.model_validate(workspace)
 
 
+@app.get(
+    "/api/v1/workspaces",
+    tags=["Workspaces"],
+    summary="List review workspaces",
+    response_model=list[WorkspaceResponse],
+)
+def list_workspaces(db: Session = Depends(get_db)) -> list[WorkspaceResponse]:  # noqa: B008
+    """List every review workspace, newest first."""
+    workspaces = db.query(WorkspaceModel).order_by(WorkspaceModel.created_at.desc()).all()
+    return [WorkspaceResponse.model_validate(ws) for ws in workspaces]
+
+
 @app.post(
     "/api/v1/workspaces/{workspace_id}/criteria",
     tags=["Criteria"],
@@ -491,6 +503,12 @@ def execute_search_count(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported source namespace '{payload.source}'",
         )
+
+    # Execution ids are deterministic per query version and translated query, so counting the
+    # same saved query again returns the recorded execution instead of failing on a duplicate id.
+    existing = db.get(SearchExecutionModel, res.id)
+    if existing is not None:
+        return SearchExecutionResponse.model_validate(existing)
 
     exec_model = SearchExecutionModel(
         id=res.id,
