@@ -45,6 +45,17 @@ def run_corpus_pipeline_job(db: Session, job) -> None:
             criteria_version_id=crit_id,
             db=db,
         )
+        revision_id = result.get("corpus_revision_id")
+        if revision_id and not result.get("error"):
+            # Evidence claims, radar and challenges are made here, once, so no GET has to write them
+            from app.services.derived import precompute_review_artifacts
+
+            try:
+                made = precompute_review_artifacts(db, job.workspace_id, revision_id)
+                logger.info("Prepared evidence for job %s: %s", job.id, made)
+            except Exception:  # noqa: BLE001 - the papers are screened even if this step fails
+                db.rollback()
+                logger.exception("Could not prepare evidence artifacts for job %s", job.id)
         if result.get("error"):
             fail_job(db, job.id, ErrorEnvelope(code="WORKFLOW_ERROR", message=result["error"]))
         elif result.get("__interrupt__"):

@@ -1,8 +1,10 @@
 """Deterministic regular expression patterns and keywords for baseline PICO extraction."""
 import re
+from collections.abc import Mapping, Sequence
 from typing import NamedTuple
 
 from app.contracts.enums import PicoLabel
+from app.terms import keyword_pattern, keyword_variants
 
 
 class PicoRule(NamedTuple):
@@ -116,3 +118,35 @@ def compile_rules() -> list[PicoRule]:
 
 
 COMPILED_RULES = compile_rules()
+
+# ---------------------------------------------------------------------------
+# Patterns built from the review's own P / I / C / O keywords
+# ---------------------------------------------------------------------------
+REVIEW_RULE_PRIORITY = 30  # above the generic patterns, so the review's own wording is the span kept
+
+_POPULATION_LEAD = (
+    r"(?:(?:adults?|patients?|participants?|subjects?|individuals?|people|persons?|children|men|women|elderly)"
+    r"\s+(?:with|having|who\s+have|diagnosed\s+with|at\s+risk\s+of)\s+)?"
+)
+
+
+def build_review_rules(terms: Mapping[PicoLabel, Sequence[str]]) -> list[PicoRule]:
+    """One rule per keyword the review's own PICO names, longest first.
+
+    A population keyword also takes a leading "patients with" / "adults with", so
+    "type 2 diabetes" is annotated as "patients with type 2 diabetes" when the text says so.
+    """
+    rules: list[PicoRule] = []
+    for label, keywords in terms.items():
+        wanted = {k.strip() for k in keywords if k.strip()}
+        if label != PicoLabel.P:
+            for keyword in list(wanted):
+                wanted.update(keyword_variants(keyword))
+        for keyword in sorted(wanted, key=lambda k: (-len(k), k.lower())):
+            core = keyword_pattern(keyword).pattern
+            if label == PicoLabel.P:
+                regex = re.compile(_POPULATION_LEAD + core, re.IGNORECASE)
+            else:
+                regex = re.compile(core, re.IGNORECASE)
+            rules.append(PicoRule(label=label, regex=regex, priority=REVIEW_RULE_PRIORITY))
+    return rules

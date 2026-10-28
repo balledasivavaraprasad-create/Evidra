@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 
 from app.contracts.enums import CriterionVerdict, ScreeningEvidenceSource
+from app.terms import keyword_pattern  # noqa: F401 - shared with the PICO patterns
 from app.contracts.models import (
     CriterionDefinition,
     CriterionEvidence,
@@ -542,16 +543,9 @@ def evaluate_study_design(
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9(\[])")
 
 
-def keyword_pattern(keyword: str) -> re.Pattern[str]:
-    """Case-insensitive whole-word / whole-phrase pattern for one keyword.
-
-    Spaces in a phrase match any run of whitespace, and the last word may carry a plural
-    "s" or "es" ("SGLT2 inhibitor" also finds "SGLT2 inhibitors"). It never matches inside a
-    longer word: "placebo" does not match "nonplacebo", and "T2D" does not match "T2DM".
-    """
-    words = [re.escape(w) for w in keyword.strip().split()]
-    body = r"\s+".join(words)
-    return re.compile(rf"(?<![\w]){body}(?:e?s)?(?![\w])", re.IGNORECASE)
+# Abstracts often do not state the comparator or the outcome in the review's words. Not finding
+# them is not evidence they are missing, so a miss on these is "unknown" (Maybe), never an Exclude.
+SOFT_CATEGORIES = frozenset({"comparator", "outcome"})
 
 
 def _sentences(text: str) -> list[str]:
@@ -575,7 +569,8 @@ def evaluate_keywords(
     """Evaluate a keyword rule against the record's title and abstract.
 
     - Any ``exclude_keywords`` match fails the rule, whatever else matches.
-    - Inclusion rule: PASS if any keyword matches (evidence is the matched sentence), FAIL if none.
+    - Inclusion rule: PASS if any keyword matches (evidence is the matched sentence), FAIL if none,
+      except comparator and outcome rules, where none is UNKNOWN (see SOFT_CATEGORIES).
     - Exclusion rule: FAIL if any keyword matches, PASS if none.
     - With no abstract, a missed keyword is not evidence of absence: the verdict is UNKNOWN
       (Maybe), never an invented FAIL.
@@ -615,6 +610,13 @@ def evaluate_keywords(
                 CriterionVerdict.UNKNOWN,
                 "NO_ABSTRACT_TO_CHECK",
                 "No abstract to check these keywords against; needs a manual look",
+                None,
+            )
+        if criterion.category in SOFT_CATEGORIES:
+            return evidence(
+                CriterionVerdict.UNKNOWN,
+                "NOT_STATED_IN_ABSTRACT",
+                f"The {criterion.category} is not stated in these words in the abstract: " + ", ".join(criterion.keywords),
                 None,
             )
         return evidence(

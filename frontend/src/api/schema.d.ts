@@ -624,7 +624,7 @@ export interface paths {
         };
         /**
          * Get Group Devils Advocate Challenge
-         * @description Retrieve or compute Devil's Advocate adversarial challenge for a paper group.
+         * @description Retrieve the stored Devil's Advocate challenge for a paper group; never saves anything.
          */
         get: operations["get_group_devils_advocate_challenge_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_get"];
         put?: never;
@@ -2978,6 +2978,11 @@ export interface components {
             events?: components["schemas"]["ReviewEventResponse"][];
             evidence_bundle?: components["schemas"]["EvidencePassportBundle"] | null;
             group: components["schemas"]["PaperGroupSummary"];
+            /**
+             * Human Pico
+             * @description The reviewer's saved PICO spans (their latest edit, complete), or null if they never edited
+             */
+            human_pico?: components["schemas"]["PicoSpan"][] | null;
             /** Members */
             members: components["schemas"]["RecordRevisionResponse"][];
             pico_result?: components["schemas"]["PicoResult"] | null;

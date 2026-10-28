@@ -3371,6 +3371,21 @@
           "group": {
             "$ref": "#/components/schemas/PaperGroupSummary"
           },
+          "human_pico": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PicoSpan"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The reviewer's saved PICO spans (their latest edit, complete), or null if they never edited",
+            "title": "Human Pico"
+          },
           "members": {
             "items": {
               "$ref": "#/components/schemas/RecordRevisionResponse"
@@ -7540,7 +7555,7 @@
     },
     "/api/v1/workspaces/{workspace_id}/groups/{group_id}/devils-advocate": {
       "get": {
-        "description": "Retrieve or compute Devil's Advocate adversarial challenge for a paper group.",
+        "description": "Retrieve the stored Devil's Advocate challenge for a paper group; never saves anything.",
         "operationId": "get_group_devils_advocate_challenge_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_get",
         "parameters": [
           {

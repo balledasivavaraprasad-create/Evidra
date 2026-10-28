@@ -24,6 +24,7 @@ import { api, type PaperGroupSummary, type PaperGroupDetail, type PicoSpan, ApiE
 import { ErrorState, LoadingRegion, SampleDataNotice, SkeletonCard, SkeletonListDetail, SkeletonStatRow } from "../../components/Feedback";
 import { MOCK_GROUPS } from "../../api/fixtures";
 import { PicoViewer } from "../pico/PicoViewer";
+import { isDetailFor, spansForViewer, textHashForSave } from "../pico/spans";
 import { AssistantPanel } from "./AssistantPanel";
 import { EvidencePassportPanel } from "../evidence-passport/EvidencePassportPanel";
 import { ArticleRadarWidget } from "../pico-radar/ArticleRadarWidget";
@@ -244,11 +245,14 @@ export const ReviewQueuePage: React.FC = () => {
     const rep = selectedGroup.representative_revision;
     const currentVersion =
       (groupDetail?.group?.id === selectedGroup.id ? groupDetail.group.row_version : selectedGroup.row_version) ?? 1;
+    // The server checks the abstract text's own hash, which is not the record's title+abstract hash
+    const textHash = textHashForSave(groupDetail, selectedGroup.id);
+    if (!textHash) throw new Error("This paper is still loading. Try saving again in a moment.");
     setErrorBanner(null);
     try {
       await api.groups.savePico(selectedGroup.id, {
         record_revision_id: rep.id,
-        content_hash: rep.content_hash,
+        content_hash: textHash,
         expected_version: currentVersion,
         spans,
       });
@@ -711,14 +715,21 @@ export const ReviewQueuePage: React.FC = () => {
             )}
 
             {activeTab === "reader" && (
-              <PicoViewer
-                key={rep?.id || selectedGroup.id}
-                abstractText={rep?.abstract_text || null}
-                contentHash={rep?.content_hash || ""}
-                initialSpans={[]}
-                comparatorAbsent={false}
-                onSaveSpans={handleSavePico}
-              />
+              isDetailFor(groupDetail, selectedGroup.id) ? (
+                <PicoViewer
+                  // Mounted once this paper's detail has arrived, so its spans are there from the start
+                  key={rep?.id || selectedGroup.id}
+                  abstractText={rep?.abstract_text || null}
+                  contentHash={groupDetail?.pico_result?.content_hash || ""}
+                  initialSpans={spansForViewer(groupDetail)}
+                  comparatorAbsent={false}
+                  onSaveSpans={handleSavePico}
+                />
+              ) : (
+                <LoadingRegion label="Loading this paper's PICO evidence">
+                  <SkeletonCard lines={4} />
+                </LoadingRegion>
+              )
             )}
 
             {activeTab === "passport" && (

@@ -511,6 +511,10 @@ class PaperGroupDetail(BaseModel):
     members: list[RecordRevisionResponse]
     screen_result: ScreenResult | None = None
     pico_result: PicoResult | None = None
+    human_pico: list[PicoSpan] | None = Field(
+        default=None,
+        description="The reviewer's saved PICO spans (their latest edit, complete), or null if they never edited",
+    )
     evidence_bundle: EvidencePassportBundle | None = None
     events: list[ReviewEventResponse] = Field(default_factory=list)
     conflicts: list[ReviewConflictResponse] = Field(default_factory=list)

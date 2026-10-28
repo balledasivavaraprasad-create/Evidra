@@ -26,6 +26,48 @@ POPULATION_LEAD_RE = re.compile(
     re.IGNORECASE,
 )
 
+def keyword_pattern(keyword: str) -> re.Pattern[str]:
+    """Case-insensitive whole-word / whole-phrase pattern for one keyword.
+
+    Spaces in a phrase match any run of whitespace, and the last word may carry a plural
+    "s" or "es" ("SGLT2 inhibitor" also finds "SGLT2 inhibitors"). It never matches inside a
+    longer word: "placebo" does not match "nonplacebo", and "T2D" does not match "T2DM".
+    """
+    words = [re.escape(w) for w in keyword.strip().split()]
+    body = r"\s+".join(words)
+    return re.compile(rf"(?<![\w]){body}(?:e?s)?(?![\w])", re.IGNORECASE)
+
+
+# Nouns that name an event ("hospitalization", "mortality"): "X hospitalization" is also written
+# "hospitalization for X" or "hospitalization due to X"
+EVENT_NOUNS = frozenset(
+    {"hospitalization", "hospitalisation", "admission", "admissions", "mortality", "death", "deaths",
+     "events", "incidence", "risk", "progression", "relapse", "recurrence"}
+)
+
+_REVERSE_RE = re.compile(r"^(?P<head>.+?)\s+(?:for|of|in|from|due\s+to)\s+(?P<tail>.+)$", re.IGNORECASE)
+
+
+def keyword_variants(term: str) -> list[str]:
+    """Other ways the same phrase is commonly worded, so word order doesn't hide a match.
+
+    "hospitalization for heart failure" <-> "heart failure hospitalization", and an event noun
+    last ("heart failure hospitalization") also gives "hospitalization for / due to heart failure".
+    The term itself is not included.
+    """
+    words = term.split()
+    out: list[str] = []
+    reverse = _REVERSE_RE.match(term)
+    if reverse:
+        out.append(f"{reverse.group('tail')} {reverse.group('head')}")
+    if len(words) >= 2 and words[-1].lower() in EVENT_NOUNS:
+        rest = " ".join(words[:-1])
+        if words[-1].lower() in {"hospitalization", "hospitalisation", "admission", "admissions"}:
+            out.append(f"{words[-1]} for {rest}")
+        out.append(f"{words[-1]} due to {rest}")
+    return [v for v in out if v.lower() != term.lower()]
+
+
 # A phrase this short is searched exactly; anything longer is a sentence and is split up
 MAX_EXACT_PHRASE_WORDS = 3
 

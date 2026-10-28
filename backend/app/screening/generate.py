@@ -8,9 +8,10 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Mapping
 
+from app.contracts.enums import PicoLabel
 from app.contracts.models import CriterionDefinition
 from app.screening.defaults import DEFAULT_CRITERIA_DEFINITIONS
-from app.terms import POPULATION_LEAD_RE, trim_stop_words
+from app.terms import POPULATION_LEAD_RE, keyword_variants, trim_stop_words
 
 # One-letter and long PICO keys both accepted
 _PICO_KEYS: tuple[tuple[str, str, str], ...] = (
@@ -21,9 +22,6 @@ _PICO_KEYS: tuple[tuple[str, str, str], ...] = (
 )
 
 _SPLIT_RE = re.compile(r"[,;/()]|\s+or\s+", re.IGNORECASE)
-
-# "hospitalization for heart failure" is also written "heart failure hospitalization"
-_SWAP_RE = re.compile(r"^(?P<head>.+?)\s+(?:for|of|in|from|due to)\s+(?P<tail>.+)$", re.IGNORECASE)
 
 # Topic-neutral rules (study design, animals, simulation, case reports, language, abstract)
 GENERIC_RULE_IDS = (
@@ -36,6 +34,33 @@ GENERIC_RULE_IDS = (
 )
 
 SynonymProvider = Callable[[str, list[str]], list[str]]
+
+_PICO_LABELS = {
+    "population": PicoLabel.P,
+    "intervention": PicoLabel.I,
+    "comparator": PicoLabel.C,
+    "outcome": PicoLabel.O,
+}
+
+
+def pico_terms_from_criteria(
+    pico: Mapping[str, str] | None,
+    criteria: list[CriterionDefinition],
+) -> dict[PicoLabel, list[str]]:
+    """The review's own words for P, I, C and O, used to find them in each abstract.
+
+    The keywords on the saved PICO rules win, so the reviewer's edits (and any synonyms they kept)
+    are what is looked for. A PICO field with no rule falls back to splitting its text.
+    """
+    fields = normalise_pico(pico)
+    by_id = {c.id: c for c in criteria}
+    terms: dict[PicoLabel, list[str]] = {}
+    for long, label in _PICO_LABELS.items():
+        rule = by_id.get(f"pico_{long}")
+        words = list(rule.keywords) if rule and rule.keywords else split_keywords(fields[long], population=(long == "population"))
+        if words:
+            terms[label] = words
+    return terms
 
 
 def split_keywords(field: str | None, *, population: bool = False) -> list[str]:
@@ -60,9 +85,9 @@ def split_keywords(field: str | None, *, population: bool = False) -> list[str]:
         if population:
             term = POPULATION_LEAD_RE.sub("", term)
         add(term)
-        swap = _SWAP_RE.match(trim_stop_words(term))
-        if swap and not population:
-            add(f"{swap.group('tail')} {swap.group('head')}")
+        if not population:
+            for variant in keyword_variants(trim_stop_words(term)):
+                add(variant)
     return out
 
 

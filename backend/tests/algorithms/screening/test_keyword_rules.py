@@ -68,6 +68,18 @@ class TestEvaluateKeywords:
         assert ev.verdict == CriterionVerdict.FAIL
         assert ev.reason_code == "NO_KEYWORD_MATCH"
 
+    def test_a_missing_comparator_or_outcome_is_maybe_not_exclude(self):
+        comparator = rule(["placebo"]).model_copy(update={"category": "comparator"})
+        outcome = rule(["hospitalisation"]).model_copy(update={"category": "outcome"})
+        for r in (comparator, outcome):
+            ev = evaluate_keywords(r, record())
+            assert ev.verdict == CriterionVerdict.UNKNOWN
+            assert ev.reason_code == "NOT_STATED_IN_ABSTRACT"
+        # but one that is stated still passes, and an excluded word still fails
+        assert evaluate_keywords(rule(["DPP-4"]).model_copy(update={"category": "comparator"}), record()).verdict == CriterionVerdict.PASS
+        blocked = comparator.model_copy(update={"exclude_keywords": ["DPP-4"]})
+        assert evaluate_keywords(blocked, record()).verdict == CriterionVerdict.FAIL
+
     def test_case_insensitive_and_phrase_with_any_spacing(self):
         assert evaluate_keywords(rule(["HEART  FAILURE"]), record()).verdict == CriterionVerdict.PASS
 

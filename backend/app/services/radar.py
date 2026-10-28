@@ -180,22 +180,29 @@ def get_or_sync_article_radar(
     db: Session,
     workspace_id: str,
     group_id: str,
+    persist: bool = True,
 ) -> ArticleRadarResponse:
-    """Retrieve or compute article-level Missing-Evidence Radar for a specific paper group."""
+    """Retrieve or compute article-level Missing-Evidence Radar for a specific paper group.
+
+    With ``persist=False`` (every GET) nothing is written: the radar is computed from the passport
+    claims that already exist. Processing and reviewer actions run it with ``persist=True``, which
+    creates the claims and keeps the stored radar status in step.
+    """
     group, rep_rev = _resolve_paper_group(db, workspace_id, group_id)
 
     # 1. Ensure passport claims exist
-    try:
-        generate_or_sync_passport_for_record(
-            db=db,
-            workspace_id=workspace_id,
-            group_id=group.id,
-            record_revision=rep_rev,
-            screen_result=None,
-            pico_result=None,
-        )
-    except (HTTPException, ValueError, KeyError, AttributeError, TypeError) as e:
-        logger.debug("Passport generation encountered error for group %s: %s", group_id, e)
+    if persist:
+        try:
+            generate_or_sync_passport_for_record(
+                db=db,
+                workspace_id=workspace_id,
+                group_id=group.id,
+                record_revision=rep_rev,
+                screen_result=None,
+                pico_result=None,
+            )
+        except (HTTPException, ValueError, KeyError, AttributeError, TypeError) as e:
+            logger.debug("Passport generation encountered error for group %s: %s", group_id, e)
 
     # 2. Resolve effective decision state and review notes
     eff_state, latest_event, screen_res, _ = project_effective_group_decision(db, group.id)
@@ -286,8 +293,8 @@ def get_or_sync_article_radar(
                     has_source_text=has_source_text,
                 )
 
-            # Sync database columns if changed
-            if item.radar_status != r_status.value or item.human_review_status != h_status.value:
+            # Sync database columns if changed (never on a read)
+            if persist and (item.radar_status != r_status.value or item.human_review_status != h_status.value):
                 item.radar_status = r_status.value
                 item.human_review_status = h_status.value
                 db.commit()

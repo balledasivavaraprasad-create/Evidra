@@ -168,8 +168,15 @@ def test_workspace_devils_advocate_dashboard_endpoint(client: TestClient, api_de
     """Test GET /api/v1/workspaces/{ws_id}/devils-advocate."""
     ws, group = api_devils_fixture
 
-    # Trigger challenge creation
+    # A GET never creates a challenge (processing does, or the reviewer asks for one)
     client.get(f"/api/v1/workspaces/{ws.id}/groups/{group.id}/devils-advocate")
+    empty = client.get(f"/api/v1/workspaces/{ws.id}/devils-advocate").json()
+    assert empty["total_challenged"] == 0
+
+    created = client.post(
+        f"/api/v1/workspaces/{ws.id}/groups/{group.id}/devils-advocate/generate", json={"force_refresh": False}
+    )
+    assert created.status_code == 200, created.text
 
     resp = client.get(f"/api/v1/workspaces/{ws.id}/devils-advocate")
     assert resp.status_code == 200

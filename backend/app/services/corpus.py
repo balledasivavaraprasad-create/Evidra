@@ -16,10 +16,12 @@ from app.contracts.enums import (
     DedupEdgeStatus,
     EffectiveDecisionState,
     EligibilityStatus,
+    PicoLabel,
     SourceNamespace,
 )
 from app.contracts.models import (
     CorpusRevisionResponse,
+    PicoSpan,
     PaperGroupDetail,
     PaperGroupSummary,
     PicoResult,
@@ -52,7 +54,7 @@ from app.dedup import DeduplicationEngine
 from app.pico import RuleBasedPicoExtractor
 from app.screening import ScreeningEngine, get_default_criteria_version  # noqa: F401 - re-exported for tests
 from app.screening.defaults import compute_criteria_hash
-from app.screening.generate import rules_from_pico
+from app.screening.generate import pico_terms_from_criteria, rules_from_pico
 
 logger = logging.getLogger(__name__)
 
@@ -473,7 +475,6 @@ def process_corpus(
 
     # 6. Persist Paper Groups, Screen Representatives, and Extract PICO
     screening_engine = ScreeningEngine()
-    pico_extractor = RuleBasedPicoExtractor()
     from app.contracts.models import CriteriaVersionResponse, CriterionDefinition
     crit_dto = CriteriaVersionResponse(
         id=crit_model.id,
@@ -484,6 +485,11 @@ def process_corpus(
         criteria=[CriterionDefinition(**c) for c in json.loads(crit_model.criteria_json)],
         content_hash=crit_model.content_hash,
         created_at=crit_model.created_at,
+    )
+    # Find the review's own P/I/C/O words in each abstract, alongside the generic patterns. The
+    # words are part of the extractor's method version, so editing them re-runs PICO extraction.
+    pico_extractor = RuleBasedPicoExtractor(
+        review_terms=pico_terms_from_criteria(crit_dto.pico_description, crit_dto.criteria)
     )
 
     for group_data in partitioned:
@@ -846,6 +852,32 @@ def get_paper_group_detail(
         except (json.JSONDecodeError, TypeError, ValueError, KeyError) as e:
             logger.warning("Failed to deserialize pico_result for group %s: %s", group_id, e)
 
+    # The reviewer's saved PICO: each edit stores the complete list, so the latest edit is the answer
+    human_pico: list[PicoSpan] | None = None
+    latest_edit = (
+        db.query(ReviewEventModel)
+        .filter_by(group_id=group_id, event_type=DecisionEventType.PICO_OVERRIDE.value)
+        .order_by(ReviewEventModel.sequence.desc())
+        .first()
+    )
+    if latest_edit is not None:
+        saved = (
+            db.query(PicoAnnotationModel)
+            .filter_by(event_id=latest_edit.id)
+            .order_by(PicoAnnotationModel.start_cp.asc(), PicoAnnotationModel.end_cp.asc())
+            .all()
+        )
+        human_pico = [
+            PicoSpan(
+                label=PicoLabel(a.label),
+                start_cp=a.start_cp,
+                end_cp=a.end_cp,
+                quote=a.quote,
+                provenance=a.provenance,
+            )
+            for a in saved
+        ]
+
     # Audit events
     events = (
         db.query(ReviewEventModel)
@@ -884,33 +916,25 @@ def get_paper_group_detail(
         for cf in conflicts
     ]
 
-    from app.services.evidence_passport import (
-        generate_or_sync_passport_for_record,
-        get_paper_group_evidence_bundle,
-    )
+    # Read only: the evidence claims are created when the corpus is processed, never by this GET
+    from app.services.evidence_passport import get_paper_group_evidence_bundle
+
     evidence_bundle = None
     try:
-        generate_or_sync_passport_for_record(
-            db=db,
-            workspace_id=group.workspace_id,
-            group_id=group.id,
-            record_revision=rep_rev,
-            screen_result=screen_res,
-            pico_result=pico_res,
-        )
         evidence_bundle = get_paper_group_evidence_bundle(
             db=db,
             workspace_id=group.workspace_id,
             group_id=group.id,
         )
     except (HTTPException, ValueError, KeyError, AttributeError, TypeError) as e:
-        logger.warning("Failed to generate or retrieve evidence_bundle for group %s: %s", group_id, e)
+        logger.warning("Failed to retrieve evidence_bundle for group %s: %s", group_id, e)
 
     return PaperGroupDetail(
         group=summary,
         members=member_dtos,
         screen_result=screen_res,
         pico_result=pico_res,
+        human_pico=human_pico,
         evidence_bundle=evidence_bundle,
         events=event_dtos,
         conflicts=conflict_dtos,

@@ -3,7 +3,10 @@ import re
 
 from app.contracts.enums import PicoLabel
 from app.contracts.models import PicoResult, PicoSpan, RecordRevisionResponse
-from app.pico.patterns import COMPILED_RULES, PicoRule
+import hashlib
+from collections.abc import Mapping, Sequence
+
+from app.pico.patterns import COMPILED_RULES, PicoRule, build_review_rules
 from app.pico.validator import compute_text_hash
 
 METHOD_VERSION = "pico_extractor:v1.0"
@@ -30,9 +33,25 @@ class RuleBasedPicoExtractor:
         rules: list[PicoRule] | None = None,
         method_version: str = METHOD_VERSION,
         provenance: str = DEFAULT_PROVENANCE,
+        review_terms: Mapping[PicoLabel, Sequence[str]] | None = None,
     ) -> None:
-        self.rules = rules if rules is not None else COMPILED_RULES
+        """``review_terms`` adds patterns for the review's own P/I/C/O keywords to the generic ones.
+
+        The terms are part of the method version, so a change to them is a different method: cached
+        results made with other keywords are never reused for this one.
+        """
+        base = rules if rules is not None else COMPILED_RULES
+        extra = build_review_rules(review_terms) if review_terms else []
+        self.rules = [*extra, *base]
         self.method_version = method_version
+        if extra:
+            digest = hashlib.sha256(
+                "|".join(
+                    f"{label.value}:{','.join(sorted(k.lower() for k in kws))}"
+                    for label, kws in sorted(review_terms.items(), key=lambda kv: kv[0].value)
+                ).encode("utf-8")
+            ).hexdigest()[:10]
+            self.method_version = f"{method_version}+review:{digest}"
         self.provenance = provenance
 
     def extract_from_text(

@@ -1438,6 +1438,7 @@ def get_group_radar_detail(
         db=db,
         workspace_id=workspace_id,
         group_id=group_id,
+        persist=False,
     )
 
 
@@ -1569,11 +1570,12 @@ def get_group_devils_advocate_challenge(
     group_id: str,
     db: Session = Depends(get_db),  # noqa: B008
 ) -> DevilsAdvocateChallengeResponse:
-    """Retrieve or compute Devil's Advocate adversarial challenge for a paper group."""
+    """Retrieve the stored Devil's Advocate challenge for a paper group; never saves anything."""
     return get_or_generate_challenge(
         db=db,
         workspace_id=workspace_id,
         group_id=group_id,
+        persist=False,
     )
 
 
