@@ -13,7 +13,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem("evidra-theme");
     if (saved === "light" || saved === "dark") return saved;
-    return "dark"; // Default to dark luxury theme
+    return "light"; // Default to the white theme
   });
 
   useEffect(() => {
