@@ -1,0 +1,33 @@
+{
+  "dataset_name": "evidra_t2d_metformin_ml_priority_benchmark_v1",
+  "dataset_sha256": "fd174c8efdf7792d394f4e17d478cc1b0c492d4f3849601221c89697c2b58296",
+  "total_records": 40,
+  "train_records": 26,
+  "holdout_records": 14,
+  "holdout_relevant_count": 7,
+  "artifact_version": "classical_ranker:v1.0.0",
+  "artifact_sha256": "daea2a0b257fedfc388dba07962664ee3f22f98301172750222760c3c09baff0",
+  "train_time_ms": 37.39,
+  "inference_time_ms": 1.07,
+  "latency_per_record_ms": 0.077,
+  "comparisons": {
+    "ml_ranker": {
+      "recall_at_25pct": 0.4286,
+      "recall_at_50pct": 0.8571,
+      "recall_at_75pct": 1.0,
+      "wss_at_95": 0.3071,
+      "records_screened_for_95pct_recall": 9
+    },
+    "fixed_ordering": {
+      "recall_at_25pct": 0.4286,
+      "recall_at_50pct": 1.0,
+      "recall_at_75pct": 1.0,
+      "wss_at_95": 0.45,
+      "records_screened_for_95pct_recall": 7
+    },
+    "rules_engine": {
+      "accuracy": 0.8571,
+      "predicted_includes": 7
+    }
+  }
+}
