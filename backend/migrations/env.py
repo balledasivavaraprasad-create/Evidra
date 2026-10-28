@@ -24,11 +24,27 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def _env_local_unpooled() -> str | None:
+    """Read DATABASE_URL_UNPOOLED from the repo-root .env.local written by the Neon CLI."""
+    path = backend_root.parent / ".env.local"
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.startswith("DATABASE_URL_UNPOOLED="):
+                return line.split("=", 1)[1].strip().strip("\"'") or None
+    return None
+
+
 def get_url() -> str:
-    """Retrieve database URL from environment or settings."""
+    """Retrieve database URL; Neon migrations prefer the unpooled (direct) connection.
+
+    Tests (APP_ENV=test) never use it, so a test run cannot migrate the hosted database.
+    """
     from app.db.session import normalize_database_url
 
-    return normalize_database_url(os.getenv("DATABASE_URL", settings.database_url))
+    url = None
+    if os.getenv("APP_ENV") != "test":
+        url = os.getenv("DATABASE_URL_UNPOOLED") or _env_local_unpooled()
+    return normalize_database_url(url or os.getenv("DATABASE_URL", settings.database_url))
 
 
 def run_migrations_offline() -> None:

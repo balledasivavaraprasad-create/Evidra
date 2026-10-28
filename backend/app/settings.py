@@ -1,4 +1,5 @@
 """Application settings and environment configuration."""
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -6,11 +7,20 @@ from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+# Neon env vars are pulled by `neon checkout` / `neon deploy` into the repo root. Tests never
+# read them, so a test run cannot reach the hosted database.
+_ENV_FILES: tuple[Path, ...] = (
+    ()
+    if os.environ.get("APP_ENV") == "test"
+    else (Path(__file__).resolve().parents[2] / ".env.local", Path(".env"))
+)
+
+
 class Settings(BaseSettings):
     """Central configuration validated through pydantic-settings."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILES,
         env_file_encoding="utf-8",
         extra="ignore",
     )
