@@ -67,6 +67,7 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Reviewer services, decision persistence, optimistic locking, and export (D03: `78a8d01`).
 - [x] Durable LangGraph pipeline and review subgraph with persistent SQLite checkpointing (C02: `6e106aa`).
 - [x] Review workbench, duplicate controls, and exact PICO editor (A03: `a507025`).
+- [x] Level 1 wiring, test server launcher, full browser walkthrough, and integrated CI activation (D04: `6dbd8cb`).
 - [ ] Remaining domain endpoints (diffs, snapshots) and auth.
 - [ ] PubMed/Europe PMC quotas, registrations and disclaimer presentation.
 - [ ] Query builder and import UI approval workflow.
