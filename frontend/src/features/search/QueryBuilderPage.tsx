@@ -4,15 +4,11 @@ import { ArrowRight, Check, CheckCircle2, Clock, Sparkles } from "lucide-react";
 import { CriteriaEditor } from "../review-setup/CriteriaEditor";
 import { QueryBuilder } from "./QueryBuilder";
 import { ImportWorkflow } from "../runs/ImportWorkflow";
-import {
-  api,
-  type CriteriaVersionResponse,
-  type QueryVersionResponse,
-  type JobResponse,
-  type WorkspaceResponse,
-} from "../../api/client";
-import { DEMO_WORKSPACE_ID } from "../../context/currentWorkspace";
-import { loadSavedCriteria } from "./savedCriteria";
+import { ErrorState, LoadingRegion, SkeletonCard } from "../../components/Feedback";
+import { selectedIds } from "./executions";
+import { termsFromPico } from "./searchTerms";
+import { loadSetupData, type SetupData } from "./setupData";
+import type { CriteriaVersionResponse, JobResponse, QueryVersionResponse } from "../../api/client";
 
 type StepKey = "question" | "search" | "import" | "screen";
 
@@ -23,31 +19,66 @@ const STEPS: Array<{ key: StepKey; label: string; hint: string }> = [
   { key: "screen", label: "Screen", hint: "Decide on each paper" },
 ];
 
-/** Starting search terms for a new review: intervention OR-group, then population OR-group. */
-function termsFromPico(crit: CriteriaVersionResponse | null): string[][] {
-  const pico = (crit?.pico_description ?? {}) as Record<string, string>;
-  const groups = [pico.intervention, pico.population]
-    .map((v) => (v ?? "").trim())
-    .filter(Boolean)
-    .map((v) => [v]);
-  return groups.length ? groups : [[""]];
-}
+/** A new review starts with a blank PICO; the editor would otherwise prefill its built-in example. */
+const BLANK_PICO = { population: "", intervention: "", comparator: "", outcome: "" };
 
-const EMPTY_PICO = { population: "", intervention: "", comparator: "", outcome: "" };
+type LoadState =
+  | { status: "loading" }
+  | { status: "error"; error: unknown }
+  | { status: "ready"; data: SetupData };
 
 export const QueryBuilderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const workspaceId = id || "ws-default";
+  const workspaceId = id ?? "";
+  const [load, setLoad] = useState<LoadState>({ status: "loading" });
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoad({ status: "loading" });
+    loadSetupData(workspaceId)
+      .then((data) => {
+        if (mounted) setLoad({ status: "ready", data });
+      })
+      .catch((error: unknown) => {
+        if (mounted) setLoad({ status: "error", error });
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [workspaceId, reloadKey]);
+
+  if (load.status === "loading") {
+    return (
+      <div className="space-y-6 pb-16">
+        <h1 className="text-xl font-bold text-white">Set up the review</h1>
+        <LoadingRegion label="Loading your review">
+          <SkeletonCard lines={3} />
+        </LoadingRegion>
+      </div>
+    );
+  }
+  if (load.status === "error") {
+    return (
+      <div className="space-y-6 pb-16">
+        <h1 className="text-xl font-bold text-white">Set up the review</h1>
+        <ErrorState error={load.error} what="Your review setup" onRetry={() => setReloadKey((n) => n + 1)} />
+      </div>
+    );
+  }
+  return <SetupView key={`${workspaceId}:${reloadKey}`} workspaceId={workspaceId} data={load.data} />;
+};
+
+const SetupView: React.FC<{ workspaceId: string; data: SetupData }> = ({ workspaceId, data }) => {
   const location = useLocation();
   const createdTitle = (location.state as { createdTitle?: string } | null)?.createdTitle;
+  const { workspace } = data;
 
-  const [workspace, setWorkspace] = useState<WorkspaceResponse | null>(null);
-  const [workspaceChecked, setWorkspaceChecked] = useState(false);
-  const [criteriaVersion, setCriteriaVersion] = useState<CriteriaVersionResponse | null>(null);
-  const [criteriaChecked, setCriteriaChecked] = useState(false);
-  const [activeQuery, setActiveQuery] = useState<QueryVersionResponse | null>(null);
-  const [selectedExecIds, setSelectedExecIds] = useState<string[]>([]);
-  const [completedJob, setCompletedJob] = useState<JobResponse | null>(null);
+  // Starts as the server has it, then follows what is saved from here
+  const [criteriaVersion, setCriteriaVersion] = useState<CriteriaVersionResponse | null>(data.criteria);
+  const [activeQuery, setActiveQuery] = useState<QueryVersionResponse | null>(data.query);
+  const [selectedExecIds, setSelectedExecIds] = useState<string[]>(() => selectedIds(data.executions));
+  const [importJob, setImportJob] = useState<JobResponse | null>(data.importJob);
 
   const doneBannerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = {
@@ -55,44 +86,6 @@ export const QueryBuilderPage: React.FC = () => {
     search: useRef<HTMLElement>(null),
     import: useRef<HTMLElement>(null),
   };
-
-  // Look up this workspace so a new review starts from its own question, not the demo's
-  useEffect(() => {
-    let mounted = true;
-    api.workspaces
-      .list()
-      .then((list) => {
-        if (mounted) setWorkspace(list.find((w) => w.id === workspaceId) ?? null);
-      })
-      .catch(() => {
-        /* offline or older backend: fall back to the example question */
-      })
-      .finally(() => {
-        if (mounted) setWorkspaceChecked(true);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [workspaceId]);
-
-  // Pick up the latest saved question so a reload keeps it and the search stays unlocked.
-  // A review with nothing saved yet keeps the empty form.
-  useEffect(() => {
-    let mounted = true;
-    loadSavedCriteria(workspaceId)
-      .then((saved) => {
-        if (mounted && saved) setCriteriaVersion(saved);
-      })
-      .catch(() => {
-        /* offline or older backend: the question can still be written and saved by hand */
-      })
-      .finally(() => {
-        if (mounted) setCriteriaChecked(true);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [workspaceId]);
 
   const goTo = (key: keyof typeof sectionRefs) => {
     const el = sectionRefs[key].current;
@@ -102,16 +95,14 @@ export const QueryBuilderPage: React.FC = () => {
     el.focus({ preventScroll: true });
   };
 
+  const importSucceeded = importJob?.state === "succeeded";
   const done: Record<StepKey, boolean> = {
     question: !!criteriaVersion,
     search: !!activeQuery && selectedExecIds.length > 0,
-    import: !!completedJob,
+    import: importSucceeded,
     screen: false,
   };
   const current: StepKey = !done.question ? "question" : !done.search ? "search" : !done.import ? "import" : "screen";
-
-  const isDemo = workspaceId === DEMO_WORKSPACE_ID;
-  const useOwnDefaults = !isDemo && workspace != null;
 
   return (
     <div className="space-y-6 pb-16">
@@ -197,14 +188,14 @@ export const QueryBuilderPage: React.FC = () => {
         </ol>
       </nav>
 
-      {completedJob && (
+      {importSucceeded && importJob && (
         <div ref={doneBannerRef} tabIndex={-1} role="status" className="scroll-mt-24 outline-none p-4 bg-emerald-950/40 border border-emerald-500/40 rounded-xl flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
             <div>
               <h2 className="text-sm font-semibold text-white">Import finished</h2>
               <p className="text-xs text-slate-300">
-                {completedJob.processed_items ?? 0} records were imported into this review. Next, screen them.
+                {importJob.processed_items ?? 0} records were imported into this review. Next, screen them.
               </p>
             </div>
           </div>
@@ -217,32 +208,33 @@ export const QueryBuilderPage: React.FC = () => {
 
       {/* 1. Review question & criteria */}
       <section ref={sectionRefs.question} tabIndex={-1} aria-label="Step 1: review question" className="scroll-mt-24 outline-none">
-        {workspaceChecked && criteriaChecked && (
-          <CriteriaEditor
-            key={workspace?.id ?? workspaceId}
-            workspaceId={workspaceId}
-            savedCriteria={criteriaVersion}
-            defaultQuestion={useOwnDefaults ? workspace?.title : undefined}
-            defaultPico={useOwnDefaults ? EMPTY_PICO : undefined}
-            onCriteriaSaved={(crit) => {
-              setCriteriaVersion(crit);
-              window.setTimeout(() => goTo("search"), 450);
-            }}
-          />
-        )}
+        <CriteriaEditor
+          key={workspaceId}
+          workspaceId={workspaceId}
+          savedCriteria={data.criteria}
+          defaultQuestion={workspace?.title}
+          defaultPico={BLANK_PICO}
+          onCriteriaSaved={(crit) => {
+            setCriteriaVersion(crit);
+            window.setTimeout(() => goTo("search"), 450);
+          }}
+        />
       </section>
 
       {/* 2. Boolean query & provider counts */}
       <section ref={sectionRefs.search} tabIndex={-1} aria-label="Step 2: search" className="scroll-mt-24 outline-none space-y-3">
         <QueryBuilder
-          key={useOwnDefaults ? `q-${criteriaVersion?.id ?? "new"}` : "q-demo"}
-          initialTerms={useOwnDefaults ? termsFromPico(criteriaVersion) : undefined}
+          // A review with no saved search restarts from its PICO terms once, when the question is first saved
+          key={data.query?.id ?? (criteriaVersion ? "new-with-question" : "new-no-question")}
           workspaceId={workspaceId}
           criteriaVersionId={criteriaVersion?.id ?? null}
+          savedQuery={data.query}
+          savedExecutions={data.executions}
+          initialTerms={termsFromPico(criteriaVersion)}
           onQuerySaved={(q) => setActiveQuery(q)}
           onExecutionSelected={(ids) => {
-            setSelectedExecIds(ids);
             if (ids.length > 0 && selectedExecIds.length === 0) window.setTimeout(() => goTo("import"), 450);
+            setSelectedExecIds(ids);
           }}
         />
       </section>
@@ -252,8 +244,9 @@ export const QueryBuilderPage: React.FC = () => {
         <ImportWorkflow
           workspaceId={workspaceId}
           selectedExecutionIds={selectedExecIds}
-          onImportComplete={(job) => {
-            setCompletedJob(job);
+          initialJob={data.importJob}
+          onJobChange={setImportJob}
+          onImportComplete={() => {
             window.setTimeout(() => {
               const el = doneBannerRef.current;
               if (!el) return;

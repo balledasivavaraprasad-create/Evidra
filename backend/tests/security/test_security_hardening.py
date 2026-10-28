@@ -12,7 +12,7 @@ def test_production_settings_rejects_insecure_defaults():
         Settings(
             app_env="production",
             secret_key="dev-insecure-secret-key-change-in-production-only",
-            auth_mode="production",
+            auth_mode="accounts",
         )
 
     # Short secret key in production
@@ -20,7 +20,7 @@ def test_production_settings_rejects_insecure_defaults():
         Settings(
             app_env="production",
             secret_key="too-short",
-            auth_mode="production",
+            auth_mode="accounts",
         )
 
     # Local auth mode in production
@@ -36,10 +36,10 @@ def test_production_settings_accepts_hardened_config():
     valid = Settings(
         app_env="production",
         secret_key="a" * 32,
-        auth_mode="production",
+        auth_mode="accounts",
     )
     assert valid.app_env == "production"
-    assert valid.auth_mode == "production"
+    assert valid.auth_mode == "accounts"
 
 
 def test_assistant_endpoint_fails_closed_when_disabled(client: TestClient, monkeypatch):

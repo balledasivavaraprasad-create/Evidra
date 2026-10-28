@@ -5,7 +5,6 @@ import { ReviewWalkthrough } from "./ReviewWalkthrough";
 import { Reveal } from "../../components/Reveal";
 
 
-const WS = "/reviews/ws-synth-001";
 
 const facts = [
   { title: "Runs fully offline", detail: "Level 1 needs no LLM or GPU" },
@@ -57,12 +56,12 @@ export const LandingPage: React.FC = () => {
         </Reveal>
 
         <Reveal delay={220} className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/reviews" className="btn-ink">
-            Open workspaces
+          <Link to="/signup" className="btn-ink">
+            Create a free account
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link to={`${WS}/records`} className="btn-ghost rounded-full px-6">
-            Go to screening queue
+          <Link to="/signin" className="btn-ghost rounded-full px-6">
+            Sign in
           </Link>
         </Reveal>
 
@@ -129,18 +128,19 @@ export const LandingPage: React.FC = () => {
       <Reveal as="section" className="glass-panel-luxury px-8 py-10 sm:px-12 sm:py-12">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div className="space-y-3 max-w-2xl">
-            <h2 className="text-3xl text-[var(--text-primary)]">Try it on the synthetic benchmark review</h2>
+            <h2 className="text-3xl text-[var(--text-primary)]">Start your own review</h2>
             <p className="text-[var(--text-secondary)]">
-              Override a duplicate, exclude a record with a reason, resolve a conflict and export the included studies as CSV.
+              Write your question, search PubMed and Europe PMC, screen with rules built from your PICO, and export the
+              included studies as CSV. Everything is saved to your account.
             </p>
           </div>
           <div className="flex flex-wrap gap-3 shrink-0">
-            <Link to={`${WS}/records`} className="btn-ink">
-              Open the review queue
+            <Link to="/signup" className="btn-ink">
+              Create a free account
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link to={`${WS}/duplicates`} className="btn-ghost rounded-full px-6">
-              Inspect duplicate pairs
+            <Link to="/signin" className="btn-ghost rounded-full px-6">
+              Sign in
             </Link>
           </div>
         </div>

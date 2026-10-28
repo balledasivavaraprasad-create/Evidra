@@ -49,9 +49,36 @@ def enforce_offline_testing():
     socket.socket.connect = orig_connect
 
 
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
+_pg_engine = None
+
+
+def _postgres_engine():
+    """One shared Postgres engine per test run; schema is rebuilt once, rows truncated per test."""
+    global _pg_engine
+    if _pg_engine is None:
+        _pg_engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
+        Base.metadata.drop_all(bind=_pg_engine)
+        Base.metadata.create_all(bind=_pg_engine)
+    return _pg_engine
+
+
 @pytest.fixture
 def db_session() -> Generator[Session, None, None]:
-    """Provide a fresh in-memory SQLite database session with enforced foreign keys."""
+    """Provide a fresh database session: in-memory SQLite by default, Postgres if TEST_DATABASE_URL is set."""
+    if TEST_DATABASE_URL.startswith("postgresql"):
+        engine = _postgres_engine()
+        session = sessionmaker(autocommit=False, autoflush=False, bind=engine)()
+        try:
+            yield session
+        finally:
+            session.rollback()
+            session.close()
+            tables = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
+            with engine.begin() as conn:
+                conn.exec_driver_sql(f"TRUNCATE {tables} RESTART IDENTITY CASCADE")
+        return
+
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},

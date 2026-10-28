@@ -159,7 +159,7 @@ def persist_record_revision(
 def run_import_job(db: Session, job: JobModel) -> None:
     """Execute import job across approved search executions."""
     try:
-        payload_data = json.loads(job.payload_hash)
+        payload_data = json.loads(job.payload_json or job.payload_hash)
         execution_ids = payload_data.get("search_execution_ids", [])
         cap = payload_data.get("cap", 200)
 

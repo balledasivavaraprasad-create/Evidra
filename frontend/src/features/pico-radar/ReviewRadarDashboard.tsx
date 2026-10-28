@@ -29,7 +29,7 @@ import { ArticleRadarWidget } from "./ArticleRadarWidget";
 
 export const ReviewRadarDashboard: React.FC = () => {
   const { id: workspaceIdParam } = useParams<{ id: string }>();
-  const activeWorkspaceId = workspaceIdParam || "ws-synth-001";
+  const activeWorkspaceId = workspaceIdParam ?? "";
 
   const [data, setData] = useState<ReviewRadarResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -28,7 +28,7 @@ import { MOCK_ML_RANKING, MOCK_GROUPS } from "../../api/fixtures";
 
 export const MLReviewPage: React.FC = () => {
   const { id: workspaceParam } = useParams<{ id: string }>();
-  const workspaceId = workspaceParam || "ws-synth-001";
+  const workspaceId = workspaceParam ?? "";
 
   const [revisionId, setRevisionId] = useState<string | null>(null);
   const [rankingData, setRankingData] = useState<MLRankingResponse | null>(null);

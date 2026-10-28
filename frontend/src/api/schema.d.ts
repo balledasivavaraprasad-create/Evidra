@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/v1/auth/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign In With Google
+         * @description Sign in (creating the account on first use) with a Google Identity Services ID token.
+         */
+        post: operations["sign_in_with_google_api_v1_auth_google_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -14,10 +34,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Login
-         * @description Exchange the shared site password for a signed, expiring session cookie.
+         * Sign In
+         * @description Sign in with email and password.
          */
-        post: operations["login_api_v1_auth_login_post"];
+        post: operations["sign_in_api_v1_auth_login_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -53,11 +73,31 @@ export interface paths {
         };
         /**
          * Get Auth Session
-         * @description Report whether a password is required and whether this browser is signed in.
+         * @description Report whether sign-in is required and who (if anyone) is signed in.
          */
         get: operations["get_auth_session_api_v1_auth_session_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign Up
+         * @description Create an account with email and password, and sign in.
+         */
+        post: operations["sign_up_api_v1_auth_signup_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -102,6 +142,46 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in user's reviews with screening progress
+         * @description Dashboard cards: each review's question, record counts and decision progress.
+         */
+        get: operations["get_dashboard_api_v1_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/executions/{execution_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Tick or untick a search count for import
+         * @description Persist whether this search count is selected for the next import.
+         */
+        patch: operations["update_execution_selection_api_v1_executions__execution_id__patch"];
         trace?: never;
     };
     "/api/v1/exports/{export_id}/download": {
@@ -313,13 +393,13 @@ export interface paths {
         };
         /**
          * List review workspaces
-         * @description List every review workspace, newest first.
+         * @description List the signed-in user's reviews, newest first (every review in local mode).
          */
         get: operations["list_workspaces_api_v1_workspaces_get"];
         put?: never;
         /**
          * Create a review workspace
-         * @description Create a new review workspace.
+         * @description Create a new review workspace owned by the signed-in user.
          */
         post: operations["create_workspace_api_v1_workspaces_post"];
         delete?: never;
@@ -486,6 +566,26 @@ export interface paths {
          * @description Correct claim or evidence passage with backend verification and audit trail preservation.
          */
         post: operations["correct_evidence_item_route_api_v1_workspaces__workspace_id__evidence__evidence_id__correct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/executions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search counts for a query version
+         * @description Search counts (with import ticks) for the given or latest query version, newest first.
+         */
+        get: operations["list_workspace_executions_api_v1_workspaces__workspace_id__executions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -816,6 +916,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspace_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent background jobs for a review
+         * @description Newest jobs first, optionally of one kind, so progress survives a reload.
+         */
+        get: operations["list_workspace_jobs_api_v1_workspaces__workspace_id__jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspace_id}/pico-radar": {
         parameters: {
             query?: never;
@@ -870,6 +990,26 @@ export interface paths {
          * @description Save an immutable structured search query version.
          */
         post: operations["create_query_version_api_v1_workspaces__workspace_id__queries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/queries/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Latest saved query version
+         * @description Return the most recently saved search so the query builder can resume it.
+         */
+        get: operations["get_latest_query_version_api_v1_workspaces__workspace_id__queries_latest_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1154,22 +1294,17 @@ export interface components {
             user_prompt: string;
         };
         /**
-         * AuthLoginRequest
-         * @description Shared site password submitted from the login screen.
-         */
-        AuthLoginRequest: {
-            /** Password */
-            password: string;
-        };
-        /**
          * AuthSessionResponse
-         * @description Whether this deployment requires the site password, and whether the caller has it.
+         * @description Whether this deployment requires sign-in, who is signed in, and which sign-in methods exist.
          */
         AuthSessionResponse: {
             /** Auth Required */
             auth_required: boolean;
             /** Authenticated */
             authenticated: boolean;
+            /** Google Client Id */
+            google_client_id?: string | null;
+            user?: components["schemas"]["UserResponse"] | null;
         };
         /**
          * BooleanOperator
@@ -1504,6 +1639,72 @@ export interface components {
          * @enum {string}
          */
         CriterionVerdict: "pass" | "fail" | "unknown";
+        /**
+         * DashboardReviewSummary
+         * @description One review on the signed-in user's dashboard, with screening progress.
+         */
+        DashboardReviewSummary: {
+            /**
+             * Awaiting Review
+             * @description Groups with no human decision yet
+             * @default 0
+             */
+            awaiting_review: number;
+            /**
+             * Conflicts
+             * @default 0
+             */
+            conflicts: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Excluded
+             * @default 0
+             */
+            excluded: number;
+            /**
+             * Group Count
+             * @default 0
+             */
+            group_count: number;
+            /** Id */
+            id: string;
+            /**
+             * Included
+             * @default 0
+             */
+            included: number;
+            /**
+             * Last Activity At
+             * Format: date-time
+             */
+            last_activity_at: string;
+            /**
+             * Maybe
+             * @default 0
+             */
+            maybe: number;
+            /**
+             * Question
+             * @description Latest saved primary review question
+             */
+            question?: string | null;
+            /**
+             * Record Count
+             * @default 0
+             */
+            record_count: number;
+            /**
+             * Reviewed By Human
+             * @default 0
+             */
+            reviewed_by_human: number;
+            /** Title */
+            title: string;
+        };
         /**
          * DecisionCommand
          * @description Reviewer manual inclusion/exclusion/maybe decision.
@@ -2491,6 +2692,14 @@ export interface components {
              * @description ID of source record supplying canonical value
              */
             source_record_id: string;
+        };
+        /** GoogleSignInRequest */
+        GoogleSignInRequest: {
+            /**
+             * Credential
+             * @description Google Identity Services ID token
+             */
+            credential: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -3604,10 +3813,24 @@ export interface components {
              * @description SHA-256 checksum of raw API count response
              */
             raw_hash?: string | null;
+            /**
+             * Selected For Import
+             * @description Whether the reviewer ticked this count for import
+             * @default true
+             */
+            selected_for_import: boolean;
             source: components["schemas"]["SourceNamespace"];
             status: components["schemas"]["JobState"];
             /** Synonym Setting */
             synonym_setting: boolean;
+        };
+        /**
+         * SearchExecutionSelectionUpdate
+         * @description Tick or untick a search count for the next import.
+         */
+        SearchExecutionSelectionUpdate: {
+            /** Selected For Import */
+            selected_for_import: boolean;
         };
         /**
          * SearchRestoreRequest
@@ -3636,6 +3859,22 @@ export interface components {
             restored_from_version_id: string;
             restored_query: components["schemas"]["QueryVersionResponse"];
         };
+        /** SignInRequest */
+        SignInRequest: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /** SignUpRequest */
+        SignUpRequest: {
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            /** Password */
+            password: string;
+        };
         /**
          * SourceNamespace
          * @description External or synthetic literature data source provider.
@@ -3657,6 +3896,19 @@ export interface components {
              * @description Section content text
              */
             text: string;
+        };
+        /** UserResponse */
+        UserResponse: {
+            /** Email */
+            email: string;
+            /** Has Google */
+            has_google: boolean;
+            /** Has Password */
+            has_password: boolean;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -3741,7 +3993,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    login_api_v1_auth_login_post: {
+    sign_in_with_google_api_v1_auth_google_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -3750,18 +4002,20 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AuthLoginRequest"];
+                "application/json": components["schemas"]["GoogleSignInRequest"];
             };
         };
         responses: {
             /** @description Successful Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
             };
-            /** @description Wrong password */
+            /** @description Unauthorized */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -3779,7 +4033,58 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Too many failed attempts */
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    sign_in_api_v1_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignInRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Too Many Requests */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -3828,6 +4133,48 @@ export interface operations {
             };
         };
     };
+    sign_up_api_v1_auth_signup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignUpRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     get_capabilities_api_v1_capabilities_get: {
         parameters: {
             query?: never;
@@ -3870,6 +4217,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewEventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_api_v1_dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardReviewSummary"][];
+                };
+            };
+        };
+    };
+    update_execution_selection_api_v1_executions__execution_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchExecutionSelectionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchExecutionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4584,6 +4986,39 @@ export interface operations {
             };
         };
     };
+    list_workspace_executions_api_v1_workspaces__workspace_id__executions_get: {
+        parameters: {
+            query?: {
+                query_version_id?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchExecutionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_group_devils_advocate_challenge_api_v1_workspaces__workspace_id__groups__group_id__devils_advocate_get: {
         parameters: {
             query?: never;
@@ -5176,6 +5611,40 @@ export interface operations {
             };
         };
     };
+    list_workspace_jobs_api_v1_workspaces__workspace_id__jobs_get: {
+        parameters: {
+            query?: {
+                kind?: components["schemas"]["JobKind"] | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_workspace_radar_overview_api_v1_workspaces__workspace_id__pico_radar_get: {
         parameters: {
             query?: {
@@ -5262,6 +5731,37 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_latest_query_version_api_v1_workspaces__workspace_id__queries_latest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

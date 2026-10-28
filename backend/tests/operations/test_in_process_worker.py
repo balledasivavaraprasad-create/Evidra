@@ -20,8 +20,7 @@ def test_settings_run_worker_in_process_defaults():
     prod_s = Settings(
         app_env="production",
         secret_key="a" * 32,
-        auth_mode="password",
-        site_password="super-secret-password",
+        auth_mode="accounts",
     )
     assert prod_s.run_worker_in_process is True
 
@@ -36,8 +35,7 @@ def test_settings_run_worker_in_process_defaults():
     explicit_s = Settings(
         app_env="production",
         secret_key="a" * 32,
-        auth_mode="password",
-        site_password="super-secret-password",
+        auth_mode="accounts",
         run_worker_in_process=False,
     )
     assert explicit_s.run_worker_in_process is False

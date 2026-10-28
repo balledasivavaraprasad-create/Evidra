@@ -29,6 +29,20 @@ def generate_uuid() -> str:
     return str(uuid4())
 
 
+class UserModel(Base):
+    """A person who can sign in and own reviews."""
+
+    __tablename__ = "users"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    email = Column(String(320), nullable=False, unique=True, index=True)
+    name = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)
+    google_sub = Column(String(255), nullable=True, unique=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    last_login_at = Column(DateTime, nullable=True)
+
+
 class WorkspaceModel(Base):
     """Systematic review workspace."""
 
@@ -38,6 +52,7 @@ class WorkspaceModel(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     created_by = Column(String(128), nullable=False)
+    owner_user_id = Column(String(64), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     current_revision_id = Column(String(64), nullable=True)
     row_version = Column(Integer, default=1, nullable=False)
     created_at = Column(DateTime, default=utc_now, nullable=False)
@@ -121,6 +136,7 @@ class SearchExecutionModel(Base):
     partial = Column(Boolean, default=False, nullable=False)
     cap = Column(Integer, nullable=True)
     raw_hash = Column(String(64), nullable=True)
+    selected_for_import = Column(Boolean, default=True, nullable=False)
 
     query_version = relationship("QueryVersionModel", back_populates="search_executions")
     memberships = relationship("QueryMembershipModel", back_populates="search_execution", cascade="all, delete-orphan")
@@ -202,6 +218,7 @@ class JobModel(Base):
     kind = Column(String(64), nullable=False)
     request_key = Column(String(128), nullable=False)
     payload_hash = Column(String(64), nullable=False)
+    payload_json = Column(Text, nullable=True)
     state = Column(String(32), nullable=False)
     progress = Column(Float, default=0.0, nullable=False)
     stage = Column(String(64), nullable=True)

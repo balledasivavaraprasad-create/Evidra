@@ -16,11 +16,11 @@ export const WorkspaceNotFound: React.FC<{ workspaceId: string; onGoToReviews: (
       new ApiError(
         404,
         "WORKSPACE_NOT_FOUND",
-        `There is no review “${workspaceId}” on this server. Reviews can disappear when the service restarts. Open your reviews to pick another or start a new one.`,
+        `There is no review “${workspaceId}” in your account. Open your dashboard to pick one of your reviews or start a new one.`,
       )
     }
     title="This review doesn't exist"
-    actionLabel="Go to your reviews"
+    actionLabel="Go to your dashboard"
     onAction={onGoToReviews}
   />
 );
@@ -66,7 +66,7 @@ export const WorkspaceGuard: React.FC = () => {
     );
   }
   if (state === "missing") {
-    return <WorkspaceNotFound workspaceId={id} onGoToReviews={() => navigate("/reviews")} />;
+    return <WorkspaceNotFound workspaceId={id} onGoToReviews={() => navigate("/dashboard")} />;
   }
   // Keyed by review so page state (saved question, query, selections) never leaks between reviews
   return <Outlet key={id} />;

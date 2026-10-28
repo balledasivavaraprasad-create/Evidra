@@ -21,16 +21,8 @@ export const DevilsAdvocateDashboard: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<DevilsAdvocateDashboardItem | null>(null);
 
   useEffect(() => {
-    if (!activeWorkspaceId) {
-      loadDefaultWorkspace();
-    } else {
-      fetchDashboard();
-    }
+    if (activeWorkspaceId) fetchDashboard();
   }, [activeWorkspaceId, activeTab]);
-
-  const loadDefaultWorkspace = () => {
-    setActiveWorkspaceId("ws-synth-001");
-  };
 
   const fetchDashboard = async () => {
     if (!activeWorkspaceId) return;

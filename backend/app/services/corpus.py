@@ -201,6 +201,83 @@ def project_effective_group_decision(
     return (EffectiveDecisionState.UNSCREENED, None, screen_res, False)
 
 
+_HUMAN_STATUS_TO_STATE = {
+    EligibilityStatus.INCLUDE.value: EffectiveDecisionState.INCLUDE,
+    EligibilityStatus.EXCLUDE.value: EffectiveDecisionState.EXCLUDE,
+    EligibilityStatus.MAYBE.value: EffectiveDecisionState.MAYBE,
+}
+
+
+def project_group_decisions_bulk(
+    db: Session,
+    group_ids: list[str],
+    revision_id: str | None = None,
+) -> dict[str, tuple[EffectiveDecisionState, ReviewEventModel | None, ScreenResult | None, bool]]:
+    """Same rules as project_effective_group_decision, for many groups in a constant number of queries."""
+    if not group_ids:
+        return {}
+    chunked = [group_ids[i : i + 500] for i in range(0, len(group_ids), 500)]
+
+    conflicted: set[str] = set()
+    latest_events: dict[str, ReviewEventModel] = {}
+    machine: dict[str, MachineResultModel] = {}
+    for chunk in chunked:
+        conflicted.update(
+            gid
+            for (gid,) in db.query(ReviewConflictModel.group_id)
+            .filter(ReviewConflictModel.group_id.in_(chunk), ReviewConflictModel.resolution_event_id.is_(None))
+            .all()
+        )
+        events = (
+            db.query(ReviewEventModel)
+            .filter(
+                ReviewEventModel.group_id.in_(chunk),
+                ReviewEventModel.event_type.in_([
+                    DecisionEventType.SCREEN_DECISION.value,
+                    DecisionEventType.CONFLICT_RESOLUTION.value,
+                ]),
+            )
+            .order_by(ReviewEventModel.sequence.asc())
+            .all()
+        )
+        for ev in events:  # ascending, so the last write per group is the latest event
+            latest_events[ev.group_id] = ev
+        mq = db.query(MachineResultModel).filter(
+            MachineResultModel.group_id.in_(chunk), MachineResultModel.stage == "screening"
+        )
+        if revision_id:
+            mq = mq.filter(MachineResultModel.corpus_revision_id == revision_id)
+        for row in mq.order_by(MachineResultModel.created_at.asc()).all():
+            machine[row.group_id] = row
+
+    result: dict[str, tuple[EffectiveDecisionState, ReviewEventModel | None, ScreenResult | None, bool]] = {}
+    for gid in group_ids:
+        if gid in conflicted:
+            result[gid] = (EffectiveDecisionState.CONFLICT, None, None, True)
+            continue
+        screen_res: ScreenResult | None = None
+        if gid in machine:
+            try:
+                screen_res = ScreenResult(**json.loads(machine[gid].output_json))
+            except (json.JSONDecodeError, TypeError, ValueError, KeyError) as e:
+                logger.warning("Failed to deserialize screen_result for group %s: %s", gid, e)
+        event = latest_events.get(gid)
+        if event is not None:
+            try:
+                payload = json.loads(event.payload_json)
+                status_str = payload.get("status") or payload.get("chosen_status") or payload.get("decision")
+                if status_str in _HUMAN_STATUS_TO_STATE:
+                    result[gid] = (_HUMAN_STATUS_TO_STATE[status_str], event, screen_res, False)
+                    continue
+            except (json.JSONDecodeError, TypeError, ValueError, KeyError) as e:
+                logger.warning("Failed to parse review event payload: %s", e)
+        if screen_res is not None and screen_res.status.value in _HUMAN_STATUS_TO_STATE:
+            result[gid] = (_HUMAN_STATUS_TO_STATE[screen_res.status.value], None, screen_res, False)
+            continue
+        result[gid] = (EffectiveDecisionState.UNSCREENED, None, screen_res, False)
+    return result
+
+
 def process_corpus(
     db: Session,
     workspace_id: str,

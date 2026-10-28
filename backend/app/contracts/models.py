@@ -87,6 +87,34 @@ class WorkspaceCreate(BaseModel):
     description: str | None = Field(default=None, max_length=2000, description="Optional review protocol context")
 
 
+class DashboardReviewSummary(BaseModel):
+    """One review on the signed-in user's dashboard, with screening progress."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    title: str
+    question: str | None = Field(default=None, description="Latest saved primary review question")
+    created_at: datetime
+    last_activity_at: datetime
+    record_count: int = 0
+    group_count: int = 0
+    included: int = 0
+    excluded: int = 0
+    maybe: int = 0
+    conflicts: int = 0
+    reviewed_by_human: int = 0
+    awaiting_review: int = Field(default=0, description="Groups with no human decision yet")
+
+
+class SearchExecutionSelectionUpdate(BaseModel):
+    """Tick or untick a search count for the next import."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    selected_for_import: bool
+
+
 class WorkspaceResponse(BaseModel):
     """Representation of an active systematic review workspace."""
 
@@ -226,6 +254,7 @@ class SearchExecutionResponse(BaseModel):
     partial: bool = Field(default=False, description="True if query or results were truncated")
     cap: int | None = None
     raw_hash: str | None = Field(default=None, description="SHA-256 checksum of raw API count response")
+    selected_for_import: bool = Field(default=True, description="Whether the reviewer ticked this count for import")
 
 
 # ============================================================================

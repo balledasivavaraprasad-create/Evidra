@@ -37,7 +37,7 @@ interface HistoryPageProps {
 
 export const HistoryPage: React.FC<HistoryPageProps> = ({ initialTab = "timeline" }) => {
   const { id: workspaceId } = useParams<{ id: string }>();
-  const activeWorkspaceId = workspaceId || "ws-default";
+  const activeWorkspaceId = workspaceId ?? "";
 
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
   const [revisions, setRevisions] = useState<CorpusRevisionResponse[]>([]);
