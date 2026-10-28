@@ -86,6 +86,7 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Optional budgeted LLM gateway and validated extraction (C05: `152d750`).
 - [x] Optional bounded, cited corpus RAG assistant (C06: `d08b87c`).
 - [x] Operational hardening, SQLite WAL-safe backup, readiness probes, and release configuration (D06: `93ab93a`).
+- [x] Final reproducible algorithm evaluation evidence and report contribution (B06: `99f3ad2`).
 - [ ] Remaining domain endpoints and auth.
 - [ ] PubMed/Europe PMC quotas, registrations and disclaimer presentation.
 - [ ] Query builder and import UI approval workflow.
