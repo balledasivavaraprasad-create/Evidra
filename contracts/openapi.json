@@ -145,25 +145,8 @@
         "title": "AssistantRequest",
         "type": "object"
       },
-      "AuthLoginRequest": {
-        "additionalProperties": false,
-        "description": "Shared site password submitted from the login screen.",
-        "properties": {
-          "password": {
-            "maxLength": 256,
-            "minLength": 1,
-            "title": "Password",
-            "type": "string"
-          }
-        },
-        "required": [
-          "password"
-        ],
-        "title": "AuthLoginRequest",
-        "type": "object"
-      },
       "AuthSessionResponse": {
-        "description": "Whether this deployment requires the site password, and whether the caller has it.",
+        "description": "Whether this deployment requires sign-in, who is signed in, and which sign-in methods exist.",
         "properties": {
           "auth_required": {
             "title": "Auth Required",
@@ -172,6 +155,27 @@
           "authenticated": {
             "title": "Authenticated",
             "type": "boolean"
+          },
+          "google_client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Client Id"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -705,6 +709,91 @@
         ],
         "title": "CriterionVerdict",
         "type": "string"
+      },
+      "DashboardReviewSummary": {
+        "additionalProperties": false,
+        "description": "One review on the signed-in user's dashboard, with screening progress.",
+        "properties": {
+          "awaiting_review": {
+            "default": 0,
+            "description": "Groups with no human decision yet",
+            "title": "Awaiting Review",
+            "type": "integer"
+          },
+          "conflicts": {
+            "default": 0,
+            "title": "Conflicts",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "excluded": {
+            "default": 0,
+            "title": "Excluded",
+            "type": "integer"
+          },
+          "group_count": {
+            "default": 0,
+            "title": "Group Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "included": {
+            "default": 0,
+            "title": "Included",
+            "type": "integer"
+          },
+          "last_activity_at": {
+            "format": "date-time",
+            "title": "Last Activity At",
+            "type": "string"
+          },
+          "maybe": {
+            "default": 0,
+            "title": "Maybe",
+            "type": "integer"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Latest saved primary review question",
+            "title": "Question"
+          },
+          "record_count": {
+            "default": 0,
+            "title": "Record Count",
+            "type": "integer"
+          },
+          "reviewed_by_human": {
+            "default": 0,
+            "title": "Reviewed By Human",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "created_at",
+          "last_activity_at"
+        ],
+        "title": "DashboardReviewSummary",
+        "type": "object"
       },
       "DecisionCommand": {
         "additionalProperties": false,
@@ -2726,6 +2815,23 @@
           "source_record_id"
         ],
         "title": "FieldProvenanceItem",
+        "type": "object"
+      },
+      "GoogleSignInRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "credential": {
+            "description": "Google Identity Services ID token",
+            "maxLength": 8192,
+            "minLength": 10,
+            "title": "Credential",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "GoogleSignInRequest",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -5368,6 +5474,12 @@
             "description": "SHA-256 checksum of raw API count response",
             "title": "Raw Hash"
           },
+          "selected_for_import": {
+            "default": true,
+            "description": "Whether the reviewer ticked this count for import",
+            "title": "Selected For Import",
+            "type": "boolean"
+          },
           "source": {
             "$ref": "#/components/schemas/SourceNamespace"
           },
@@ -5390,6 +5502,21 @@
           "status"
         ],
         "title": "SearchExecutionResponse",
+        "type": "object"
+      },
+      "SearchExecutionSelectionUpdate": {
+        "additionalProperties": false,
+        "description": "Tick or untick a search count for the next import.",
+        "properties": {
+          "selected_for_import": {
+            "title": "Selected For Import",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "selected_for_import"
+        ],
+        "title": "SearchExecutionSelectionUpdate",
         "type": "object"
       },
       "SearchRestoreRequest": {
@@ -5442,6 +5569,59 @@
         "title": "SearchRestoreResponse",
         "type": "object"
       },
+      "SignInRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "SignInRequest",
+        "type": "object"
+      },
+      "SignUpRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 256,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "SignUpRequest",
+        "type": "object"
+      },
       "SourceNamespace": {
         "description": "External or synthetic literature data source provider.",
         "enum": [
@@ -5472,6 +5652,39 @@
           "text"
         ],
         "title": "StructuredSection",
+        "type": "object"
+      },
+      "UserResponse": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "has_google": {
+            "title": "Has Google",
+            "type": "boolean"
+          },
+          "has_password": {
+            "title": "Has Password",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "has_password",
+          "has_google"
+        ],
+        "title": "UserResponse",
         "type": "object"
       },
       "ValidationError": {
@@ -5632,22 +5845,29 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/api/v1/auth/login": {
+    "/api/v1/auth/google": {
       "post": {
-        "description": "Exchange the shared site password for a signed, expiring session cookie.",
-        "operationId": "login_api_v1_auth_login_post",
+        "description": "Sign in (creating the account on first use) with a Google Identity Services ID token.",
+        "operationId": "sign_in_with_google_api_v1_auth_google_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AuthLoginRequest"
+                "$ref": "#/components/schemas/GoogleSignInRequest"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "204": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
             "description": "Successful Response"
           },
           "401": {
@@ -5658,7 +5878,69 @@
                 }
               }
             },
-            "description": "Wrong password"
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Sign In With Google",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "description": "Sign in with email and password.",
+        "operationId": "sign_in_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
           },
           "422": {
             "content": {
@@ -5678,10 +5960,10 @@
                 }
               }
             },
-            "description": "Too many failed attempts"
+            "description": "Too Many Requests"
           }
         },
-        "summary": "Login",
+        "summary": "Sign In",
         "tags": [
           "auth"
         ]
@@ -5704,7 +5986,7 @@
     },
     "/api/v1/auth/session": {
       "get": {
-        "description": "Report whether a password is required and whether this browser is signed in.",
+        "description": "Report whether sign-in is required and who (if anyone) is signed in.",
         "operationId": "get_auth_session_api_v1_auth_session_get",
         "responses": {
           "200": {
@@ -5719,6 +6001,58 @@
           }
         },
         "summary": "Get Auth Session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/signup": {
+      "post": {
+        "description": "Create an account with email and password, and sign in.",
+        "operationId": "sign_up_api_v1_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Sign Up",
         "tags": [
           "auth"
         ]
@@ -5796,6 +6130,85 @@
         "summary": "Resolve group merge conflict",
         "tags": [
           "Review"
+        ]
+      }
+    },
+    "/api/v1/dashboard": {
+      "get": {
+        "description": "Dashboard cards: each review's question, record counts and decision progress.",
+        "operationId": "get_dashboard_api_v1_dashboard_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DashboardReviewSummary"
+                  },
+                  "title": "Response Get Dashboard Api V1 Dashboard Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The signed-in user's reviews with screening progress",
+        "tags": [
+          "Workspaces"
+        ]
+      }
+    },
+    "/api/v1/executions/{execution_id}": {
+      "patch": {
+        "description": "Persist whether this search count is selected for the next import.",
+        "operationId": "update_execution_selection_api_v1_executions__execution_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "execution_id",
+            "required": true,
+            "schema": {
+              "title": "Execution Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchExecutionSelectionUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchExecutionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tick or untick a search count for import",
+        "tags": [
+          "Queries"
         ]
       }
     },
@@ -6334,7 +6747,7 @@
     },
     "/api/v1/workspaces": {
       "get": {
-        "description": "List every review workspace, newest first.",
+        "description": "List the signed-in user's reviews, newest first (every review in local mode).",
         "operationId": "list_workspaces_api_v1_workspaces_get",
         "responses": {
           "200": {
@@ -6358,7 +6771,7 @@
         ]
       },
       "post": {
-        "description": "Create a new review workspace.",
+        "description": "Create a new review workspace owned by the signed-in user.",
         "operationId": "create_workspace_api_v1_workspaces_post",
         "requestBody": {
           "content": {
@@ -6913,6 +7326,69 @@
         "summary": "Submit reviewer correction for evidence claim",
         "tags": [
           "Evidence Passport"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/executions": {
+      "get": {
+        "description": "Search counts (with import ticks) for the given or latest query version, newest first.",
+        "operationId": "list_workspace_executions_api_v1_workspaces__workspace_id__executions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query_version_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SearchExecutionResponse"
+                  },
+                  "title": "Response List Workspace Executions Api V1 Workspaces  Workspace Id  Executions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search counts for a query version",
+        "tags": [
+          "Queries"
         ]
       }
     },
@@ -7944,6 +8420,81 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspace_id}/jobs": {
+      "get": {
+        "description": "Newest jobs first, optionally of one kind, so progress survives a reload.",
+        "operationId": "list_workspace_jobs_api_v1_workspaces__workspace_id__jobs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/JobKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JobResponse"
+                  },
+                  "title": "Response List Workspace Jobs Api V1 Workspaces  Workspace Id  Jobs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recent background jobs for a review",
+        "tags": [
+          "Jobs"
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspace_id}/pico-radar": {
       "get": {
         "description": "Retrieve comprehensive review-level PICO evidence matrix and dimension metrics.",
@@ -8156,6 +8707,49 @@
           }
         },
         "summary": "Save a new query version",
+        "tags": [
+          "Queries"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/queries/latest": {
+      "get": {
+        "description": "Return the most recently saved search so the query builder can resume it.",
+        "operationId": "get_latest_query_version_api_v1_workspaces__workspace_id__queries_latest_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryVersionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest saved query version",
         "tags": [
           "Queries"
         ]

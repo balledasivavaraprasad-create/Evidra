@@ -5,13 +5,7 @@ from fastapi.testclient import TestClient
 
 from app import auth
 from app.contracts.models import CapabilitiesResponse
-from app.main import app
 from app.settings import settings
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
 
 
 def test_capabilities_flags_off_by_default(client: TestClient, monkeypatch: pytest.MonkeyPatch):
@@ -49,11 +43,10 @@ def test_capabilities_flags_on(client: TestClient, monkeypatch: pytest.MonkeyPat
     assert validated.rag_enabled is True
 
 
-def test_capabilities_sits_behind_password_gate(client: TestClient, monkeypatch: pytest.MonkeyPatch):
-    """When AUTH_MODE=password, /api/v1/capabilities requires authentication like other /api routes."""
+def test_capabilities_requires_sign_in(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+    """When AUTH_MODE=accounts, /api/v1/capabilities requires a signed-in user like other /api routes."""
     password = "test-secret-password-123"
-    monkeypatch.setattr(settings, "auth_mode", "password")
-    monkeypatch.setattr(settings, "site_password", password)
+    monkeypatch.setattr(settings, "auth_mode", "accounts")
     monkeypatch.setattr(settings, "session_cookie_secure", False)
     auth.reset_failed_attempts()
 
@@ -64,8 +57,11 @@ def test_capabilities_sits_behind_password_gate(client: TestClient, monkeypatch:
         assert blocked.json()["code"] == "AUTH_REQUIRED"
 
         # Login to obtain session
-        login_res = client.post("/api/v1/auth/login", json={"password": password})
-        assert login_res.status_code == 204
+        signup = client.post(
+            "/api/v1/auth/signup",
+            json={"name": "Asha", "email": "asha@example.com", "password": password},
+        )
+        assert signup.status_code == 201
 
         # Authenticated request succeeds
         allowed = client.get("/api/v1/capabilities")

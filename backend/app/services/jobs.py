@@ -1,5 +1,6 @@
 """Background job lifecycle, durable leasing, and progress tracking service."""
 import contextlib
+import hashlib
 import json
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -30,7 +31,8 @@ def create_job(
         )
 
     # 2. Check for duplicate request key
-    payload_hash = json.dumps(payload, sort_keys=True)
+    payload_json = json.dumps(payload, sort_keys=True)
+    payload_hash = hashlib.sha256(payload_json.encode("utf-8")).hexdigest()
     existing = db.query(JobModel).filter_by(workspace_id=workspace_id, request_key=request_key).first()
     if existing:
         if existing.payload_hash == payload_hash:
@@ -46,6 +48,7 @@ def create_job(
         kind=kind.value,
         request_key=request_key,
         payload_hash=payload_hash,
+        payload_json=payload_json,
         state=JobState.QUEUED.value,
         progress=0.0,
         stage="queued",

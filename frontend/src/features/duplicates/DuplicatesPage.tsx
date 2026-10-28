@@ -28,7 +28,7 @@ type ViewTab = "genealogy" | "conflicts" | "candidates";
 
 export const DuplicatesPage: React.FC = () => {
   const { id: workspaceParam } = useParams<{ id: string }>();
-  const workspaceId = workspaceParam || "ws-synth-001";
+  const workspaceId = workspaceParam ?? "";
 
   const [activeTab, setActiveTab] = useState<ViewTab>("genealogy");
   const [summaryData, setSummaryData] = useState<DuplicateWorkspaceSummaryResponse | null>(null);

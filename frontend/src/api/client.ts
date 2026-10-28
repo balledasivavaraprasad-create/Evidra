@@ -152,13 +152,17 @@ export const FRIENDLY_ERRORS = {
   unreachable: "Evidra can't reach the review service. Start the backend, then try again.",
   server: "The review service hit an unexpected problem while loading this. Try again; if it keeps happening, check the backend terminal for details.",
   notFound: "This item doesn't exist in the current review. It may have been removed or belongs to another workspace.",
-  authRequired: "Enter the site password to continue.",
+  authRequired: "Sign in to continue.",
 } as const;
 
-/** Fired on window when the server says this browser needs to sign in (AUTH_MODE=password). */
+/** Fired on window when the server says this browser needs to sign in (session missing or expired). */
 export const AUTH_REQUIRED_EVENT = "evidra:auth-required";
 
 export type AuthSession = components["schemas"]["AuthSessionResponse"];
+export type AuthUser = components["schemas"]["UserResponse"];
+export type SignUpRequest = components["schemas"]["SignUpRequest"];
+export type SignInRequest = components["schemas"]["SignInRequest"];
+export type DashboardReviewSummary = components["schemas"]["DashboardReviewSummary"];
 
 /** True when the backend could not be reached at all (stopped, crashed or proxy can't connect). */
 export function isServiceUnreachable(err: unknown): boolean {
@@ -219,9 +223,16 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 export const api = {
   auth: {
     session: () => request<AuthSession>("/api/v1/auth/session"),
-    login: (password: string) =>
-      request<void>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ password }) }),
+    signUp: (payload: SignUpRequest) =>
+      request<AuthUser>("/api/v1/auth/signup", { method: "POST", body: JSON.stringify(payload) }),
+    login: (payload: SignInRequest) =>
+      request<AuthUser>("/api/v1/auth/login", { method: "POST", body: JSON.stringify(payload) }),
+    google: (credential: string) =>
+      request<AuthUser>("/api/v1/auth/google", { method: "POST", body: JSON.stringify({ credential }) }),
     logout: () => request<void>("/api/v1/auth/logout", { method: "POST" }),
+  },
+  dashboard: {
+    list: () => request<DashboardReviewSummary[]>("/api/v1/dashboard"),
   },
   capabilities: {
     get: () => request<CapabilitiesResponse>("/api/v1/capabilities"),
@@ -249,6 +260,18 @@ export const api = {
       }),
   },
   queries: {
+    /** Latest saved search; rejects with a 404 ApiError when none has been saved yet. */
+    latest: (workspaceId: string) =>
+      request<QueryVersionResponse>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/queries/latest`),
+    listExecutions: (workspaceId: string, queryVersionId?: string) => {
+      const qs = queryVersionId ? `?query_version_id=${encodeURIComponent(queryVersionId)}` : "";
+      return request<SearchExecutionResponse[]>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/executions${qs}`);
+    },
+    setExecutionSelected: (executionId: string, selected: boolean) =>
+      request<SearchExecutionResponse>(`/api/v1/executions/${encodeURIComponent(executionId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ selected_for_import: selected }),
+      }),
     create: (workspaceId: string, payload: QueryVersionCreate) =>
       request<QueryVersionResponse>(`/api/v1/workspaces/${workspaceId}/queries`, {
         method: "POST",
@@ -269,6 +292,11 @@ export const api = {
   },
   jobs: {
     get: (jobId: string) => request<JobResponse>(`/api/v1/jobs/${jobId}`),
+    listForWorkspace: (workspaceId: string, kind?: JobKind, limit = 5) => {
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (kind) params.set("kind", kind);
+      return request<JobResponse[]>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/jobs?${params.toString()}`);
+    },
     cancel: (jobId: string) =>
       request<JobResponse>(`/api/v1/jobs/${jobId}/cancel`, {
         method: "POST",

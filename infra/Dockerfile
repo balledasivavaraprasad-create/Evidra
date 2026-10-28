@@ -13,7 +13,7 @@ RUN npm run build
 # Stage 2: Python / FastAPI backend runtime
 FROM python:3.12-slim AS runtime
 
-# System dependencies: SQLite 3 and curl for health probes
+# System dependencies: SQLite 3 (local dev / LangGraph checkpoints) and curl for health probes
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 \
     curl \
@@ -42,7 +42,7 @@ ENV DATA_DIR=/app/data \
     CHECKPOINT_DATABASE_URL=sqlite:////app/data/checkpoints.sqlite \
     FRONTEND_DIST=/app/frontend/dist \
     APP_ENV=production \
-    AUTH_MODE=local \
+    AUTH_MODE=accounts \
     PYTHONUNBUFFERED=1
 
 EXPOSE 8000

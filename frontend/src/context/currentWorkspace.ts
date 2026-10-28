@@ -1,5 +1,8 @@
-/** The review the menu links point at: the one in the URL, else the last one opened, else the demo. */
-export const DEMO_WORKSPACE_ID = "ws-synth-001";
+/**
+ * The review the menu links point at: the one in the URL, else the last one this browser opened.
+ * There is no fallback review: with nothing remembered the menu sends people to their dashboard,
+ * so work never lands in someone else's (or a demo) review by accident.
+ */
 const STORAGE_KEY = "evidra-current-workspace";
 
 export function workspaceIdFromPath(pathname: string): string | null {
@@ -15,15 +18,15 @@ function readStoredWorkspaceId(): string | null {
   }
 }
 
-export function getRememberedWorkspaceId(): string {
-  return readStoredWorkspaceId() ?? DEMO_WORKSPACE_ID;
+export function getRememberedWorkspaceId(): string | null {
+  return readStoredWorkspaceId();
 }
 
 export function rememberWorkspaceId(id: string): void {
   try {
     localStorage.setItem(STORAGE_KEY, id);
   } catch {
-    /* storage unavailable: menu falls back to the demo review */
+    /* storage unavailable: menu links fall back to the dashboard */
   }
 }
 
@@ -38,12 +41,12 @@ export function forgetWorkspaceId(onlyIf?: string): void {
 }
 
 /**
- * Check the remembered review against the reviews the server really has. A review that is gone
- * (for example after the server restarted with an empty database) is forgotten, and the demo is used.
+ * Check the remembered review against the signed-in user's reviews. One that isn't theirs
+ * (another account used this browser, or it was deleted) is forgotten.
  */
-export function reconcileRememberedWorkspace(existingIds: readonly string[]): string {
+export function reconcileRememberedWorkspace(existingIds: readonly string[]): string | null {
   const stored = readStoredWorkspaceId();
   if (stored && existingIds.includes(stored)) return stored;
   if (stored) forgetWorkspaceId();
-  return DEMO_WORKSPACE_ID;
+  return null;
 }

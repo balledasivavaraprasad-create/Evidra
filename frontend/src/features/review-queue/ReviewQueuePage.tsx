@@ -41,7 +41,7 @@ const EXCLUSION_REASONS = [
 
 export const ReviewQueuePage: React.FC = () => {
   const { id: workspaceParam } = useParams<{ id: string }>();
-  const workspaceId = workspaceParam || "ws-synth-001";
+  const workspaceId = workspaceParam ?? "";
 
   const [revisionId, setRevisionId] = useState<string | null>(null);
   const [groups, setGroups] = useState<PaperGroupSummary[]>([]);

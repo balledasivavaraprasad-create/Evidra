@@ -1,35 +1,32 @@
-# Render Blueprint for Evidra: one Docker web service on the free plan (SQLite, demo data reloaded on start).
+# Render Blueprint for Evidra: one Docker web service on the free plan, data in Neon Postgres.
 # Create it from the Render dashboard: New > Blueprint > pick this repository.
-# You will be asked for SITE_PASSWORD (the password people type to open the site).
+# You will be asked for DATABASE_URL (Neon pooled connection string), GOOGLE_CLIENT_ID and LLM_API_KEY.
 services:
   - type: web
     name: evidra
     runtime: docker
     dockerfilePath: ./infra/Dockerfile
     dockerContext: .
-    # Free plan: no card needed. The filesystem is temporary, so the database resets whenever the
-    # service restarts, redeploys or wakes from sleep, and SEED_DEMO reloads the demo review.
-    # For data that must persist, switch to a paid plan (e.g. 0.5c-512mb) and add the disk below.
+    # Free plan: no card needed. The container filesystem is temporary, so all review data lives in
+    # Neon Postgres (DATABASE_URL) and survives restarts, redeploys and wake-ups. Only transient
+    # LangGraph checkpoints stay on local disk.
     plan: free
     region: singapore
     healthCheckPath: /health/ready
     autoDeployTrigger: commit
-    # Persistent disk (paid plans only):
-    # disk:
-    #   name: evidra-data
-    #   mountPath: /app/data
-    #   sizeGB: 1
     envVars:
       - key: APP_ENV
         value: production
       - key: AUTH_MODE
-        value: password
-      - key: SITE_PASSWORD
+        value: accounts
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
         sync: false
       - key: SECRET_KEY
         generateValue: true
       - key: SEED_DEMO
-        value: "true"
+        value: "false"
       - key: PORT
         value: "8000"
       - key: RUN_WORKER_IN_PROCESS

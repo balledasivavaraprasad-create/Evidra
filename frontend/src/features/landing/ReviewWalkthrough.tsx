@@ -21,7 +21,7 @@ import {
  * Uses the synthetic benchmark review (metformin vs placebo, type 2 diabetes).
  */
 
-const WS = "/reviews/ws-synth-001";
+const WS = "/dashboard";
 const STEP_MS = 7000;
 
 type StepId = "search" | "dedup" | "screen" | "pico" | "audit";
@@ -54,7 +54,7 @@ const STEPS: Step[] = [
       { value: "5", label: "records imported" },
     ],
     why: "Query versions are immutable, so you can always show exactly what was searched and when.",
-    link: { to: `${WS}/search`, label: "Open the query builder" },
+    link: { to: WS, label: "Open the query builder" },
   },
   {
     id: "dedup",
@@ -70,7 +70,7 @@ const STEPS: Step[] = [
       { value: "1", label: "cannot-link kept" },
     ],
     why: "Merging a protocol into its results paper would silently hide evidence. Evidra never deletes a duplicate; it groups it.",
-    link: { to: `${WS}/duplicates`, label: "Inspect duplicate pairs" },
+    link: { to: WS, label: "Inspect duplicate pairs" },
   },
   {
     id: "screen",
@@ -87,7 +87,7 @@ const STEPS: Step[] = [
       { value: "2", label: "exclude" },
     ],
     why: "Machine output stays a suggestion. Every human decision is attributed and appended, never overwritten.",
-    link: { to: `${WS}/records`, label: "Open the screening queue" },
+    link: { to: WS, label: "Open the screening queue" },
   },
   {
     id: "pico",
@@ -103,7 +103,7 @@ const STEPS: Step[] = [
       { value: "0", label: "stale spans" },
     ],
     why: "If the abstract text ever changes, the hash no longer matches and the span is flagged instead of drifting.",
-    link: { to: `${WS}/radar`, label: "Open the PICO radar" },
+    link: { to: WS, label: "Open the PICO radar" },
   },
   {
     id: "audit",
@@ -119,7 +119,7 @@ const STEPS: Step[] = [
       { value: "100%", label: "reproducible" },
     ],
     why: "Reviewers and auditors can see what the review looked like on any date, and why each record ended up where it did.",
-    link: { to: `${WS}/history`, label: "Open audit lineage" },
+    link: { to: WS, label: "Open audit lineage" },
   },
 ];
 

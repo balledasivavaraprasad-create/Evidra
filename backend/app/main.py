@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -17,10 +17,13 @@ from sqlalchemy.orm import Session
 
 from app.contracts.enums import (
     CorpusRevisionState,
+    JobKind,
     EffectiveDecisionState,
     SourceNamespace,
 )
 from app.contracts.models import (
+    DashboardReviewSummary,
+    SearchExecutionSelectionUpdate,
     ArticleRadarResponse,
     AssistantProposal,
     AssistantRequest,
@@ -89,6 +92,13 @@ from app.db.models import (
 )
 from app.db.session import get_db
 from app.ml_feature.service import execute_ml_ranking
+from app.services.workspace_state import (
+    dashboard_summaries,
+    latest_query_version,
+    list_executions,
+    list_jobs,
+    set_execution_selection,
+)
 from app.services.corpus import (
     get_paper_group_detail,
     list_paper_groups_in_revision,
@@ -146,7 +156,15 @@ from app.services.snapshots import (
 from app.services.snapshots import (
     restore_corpus_snapshot as svc_restore_corpus_snapshot,
 )
-from app.auth import PasswordGateMiddleware, auth_router
+from app.auth import (
+    LOCAL_USER_ID,
+    SessionAuthMiddleware,
+    accounts_enabled,
+    auth_router,
+    current_user_id,
+    get_or_create_local_user,
+)
+from app.services.access import enforce_review_access
 from app.settings import settings
 from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
@@ -224,10 +242,11 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
     lifespan=lifespan,
+    dependencies=[Depends(enforce_review_access)],
 )
 
-# Shared-password gate (no-op unless AUTH_MODE=password). Added before CORS so CORS stays outermost.
-app.add_middleware(PasswordGateMiddleware)
+# User sessions (AUTH_MODE=accounts; no-op in local mode). Added before CORS so CORS stays outermost.
+app.add_middleware(SessionAuthMiddleware)
 app.include_router(auth_router)
 
 app.add_middleware(
@@ -396,12 +415,20 @@ def stub_not_implemented(operation_name: str) -> None:
     response_model=WorkspaceResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_workspace(payload: WorkspaceCreate, db: Session = Depends(get_db)) -> WorkspaceResponse:  # noqa: B008
-    """Create a new review workspace."""
+def create_workspace(
+    payload: WorkspaceCreate,
+    request: Request,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> WorkspaceResponse:
+    """Create a new review workspace owned by the signed-in user."""
+    user_id = current_user_id(request)
+    if user_id == LOCAL_USER_ID:
+        get_or_create_local_user(db)
     workspace = WorkspaceModel(
         title=payload.title,
         description=payload.description,
-        created_by="reviewer_local",
+        created_by=user_id or "reviewer_local",
+        owner_user_id=user_id,
     )
     db.add(workspace)
     db.commit()
@@ -415,10 +442,84 @@ def create_workspace(payload: WorkspaceCreate, db: Session = Depends(get_db)) ->
     summary="List review workspaces",
     response_model=list[WorkspaceResponse],
 )
-def list_workspaces(db: Session = Depends(get_db)) -> list[WorkspaceResponse]:  # noqa: B008
-    """List every review workspace, newest first."""
-    workspaces = db.query(WorkspaceModel).order_by(WorkspaceModel.created_at.desc()).all()
+def list_workspaces(request: Request, db: Session = Depends(get_db)) -> list[WorkspaceResponse]:  # noqa: B008
+    """List the signed-in user's reviews, newest first (every review in local mode)."""
+    query = db.query(WorkspaceModel)
+    if accounts_enabled():
+        query = query.filter(WorkspaceModel.owner_user_id == current_user_id(request))
+    workspaces = query.order_by(WorkspaceModel.created_at.desc()).all()
     return [WorkspaceResponse.model_validate(ws) for ws in workspaces]
+
+
+@app.get(
+    "/api/v1/dashboard",
+    tags=["Workspaces"],
+    summary="The signed-in user's reviews with screening progress",
+    response_model=list[DashboardReviewSummary],
+)
+def get_dashboard(request: Request, db: Session = Depends(get_db)) -> list[DashboardReviewSummary]:  # noqa: B008
+    """Dashboard cards: each review's question, record counts and decision progress."""
+    query = db.query(WorkspaceModel)
+    if accounts_enabled():
+        query = query.filter(WorkspaceModel.owner_user_id == current_user_id(request))
+    return dashboard_summaries(db, query.order_by(WorkspaceModel.created_at.desc()).all())
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/queries/latest",
+    tags=["Queries"],
+    summary="Latest saved query version",
+    response_model=QueryVersionResponse,
+)
+def get_latest_query_version(workspace_id: str, db: Session = Depends(get_db)) -> QueryVersionResponse:  # noqa: B008
+    """Return the most recently saved search so the query builder can resume it."""
+    return latest_query_version(db, workspace_id)
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/executions",
+    tags=["Queries"],
+    summary="Search counts for a query version",
+    response_model=list[SearchExecutionResponse],
+)
+def list_workspace_executions(
+    workspace_id: str,
+    query_version_id: str | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> list[SearchExecutionResponse]:
+    """Search counts (with import ticks) for the given or latest query version, newest first."""
+    return list_executions(db, workspace_id, query_version_id)
+
+
+@app.patch(
+    "/api/v1/executions/{execution_id}",
+    tags=["Queries"],
+    summary="Tick or untick a search count for import",
+    response_model=SearchExecutionResponse,
+)
+def update_execution_selection(
+    execution_id: str,
+    payload: SearchExecutionSelectionUpdate,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> SearchExecutionResponse:
+    """Persist whether this search count is selected for the next import."""
+    return set_execution_selection(db, execution_id, payload.selected_for_import)
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/jobs",
+    tags=["Jobs"],
+    summary="Recent background jobs for a review",
+    response_model=list[JobResponse],
+)
+def list_workspace_jobs(
+    workspace_id: str,
+    kind: JobKind | None = None,
+    limit: int = Query(default=5, ge=1, le=50),
+    db: Session = Depends(get_db),  # noqa: B008
+) -> list[JobResponse]:
+    """Newest jobs first, optionally of one kind, so progress survives a reload."""
+    return list_jobs(db, workspace_id, kind, limit)
 
 
 @app.post(

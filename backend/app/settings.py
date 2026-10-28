@@ -25,12 +25,12 @@ class Settings(BaseSettings):
         description="SQLite database URL for LangGraph checkpoints",
     )
 
-    # local: no login (development). password: one shared site password gates the API
-    # (hosted demos). production: reserved for an external identity provider.
-    auth_mode: Literal["local", "password", "production"] = "local"
-    site_password: str | None = Field(
+    # local: no sign-in, everyone is the built-in local user (development and tests).
+    # accounts: people sign up and sign in; each user sees only their own reviews.
+    auth_mode: Literal["local", "accounts"] = "local"
+    google_client_id: str | None = Field(
         default=None,
-        description="Shared password required when AUTH_MODE=password (minimum 8 characters)",
+        description="Google OAuth Web client ID; enables 'Continue with Google' when set",
     )
     session_cookie_secure: bool | None = Field(
         default=None,
@@ -81,11 +81,10 @@ class Settings(BaseSettings):
                 )
             if self.auth_mode == "local":
                 raise ValueError(
-                    "AUTH_MODE='local' is not permitted in production. "
-                    "Use AUTH_MODE=password with SITE_PASSWORD, or configure an authenticated identity provider."
+                    "AUTH_MODE='local' is not permitted in production. Use AUTH_MODE=accounts."
                 )
-        if self.auth_mode == "password" and (not self.site_password or len(self.site_password) < 8):
-            raise ValueError("AUTH_MODE='password' requires SITE_PASSWORD with at least 8 characters.")
+        if self.google_client_id is not None and not self.google_client_id.strip():
+            self.google_client_id = None
         if self.run_worker_in_process is None:
             self.run_worker_in_process = (self.app_env == "production")
         return self

@@ -36,7 +36,7 @@ def upgrade() -> None:
         sa.Column("validation_message", sa.Text(), nullable=True),
         sa.Column("semantic_assessment", sa.String(length=32), server_default="unassessed", nullable=False),
         sa.Column("assessed_by", sa.String(length=128), nullable=True),
-        sa.Column("is_contradictory", sa.Boolean(), server_default=sa.text("0"), nullable=False),
+        sa.Column("is_contradictory", sa.Boolean(), server_default=sa.false(), nullable=False),
         sa.Column("uncertainty_note", sa.Text(), nullable=True),
         sa.Column("reviewer_correction_reason", sa.Text(), nullable=True),
         sa.Column("superseded_by_id", sa.String(length=64), nullable=True),
