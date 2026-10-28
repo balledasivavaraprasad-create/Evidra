@@ -46,6 +46,7 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | A02: Query builder and approved import experience | Merged | Commit `03a7acc`; grouped Boolean query builder, AST compilation, criteria editor, search count runner across PubMed and Europe PMC, approved ingestion workflow, durable job polling with exponential backoff and cancel, 13 frontend tests passing; see [A02 handoff](prompts/handoffs/A02.md) |
 | C-ML01: Review prioritization model and artifact security | Merged | Commit `68e4715`; offline TF-IDF ranking pipeline, strict SHA-256 artifact verification, train/test evaluation split, calibration and unit tests; see [C-ML01 handoff](prompts/handoffs/C-ML01.md) |
 | D03: Reviewer services and deterministic pipeline integration | Merged | Commit `78a8d01`; Alembic migration `002_review_services_schema`, paper groups, group snapshots, append-only review decision events, optimistic concurrency (409 on version collision), PICO offset/quote validation, dedup overrides, formula-sanitized CSV export, evidence retrieval repository, 74 backend tests passing; see [D03 handoff](prompts/handoffs/D03.md) |
+| D05: Version snapshots, decision lineage and exact restoration | Merged | Commit `ef5ff75`; Level 2 snapshot restoration, lineage projection (merge/split/extend/retain), decision carryover, merge conflict detection, structured diff, deterministic invalidation fingerprints, 8 Level 2 tests passing, 104 backend tests passing; see [D05 handoff](prompts/handoffs/D05.md) |
 
 ## Actual dependency defects found during preparation
 
@@ -71,7 +72,8 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Baseline evaluation, adversarial regression suite, and evaluation manifest (B03: `8704cbc`).
 - [x] Agent boundaries, replay safety, prompt injection defense, and model gateway (C03: `b3329be`).
 - [x] Premium 3D experience, scroll-driven kinematics, luxury frosted glass design system, and light/dark theme (A04: `a3d03fd`).
-- [ ] Remaining domain endpoints (diffs, snapshots) and auth.
+- [x] Version snapshots, decision lineage, group merge/split conflicts, diffs, and exact restore (D05: `ef5ff75`).
+- [ ] Remaining domain endpoints and auth.
 - [ ] PubMed/Europe PMC quotas, registrations and disclaimer presentation.
 - [ ] Query builder and import UI approval workflow.
 - [ ] Deduplication, eligibility rules, PICO algorithms and reviewer correction services.
