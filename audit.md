@@ -48,6 +48,7 @@ Updated **27 October 2026**, Asia/Kolkata. Scope: full problem-statement analysi
 | D03: Reviewer services and deterministic pipeline integration | Merged | Commit `78a8d01`; Alembic migration `002_review_services_schema`, paper groups, group snapshots, append-only review decision events, optimistic concurrency (409 on version collision), PICO offset/quote validation, dedup overrides, formula-sanitized CSV export, evidence retrieval repository, 74 backend tests passing; see [D03 handoff](prompts/handoffs/D03.md) |
 | D05: Version snapshots, decision lineage and exact restoration | Merged | Commit `ef5ff75`; Level 2 snapshot restoration, lineage projection (merge/split/extend/retain), decision carryover, merge conflict detection, structured diff, deterministic invalidation fingerprints, 8 Level 2 tests passing, 104 backend tests passing; see [D05 handoff](prompts/handoffs/D05.md) |
 | B04: Group merge/split and cross-version regression suite | Merged | Commit `14795d4`; cross-version regression suite covering bridge records, cannot-link/rejected edge preservation, single-trial distinct publication separation, split ambiguity conflicts, export blocking on unresolved conflicts, partition arrival invariance, 6 regression tests passing, 110 backend tests passing; see [B04 handoff](prompts/handoffs/B04.md) |
+| C04: Incremental graph execution and snapshot-aware replay | Merged | Commit `8c7c93b`; incremental graph orchestration, stage-specific input fingerprinting (screening & PICO cache reuse), exact snapshot restore mode completely bypassing algorithms, version compatibility checks, rollback failure isolation, 7 Level 2 tests passing, 117 backend tests passing; see [C04 handoff](prompts/handoffs/C04.md) |
 
 ## Actual dependency defects found during preparation
 
@@ -75,6 +76,7 @@ The frontend build emits client-directive warnings from libraries in this client
 - [x] Premium 3D experience, scroll-driven kinematics, luxury frosted glass design system, and light/dark theme (A04: `a3d03fd`).
 - [x] Version snapshots, decision lineage, group merge/split conflicts, diffs, and exact restore (D05: `ef5ff75`).
 - [x] Group merge/split and cross-version regression suite (B04: `14795d4`).
+- [x] Incremental graph execution and snapshot-aware replay (C04: `8c7c93b`).
 - [ ] Remaining domain endpoints and auth.
 - [ ] PubMed/Europe PMC quotas, registrations and disclaimer presentation.
 - [ ] Query builder and import UI approval workflow.
