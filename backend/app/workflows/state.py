@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any, TypedDict
 
-GRAPH_VERSION = "review_graph:v1.0.0"
+GRAPH_VERSION = "review_graph:v2.0.0"
+SUPPORTED_GRAPH_VERSIONS = {"review_graph:v1.0.0", "review_graph:v2.0.0"}
 
 
 class ReviewGraphState(TypedDict):
@@ -30,3 +31,13 @@ class ReviewGraphState(TypedDict):
     error: str | None
     trace_steps: list[str]
     graph_version: str
+
+    # C04 incremental & snapshot-aware extensions
+    mode: str  # "full" | "incremental" | "restore"
+    restore_snapshot_id: str | None
+    reused_screening_count: int
+    recomputed_screening_count: int
+    reused_pico_count: int
+    recomputed_pico_count: int
+    invalidation_fingerprint: str | None
+    affected_group_ids: list[str]

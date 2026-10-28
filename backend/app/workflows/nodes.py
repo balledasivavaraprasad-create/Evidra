@@ -1,4 +1,4 @@
-"""Graph execution nodes calling D03 review services and human-in-the-loop review interrupts."""
+"""Graph execution nodes calling D03/D05/C04 review services and human-in-the-loop review interrupts."""
 from __future__ import annotations
 
 import logging
@@ -9,11 +9,12 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 from sqlalchemy.orm import Session
 
-from app.contracts.enums import EffectiveDecisionState
+from app.contracts.enums import EffectiveDecisionState, RestoreMode
 from app.db.models import WorkspaceModel
 from app.db.session import SessionLocal
 from app.services.corpus import list_paper_groups_in_revision, process_corpus
-from app.workflows.state import ReviewGraphState
+from app.services.snapshots import compute_corpus_diff, restore_corpus_snapshot
+from app.workflows.state import SUPPORTED_GRAPH_VERSIONS, ReviewGraphState
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +29,16 @@ def get_node_db(config: RunnableConfig | None = None) -> tuple[Session, bool]:
 
 
 def validate_input_node(state: ReviewGraphState, config: RunnableConfig) -> dict[str, Any]:
-    """Validate workspace existence and state prerequisites."""
+    """Validate workspace existence, graph version compatibility, and state prerequisites."""
     ws_id = state["workspace_id"]
+    version = state.get("graph_version")
+    if version and version not in SUPPORTED_GRAPH_VERSIONS:
+        return {
+            "error": f"Incompatible checkpoint graph version '{version}'. Replay from domain output or migration required.",
+            "stage": "failed",
+            "trace_steps": state.get("trace_steps", []) + ["validate_input:incompatible_version"],
+        }
+
     db, should_close = get_node_db(config)
     try:
         ws = db.query(WorkspaceModel).filter_by(id=ws_id).first()
@@ -49,16 +58,69 @@ def validate_input_node(state: ReviewGraphState, config: RunnableConfig) -> dict
             db.close()
 
 
+def restore_snapshot_node(state: ReviewGraphState, config: RunnableConfig) -> dict[str, Any]:
+    """Execute exact snapshot restoration, completely bypassing retrieval, dedup, screening, and PICO algorithms."""
+    if state.get("error"):
+        return {}
+
+    ws_id = state["workspace_id"]
+    snapshot_id = state.get("restore_snapshot_id")
+    if not snapshot_id:
+        return {
+            "error": "restore_snapshot_id is required when mode is 'restore'",
+            "stage": "failed",
+            "trace_steps": state.get("trace_steps", []) + ["restore_snapshot:failed_missing_id"],
+        }
+
+    db, should_close = get_node_db(config)
+    try:
+        restored_rev = restore_corpus_snapshot(
+            db=db,
+            workspace_id=ws_id,
+            snapshot_id=snapshot_id,
+            mode=RestoreMode.EXACT_SNAPSHOT,
+        )
+        return {
+            "corpus_revision_id": restored_rev.id,
+            "group_count": restored_rev.group_count,
+            "record_count": restored_rev.record_count,
+            "stage": "restored",
+            "reused_screening_count": 0,
+            "recomputed_screening_count": 0,
+            "reused_pico_count": 0,
+            "recomputed_pico_count": 0,
+            "trace_steps": state.get("trace_steps", []) + ["restore_snapshot:succeeded"],
+        }
+    except (ValueError, KeyError, RuntimeError, HTTPException) as e:
+        logger.error("Error restoring snapshot in workflow node: %s", e)
+        return {
+            "error": str(e),
+            "stage": "failed",
+            "trace_steps": state.get("trace_steps", []) + [f"restore_snapshot:error:{e}"],
+        }
+    finally:
+        if should_close:
+            db.close()
+
+
 def process_corpus_node(state: ReviewGraphState, config: RunnableConfig) -> dict[str, Any]:
-    """Execute deterministic dedup, screening, and PICO extraction via D03 services."""
+    """Execute deterministic dedup, screening, and PICO extraction via D03/D05/C04 services."""
     if state.get("error"):
         return {}
 
     ws_id = state["workspace_id"]
     crit_id = state.get("criteria_version_id")
+    incremental = (state.get("mode") != "full")
+    stats: dict[str, int] = {}
     db, should_close = get_node_db(config)
     try:
-        rev = process_corpus(db=db, workspace_id=ws_id, criteria_version_id=crit_id)
+        rev = process_corpus(
+            db=db,
+            workspace_id=ws_id,
+            criteria_version_id=crit_id,
+            incremental=incremental,
+            stats=stats,
+        )
         groups = list_paper_groups_in_revision(db=db, revision_id=rev.id)
 
         inc_count = sum(1 for g in groups if g.effective_status == EffectiveDecisionState.INCLUDE)
@@ -66,6 +128,15 @@ def process_corpus_node(state: ReviewGraphState, config: RunnableConfig) -> dict
         unc_count = sum(
             1 for g in groups if g.effective_status in (EffectiveDecisionState.MAYBE, EffectiveDecisionState.CONFLICT)
         )
+
+        invalidation_fp = None
+        affected_groups: list[str] = []
+        if rev.parent_id:
+            diff = compute_corpus_diff(db=db, base_revision_id=rev.parent_id, target_revision_id=rev.id)
+            invalidation_fp = diff.invalidation_fingerprint
+            for g in groups:
+                if g.has_conflict or g.effective_status == EffectiveDecisionState.CONFLICT:
+                    affected_groups.append(g.id)
 
         pending_review = None
         # If there are uncertain records or conflicts, identify first group requiring human review
@@ -90,6 +161,12 @@ def process_corpus_node(state: ReviewGraphState, config: RunnableConfig) -> dict
             "uncertain_count": unc_count,
             "stage": "corpus_processed",
             "pending_human_review": pending_review,
+            "reused_screening_count": stats.get("reused_screening_count", 0),
+            "recomputed_screening_count": stats.get("recomputed_screening_count", 0),
+            "reused_pico_count": stats.get("reused_pico_count", 0),
+            "recomputed_pico_count": stats.get("recomputed_pico_count", 0),
+            "invalidation_fingerprint": invalidation_fp,
+            "affected_group_ids": affected_groups,
             "trace_steps": state.get("trace_steps", []) + ["process_corpus:succeeded"],
         }
     except (ValueError, KeyError, RuntimeError, HTTPException) as e:
