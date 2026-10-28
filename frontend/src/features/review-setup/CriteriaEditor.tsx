@@ -63,6 +63,10 @@ export const DEFAULT_FRONTEND_CRITERIA: CriterionDefinition[] = [
 
 interface CriteriaEditorProps {
   workspaceId: string;
+  /** Starting question for a new review (defaults to the metformin example) */
+  defaultQuestion?: string;
+  /** Starting PICO for a new review (defaults to the metformin example) */
+  defaultPico?: Record<string, string>;
   onCriteriaSaved?: (criteriaVersion: CriteriaVersionResponse) => void;
   savedCriteria?: CriteriaVersionResponse | null;
 }
@@ -71,14 +75,17 @@ export const CriteriaEditor: React.FC<CriteriaEditorProps> = ({
   workspaceId,
   onCriteriaSaved,
   savedCriteria = null,
+  defaultQuestion,
+  defaultPico,
 }) => {
   const [question, setQuestion] = useState(
     savedCriteria?.question ||
+      defaultQuestion ||
       "In adults with type 2 diabetes, how does metformin, compared with placebo or another glucose-lowering intervention, affect HbA1c?"
   );
 
   const [pico, setPico] = useState<Record<string, string>>(
-    savedCriteria?.pico_description || {
+    savedCriteria?.pico_description || defaultPico || {
       population: "Adults with type 2 diabetes",
       intervention: "Metformin",
       comparator: "Placebo or another glucose-lowering intervention",
@@ -191,6 +198,7 @@ export const CriteriaEditor: React.FC<CriteriaEditorProps> = ({
               type="text"
               className="w-full px-2.5 py-1.5 bg-slate-950/70 border border-slate-800 rounded text-xs text-white"
               value={pico.population || ""}
+              placeholder="e.g. Adults with type 2 diabetes"
               onChange={(e) => setPico({ ...pico, population: e.target.value })}
             />
           </div>
@@ -200,6 +208,7 @@ export const CriteriaEditor: React.FC<CriteriaEditorProps> = ({
               type="text"
               className="w-full px-2.5 py-1.5 bg-slate-950/70 border border-slate-800 rounded text-xs text-white"
               value={pico.intervention || ""}
+              placeholder="e.g. Metformin"
               onChange={(e) => setPico({ ...pico, intervention: e.target.value })}
             />
           </div>
@@ -209,6 +218,7 @@ export const CriteriaEditor: React.FC<CriteriaEditorProps> = ({
               type="text"
               className="w-full px-2.5 py-1.5 bg-slate-950/70 border border-slate-800 rounded text-xs text-white"
               value={pico.comparator || ""}
+              placeholder="e.g. Placebo"
               onChange={(e) => setPico({ ...pico, comparator: e.target.value })}
             />
           </div>
@@ -218,6 +228,7 @@ export const CriteriaEditor: React.FC<CriteriaEditorProps> = ({
               type="text"
               className="w-full px-2.5 py-1.5 bg-slate-950/70 border border-slate-800 rounded text-xs text-white"
               value={pico.outcome || ""}
+              placeholder="e.g. Change in HbA1c"
               onChange={(e) => setPico({ ...pico, outcome: e.target.value })}
             />
           </div>

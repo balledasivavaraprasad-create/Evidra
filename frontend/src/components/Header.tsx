@@ -4,23 +4,22 @@ import { LogOut, Sparkles, Sun, Moon } from "lucide-react";
 import { api } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import { getRememberedWorkspaceId, rememberWorkspaceId, workspaceIdFromPath } from "../context/currentWorkspace";
 
-const WS = "/reviews/ws-synth-001";
-
-const navGroups: Array<Array<{ to: string; label: string; title: string }>> = [
+const buildNavGroups = (ws: string): Array<Array<{ to: string; label: string; title: string }>> => [
   [
     { to: "/", label: "Overview", title: "Overview" },
     { to: "/reviews", label: "Workspaces", title: "Review workspaces" },
   ],
   [
-    { to: `${WS}/search`, label: "Query", title: "Query builder" },
-    { to: `${WS}/records`, label: "Screening", title: "Screening queue" },
-    { to: `${WS}/ml-ranking`, label: "ML ranking", title: "ML prioritization" },
-    { to: `${WS}/duplicates`, label: "Duplicates", title: "Deduplication" },
-    { to: `${WS}/history`, label: "Lineage", title: "Audit lineage" },
-    { to: `${WS}/radar`, label: "PICO radar", title: "Missing-evidence radar" },
-    { to: `${WS}/devils-advocate`, label: "Devil's advocate", title: "Devil's advocate reviewer" },
-    { to: `${WS}/search-evolution`, label: "Evolution", title: "Search evolution" },
+    { to: `${ws}/setup`, label: "Query", title: "Review question, search and import" },
+    { to: `${ws}/records`, label: "Screening", title: "Screening queue" },
+    { to: `${ws}/ml-ranking`, label: "ML ranking", title: "ML prioritization" },
+    { to: `${ws}/duplicates`, label: "Duplicates", title: "Deduplication" },
+    { to: `${ws}/history`, label: "Lineage", title: "Audit lineage" },
+    { to: `${ws}/radar`, label: "PICO radar", title: "Missing-evidence radar" },
+    { to: `${ws}/devils-advocate`, label: "Devil's advocate", title: "Devil's advocate reviewer" },
+    { to: `${ws}/search-evolution`, label: "Evolution", title: "Search evolution" },
   ],
 ];
 
@@ -28,6 +27,13 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { authRequired, signOut } = useAuth();
+
+  // Menu links follow the review you're working in
+  const urlWorkspace = workspaceIdFromPath(location.pathname);
+  useEffect(() => {
+    if (urlWorkspace) rememberWorkspaceId(urlWorkspace);
+  }, [urlWorkspace]);
+  const navGroups = buildNavGroups(`/reviews/${encodeURIComponent(urlWorkspace ?? getRememberedWorkspaceId())}`);
   const [backendStatus, setBackendStatus] = useState<"checking" | "ready" | "offline">("checking");
 
   useEffect(() => {
@@ -78,7 +84,9 @@ export const Header: React.FC = () => {
               <React.Fragment key={gi}>
                 {gi > 0 && <li aria-hidden="true" className="mx-2 h-4 w-px bg-[var(--border-silver)] shrink-0" />}
                 {group.map((link) => {
-                  const isActive = location.pathname === link.to;
+                  const isActive =
+                    location.pathname === link.to ||
+                    (link.label === "Query" && /\/(search|setup)$/.test(location.pathname));
                   return (
                     <li key={link.to} className="h-full">
                       <Link

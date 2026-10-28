@@ -6283,6 +6283,30 @@
       }
     },
     "/api/v1/workspaces": {
+      "get": {
+        "description": "List every review workspace, newest first.",
+        "operationId": "list_workspaces_api_v1_workspaces_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WorkspaceResponse"
+                  },
+                  "title": "Response List Workspaces Api V1 Workspaces Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List review workspaces",
+        "tags": [
+          "Workspaces"
+        ]
+      },
       "post": {
         "description": "Create a new review workspace.",
         "operationId": "create_workspace_api_v1_workspaces_post",

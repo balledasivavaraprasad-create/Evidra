@@ -1,25 +1,41 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Plus, FolderPlus, ArrowRight, Calendar, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { api, type WorkspaceResponse } from "../../api/client";
+import { ErrorState, LoadingRegion, SkeletonCard } from "../../components/Feedback";
+import { DEMO_WORKSPACE_ID, rememberWorkspaceId } from "../../context/currentWorkspace";
 
 export const WorkspacesPage: React.FC = () => {
-  const [workspaces, setWorkspaces] = useState<WorkspaceResponse[]>([
-    {
-      id: "ws-demo-01",
-      title: "Type 2 Diabetes: Metformin vs Placebo Review",
-      description: "Evaluation of HbA1c reduction from metformin monotherapy in adult type 2 diabetes patients.",
-      created_by: "reviewer_local",
-      created_at: new Date().toISOString(),
-      current_revision_id: "rev-001",
-      row_version: 1,
-    },
-  ]);
+  const navigate = useNavigate();
+  const [workspaces, setWorkspaces] = useState<WorkspaceResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setIsLoading(true);
+    setLoadError(null);
+    api.workspaces
+      .list()
+      .then((list) => {
+        if (mounted) setWorkspaces(list);
+      })
+      .catch((err: unknown) => {
+        if (mounted) setLoadError(err);
+      })
+      .finally(() => {
+        if (mounted) setIsLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [reloadKey]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,15 +50,17 @@ export const WorkspacesPage: React.FC = () => {
         description: description.trim() || undefined,
       });
       setWorkspaces((prev) => [newWs, ...prev]);
-      setTitle("");
-      setDescription("");
-      setFeedback({ type: "success", message: `Created “${newWs.title}”.` });
-    } catch (err: any) {
+      rememberWorkspaceId(newWs.id);
+      // Next step: set up the review question, search and import for the new review
+      navigate(`/reviews/${encodeURIComponent(newWs.id)}/setup`, { state: { createdTitle: newWs.title } });
+    } catch (err: unknown) {
       setFeedback({
         type: "error",
-        message: err.message || "Couldn’t create the workspace. Check that the backend is running, then try again.",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Couldn’t create the workspace. Check that the backend is running, then try again.",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -82,15 +100,35 @@ export const WorkspacesPage: React.FC = () => {
               Your reviews
             </h2>
             <span className="text-sm text-[var(--text-muted)]">
-              {workspaces.length} {workspaces.length === 1 ? "workspace" : "workspaces"}
+              {isLoading ? "" : `${workspaces.length} ${workspaces.length === 1 ? "workspace" : "workspaces"}`}
             </span>
           </div>
 
+          {isLoading ? (
+            <LoadingRegion label="Loading your reviews" className="space-y-3">
+              <SkeletonCard />
+              <SkeletonCard />
+            </LoadingRegion>
+          ) : loadError != null ? (
+            <ErrorState compact error={loadError} onRetry={() => setReloadKey((k) => k + 1)} what="Your reviews" />
+          ) : workspaces.length === 0 ? (
+            <div className="glass-panel p-6 text-center space-y-2">
+              <p className="font-semibold text-[var(--text-primary)]">No reviews yet</p>
+              <p className="text-sm text-[var(--text-muted)]">
+                Create your first workspace with the form, or explore the{" "}
+                <Link to={`/reviews/${DEMO_WORKSPACE_ID}/records`} className="text-[var(--accent-gold)]">
+                  demo review
+                </Link>
+                .
+              </p>
+            </div>
+          ) : (
           <ul className="space-y-3">
             {workspaces.map((ws) => (
               <li key={ws.id}>
                 <Link
-                  to={`/reviews/${ws.id}/records`}
+                  to={`/reviews/${encodeURIComponent(ws.id)}/${ws.current_revision_id ? "records" : "setup"}`}
+                  onClick={() => rememberWorkspaceId(ws.id)}
                   className="group glass-panel flex flex-col sm:flex-row sm:items-center gap-4 p-5 sm:p-6 hover:border-[var(--border-gold)]"
                 >
                   <div className="flex-1 min-w-0 space-y-1.5">
@@ -104,17 +142,18 @@ export const WorkspacesPage: React.FC = () => {
                         <Calendar className="w-3 h-3" />
                         Created {new Date(ws.created_at).toLocaleDateString()}
                       </span>
-                      <span>Revision {ws.current_revision_id || "initial"}</span>
+                      <span>{ws.current_revision_id ? "Screening in progress" : "Setup not finished"}</span>
                     </p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--accent-gold)] shrink-0">
-                    Open workbench
+                    {ws.current_revision_id ? "Open workbench" : "Continue setup"}
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </Link>
               </li>
             ))}
           </ul>
+          )}
         </section>
 
         {/* Create form */}
