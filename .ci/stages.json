@@ -2,6 +2,6 @@
   "backend": "application",
   "frontend": "application",
   "integration": true,
-  "level2": false,
-  "ai": false
+  "level2": true,
+  "ai": true
 }

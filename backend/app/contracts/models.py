@@ -582,3 +582,40 @@ class AssistantProposal(BaseModel):
     citations: list[RetrievalChunk] = Field(default_factory=list)
     confidence_rationale: str
     requires_human_approval: bool = True
+
+
+# ============================================================================
+# Classical ML Screening Ranking Schemas (B05 / D06)
+# ============================================================================
+
+class RankedGroupItem(BaseModel):
+    """Priority scoring item for screening workbench ordering."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    group_id: str
+    score: float = Field(ge=0.0, le=1.0, description="Priority score; higher indicates higher inclusion likelihood")
+    rank: int = Field(ge=1, description="1-indexed priority rank")
+
+
+class ScreeningRankRequest(BaseModel):
+    """Request to compute or retrieve ML-prioritized screening order."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    revision_id: str | None = Field(default=None, description="Corpus revision to rank; defaults to latest published")
+    limit: int = Field(default=100, ge=1, le=1000, description="Maximum number of groups to return")
+
+
+class ScreeningRankResponse(BaseModel):
+    """Prioritized ordering recommendation for screening workbench."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    revision_id: str
+    status: str
+    model_version: str | None = None
+    ranked_groups: list[RankedGroupItem] = Field(default_factory=list)
+    reason: str | None = None
+
