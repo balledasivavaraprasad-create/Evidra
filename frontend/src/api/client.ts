@@ -35,6 +35,14 @@ export type ScreenResult = components["schemas"]["ScreenResult"];
 export type PicoResult = components["schemas"]["PicoResult"];
 export type EffectiveDecisionState = components["schemas"]["EffectiveDecisionState"];
 export type EligibilityStatus = components["schemas"]["EligibilityStatus"];
+export type CorpusDiffResponse = components["schemas"]["CorpusDiffResponse"];
+export type RestoreMode = "exact_snapshot" | "latest_decisions";
+
+export interface SnapshotRestoreRequest {
+  snapshot_id: string;
+  mode?: RestoreMode;
+  expected_workspace_version?: number;
+}
 
 export interface DedupProposal {
   record_id_a: string;
@@ -159,6 +167,17 @@ export const api = {
       if (status) params.set("status", status);
       return request<PaperGroupSummary[]>(`/api/v1/revisions/${revisionId}/groups?${params.toString()}`);
     },
+    getDiff: (revisionId: string, baseRevisionId: string) =>
+      request<CorpusDiffResponse>(
+        `/api/v1/revisions/${encodeURIComponent(revisionId)}/diff?base_revision_id=${encodeURIComponent(baseRevisionId)}`
+      ),
+    restore: (workspaceId: string, payload: SnapshotRestoreRequest) =>
+      request<CorpusRevisionResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/restore?snapshot_id=${encodeURIComponent(payload.snapshot_id)}`,
+        {
+          method: "POST",
+        }
+      ),
   },
   groups: {
     getDetail: (groupId: string, revisionId?: string) => {
