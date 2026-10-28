@@ -5,7 +5,7 @@
 - **Leakage Prevention:** Clustered split by `group_id` ensured no papers from the same study crossed train/holdout boundaries.
 - **Train Split:** 26 records (fitted solely on training vocabulary).
 - **Holdout Split:** 14 records (7 positive includes).
-- **Artifact SHA-256:** `daea2a0b257fedfc388dba07962664ee3f22f98301172750222760c3c09baff0`
+- **Artifact SHA-256:** `8f1ce21aaa10baa536f455adecb29d7e2cbbcb7bc62d9746bf5bdf6b56424497`
 
 ## Benchmark Comparison Table
 
@@ -19,8 +19,8 @@
 | **Accuracy / Determinism** | Baseline | 85.7% | Priority ordering aid only |
 
 ## Latency and Computational Budget
-- **Training Duration:** 37.39 ms
-- **Holdout Inference Latency:** 1.07 ms (0.077 ms/record)
+- **Training Duration:** 18.39 ms
+- **Holdout Inference Latency:** 1.11 ms (0.079 ms/record)
 - **External Network Calls:** 0 (100% offline, reproducible)
 
 ## Findings and Integration Recommendation

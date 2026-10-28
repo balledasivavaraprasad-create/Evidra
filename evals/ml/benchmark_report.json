@@ -6,10 +6,10 @@
   "holdout_records": 14,
   "holdout_relevant_count": 7,
   "artifact_version": "classical_ranker:v1.0.0",
-  "artifact_sha256": "daea2a0b257fedfc388dba07962664ee3f22f98301172750222760c3c09baff0",
-  "train_time_ms": 37.39,
-  "inference_time_ms": 1.07,
-  "latency_per_record_ms": 0.077,
+  "artifact_sha256": "8f1ce21aaa10baa536f455adecb29d7e2cbbcb7bc62d9746bf5bdf6b56424497",
+  "train_time_ms": 18.39,
+  "inference_time_ms": 1.11,
+  "latency_per_record_ms": 0.079,
   "comparisons": {
     "ml_ranker": {
       "recall_at_25pct": 0.4286,

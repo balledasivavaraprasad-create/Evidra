@@ -11,8 +11,8 @@
 |---|---|---|---|
 | **Citation Verification Rate** | 100.0% (raw snippets) | **100.0%** | **100.0%** |
 | **Out-of-Domain Abstention** | 0.0% | 40.0% | **100.0%** |
-| **Total Latency** | 1.0 ms | 2.19 ms | 1.96 ms |
-| **Latency per Query** | 0.201 ms | 0.438 ms | 0.393 ms |
+| **Total Latency** | 0.99 ms | 2.29 ms | 1.98 ms |
+| **Latency per Query** | 0.199 ms | 0.457 ms | 0.396 ms |
 | **Requires Reviewer Approval** | Always human read | Always human read | **Always human read (100%)** |
 
 ## Key Insights & Adoption Recommendation

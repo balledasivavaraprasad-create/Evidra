@@ -1,0 +1,84 @@
+{
+  "dedup": {
+    "method_version": "dedup-rules-v1.0.0",
+    "evaluation": {
+      "benchmark_file": "evals/dedup/benchmark.json",
+      "benchmark_sha256": "decfbcc3d68426d2e832fe56d69f543447a4f3f27348b4dab3411f0cf4001d24",
+      "total_pairs": 5,
+      "confusion_matrix": {
+        "TP": 2,
+        "FP": 0,
+        "FN": 0,
+        "TN": 3
+      },
+      "precision": 1.0,
+      "recall": 1.0,
+      "specificity": 1.0,
+      "f1_score": 1.0,
+      "balanced_accuracy": 1.0,
+      "study_vs_paper_false_merges": 0
+    }
+  },
+  "screening": {
+    "method_version": "screening-rules-v1.0.0",
+    "evaluation": {
+      "benchmark_file": "evals/screening/fixtures.json",
+      "benchmark_sha256": "1021139813b7d896d900849a26122461b805b08867251bc07fafe76366ce0e74",
+      "total_cases": 10,
+      "status_distribution": {
+        "include": 4,
+        "exclude": 5,
+        "maybe": 1
+      },
+      "accuracy": 1.0,
+      "reason_completeness": 1.0,
+      "maybe_rate": 0.1
+    }
+  },
+  "classical_ml_ranking": {
+    "method_version": "ml-ranker-tfidf-logreg-v1.0.0",
+    "evaluation": {
+      "dataset_file": "evals/ml/dataset.json",
+      "dataset_sha256": "fd174c8efdf7792d394f4e17d478cc1b0c492d4f3849601221c89697c2b58296",
+      "artifact_sha256": "25763c1238b59923c23298419e2c06d61390f9ab99e59d4ad02eaddb36af84eb",
+      "train_records": 26,
+      "test_records": 14,
+      "vocabulary_size": 500,
+      "wss_at_95": 0.3071,
+      "recall_at_75_pct": 1.0,
+      "training_time_seconds": 0.022,
+      "inference_ms_per_record": 0.2131
+    }
+  },
+  "pico_deterministic": {
+    "method_version": "pico-rules-v1.0.0",
+    "evaluation": {
+      "total_records": 16,
+      "total_spans": 79,
+      "population_spans": 9,
+      "intervention_spans": 36,
+      "comparator_spans": 11,
+      "outcome_spans": 23,
+      "validation_failures": 0,
+      "span_validity_rate": 1.0
+    }
+  },
+  "llm_extraction_optional": {
+    "method_version": "llm-pico-adapter-v1.0.0",
+    "evaluation": {
+      "total_test_cases": 3,
+      "valid_span_rate": 1.0,
+      "forged_quote_rejection_rate": 1.0,
+      "repaired_count": 1
+    }
+  },
+  "rag_assistant_optional": {
+    "method_version": "rag-fts5-assistant-v1.0.0",
+    "evaluation": {
+      "total_queries": 5,
+      "citation_verification_rate": 1.0,
+      "out_of_domain_abstention_rate": 1.0,
+      "latency_ms_per_query": 1.5
+    }
+  }
+}
