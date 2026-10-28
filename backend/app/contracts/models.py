@@ -65,6 +65,15 @@ class ErrorEnvelope(BaseModel):
     details: list[ErrorDetail] | None = Field(default=None, description="Optional granular error details")
 
 
+class CapabilitiesResponse(BaseModel):
+    """Runtime capabilities and feature flags."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    llm_enabled: bool = Field(description="Whether LLM features are enabled in settings")
+    rag_enabled: bool = Field(description="Whether RAG features are enabled in settings")
+
+
 # ============================================================================
 # Workspace Contracts
 # ============================================================================

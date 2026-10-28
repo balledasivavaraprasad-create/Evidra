@@ -38,6 +38,7 @@ export type EligibilityStatus = components["schemas"]["EligibilityStatus"];
 export type CorpusDiffResponse = components["schemas"]["CorpusDiffResponse"];
 export type AssistantRequest = components["schemas"]["AssistantRequest"];
 export type AssistantProposal = components["schemas"]["AssistantProposal"];
+export type CapabilitiesResponse = components["schemas"]["CapabilitiesResponse"];
 export type RetrievalChunk = components["schemas"]["RetrievalChunk"];
 export type ScreeningRankRequest = components["schemas"]["ScreeningRankRequest"];
 export type ScreeningRankResponse = components["schemas"]["ScreeningRankResponse"];
@@ -221,6 +222,9 @@ export const api = {
     login: (password: string) =>
       request<void>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ password }) }),
     logout: () => request<void>("/api/v1/auth/logout", { method: "POST" }),
+  },
+  capabilities: {
+    get: () => request<CapabilitiesResponse>("/api/v1/capabilities"),
   },
   health: {
     live: () => request<{ status: string; app: string; version: string; env: string }>("/health/live"),
