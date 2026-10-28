@@ -1472,6 +1472,36 @@
         "title": "QueryVersionResponse",
         "type": "object"
       },
+      "RankedGroupItem": {
+        "additionalProperties": false,
+        "description": "Priority scoring item for screening workbench ordering.",
+        "properties": {
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "rank": {
+            "description": "1-indexed priority rank",
+            "minimum": 1.0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "score": {
+            "description": "Priority score; higher indicates higher inclusion likelihood",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "group_id",
+          "score",
+          "rank"
+        ],
+        "title": "RankedGroupItem",
+        "type": "object"
+      },
       "RecordRevisionResponse": {
         "additionalProperties": false,
         "description": "Normalized, immutable metadata and text snapshot for an ingested literature record.",
@@ -1878,6 +1908,88 @@
         ],
         "title": "ScreeningEvidenceSource",
         "type": "string"
+      },
+      "ScreeningRankRequest": {
+        "additionalProperties": false,
+        "description": "Request to compute or retrieve ML-prioritized screening order.",
+        "properties": {
+          "limit": {
+            "default": 100,
+            "description": "Maximum number of groups to return",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Corpus revision to rank; defaults to latest published",
+            "title": "Revision Id"
+          }
+        },
+        "title": "ScreeningRankRequest",
+        "type": "object"
+      },
+      "ScreeningRankResponse": {
+        "additionalProperties": false,
+        "description": "Prioritized ordering recommendation for screening workbench.",
+        "properties": {
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "ranked_groups": {
+            "items": {
+              "$ref": "#/components/schemas/RankedGroupItem"
+            },
+            "title": "Ranked Groups",
+            "type": "array"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "revision_id": {
+            "title": "Revision Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "revision_id",
+          "status"
+        ],
+        "title": "ScreeningRankResponse",
+        "type": "object"
       },
       "SearchExecutionCreate": {
         "additionalProperties": false,
@@ -2832,7 +2944,7 @@
                 }
               }
             },
-            "description": "Successful Response"
+            "description": "Structured assistant proposal with citations"
           },
           "422": {
             "content": {
@@ -2843,6 +2955,16 @@
               }
             },
             "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Assistant feature disabled by runtime configuration"
           }
         },
         "summary": "Query bounded RAG assistant",
@@ -3205,6 +3327,66 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspace_id}/screening/rank": {
+      "post": {
+        "description": "Compute ML-prioritized screening order for workbench triage without automatic exclusions.",
+        "operationId": "get_screening_rank_api_v1_workspaces__workspace_id__screening_rank_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ScreeningRankRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreeningRankResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compute ML-prioritized screening order",
+        "tags": [
+          "Screening"
+        ]
+      }
+    },
     "/health/live": {
       "get": {
         "description": "Check if the process is alive.",
@@ -3231,7 +3413,7 @@
     },
     "/health/ready": {
       "get": {
-        "description": "Check if the application and business SQLite database are ready to serve.",
+        "description": "Check if the application, SQLite database, migrations, and storage are ready to serve.",
         "operationId": "health_ready_health_ready_get",
         "responses": {
           "200": {
@@ -3244,7 +3426,7 @@
                 }
               }
             },
-            "description": "Service and database ready"
+            "description": "Service, database, migrations, and disk ready"
           },
           "503": {
             "content": {
@@ -3254,7 +3436,7 @@
                 }
               }
             },
-            "description": "Database connection unavailable"
+            "description": "Service readiness check failed"
           }
         },
         "summary": "Readiness probe",

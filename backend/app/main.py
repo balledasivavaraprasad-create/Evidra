@@ -1,6 +1,8 @@
 import hashlib
 import json
 import os
+import shutil
+from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -38,6 +40,8 @@ from app.contracts.models import (
     QueryVersionCreate,
     QueryVersionResponse,
     ReviewEventResponse,
+    ScreeningRankRequest,
+    ScreeningRankResponse,
     SearchExecutionCreate,
     SearchExecutionResponse,
     WorkspaceCreate,
@@ -66,6 +70,7 @@ from app.services.review_decisions import (
     resolve_group_conflict,
     save_pico_annotations,
 )
+from app.services.screening_rank import rank_screening_groups
 from app.services.snapshots import (
     compute_corpus_diff,
 )
@@ -158,22 +163,55 @@ def health_live() -> dict[str, Any]:
     summary="Readiness probe",
     response_model=dict[str, Any],
     responses={
-        200: {"description": "Service and database ready"},
-        503: {"model": ErrorEnvelope, "description": "Database connection unavailable"},
+        200: {"description": "Service, database, migrations, and disk ready"},
+        503: {"model": ErrorEnvelope, "description": "Service readiness check failed"},
     },
 )
 def health_ready(db: Session = Depends(get_db)) -> JSONResponse:  # noqa: B008
-    """Check if the application and business SQLite database are ready to serve."""
+    """Check if the application, SQLite database, migrations, and storage are ready to serve."""
     try:
+        # 1. Database connectivity
         db.execute(text("SELECT 1")).scalar()
+
+        # 2. Migration version verification
+        migration_version = None
+        try:
+            row = db.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).fetchone()
+            if row:
+                migration_version = row[0]
+        except Exception:  # noqa: BLE001
+            migration_version = None
+
+        # 3. Disk space check (ensure at least 10MB free)
+        target_path = settings.data_dir if settings.data_dir.exists() else Path(".")
+        disk = shutil.disk_usage(target_path)
+        min_required_bytes = 10 * 1024 * 1024  # 10 MB
+        if disk.free < min_required_bytes:
+            envelope = ErrorEnvelope(
+                code="DISK_SPACE_EXHAUSTED",
+                message=f"Insufficient free disk space: {disk.free} bytes available (minimum required: {min_required_bytes})",
+                retryable=True,
+            )
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content=envelope.model_dump(),
+            )
+
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"status": "ready", "database": "connected"},
+            content={
+                "status": "ready",
+                "database": "connected",
+                "migration_version": migration_version,
+                "disk_free_bytes": disk.free,
+                "llm_enabled": settings.llm_enabled,
+                "rag_enabled": settings.rag_enabled,
+            },
         )
     except Exception as exc:  # noqa: BLE001
         envelope = ErrorEnvelope(
-            code="DATABASE_UNAVAILABLE",
-            message=f"Database readiness check failed: {exc}",
+            code="SERVICE_UNAVAILABLE",
+            message=f"Service readiness check failed: {exc}",
             retryable=True,
         )
         return JSONResponse(
@@ -649,12 +687,75 @@ def download_export_file(export_id: str, db: Session = Depends(get_db)):  # noqa
 
 
 @app.post(
+    "/api/v1/workspaces/{workspace_id}/screening/rank",
+    tags=["Screening"],
+    summary="Compute ML-prioritized screening order",
+    response_model=ScreeningRankResponse,
+)
+def get_screening_rank(
+    workspace_id: str,
+    payload: ScreeningRankRequest | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> ScreeningRankResponse:
+    """Compute ML-prioritized screening order for workbench triage without automatic exclusions."""
+    req = payload or ScreeningRankRequest()
+    return rank_screening_groups(db=db, workspace_id=workspace_id, request=req)
+
+
+@app.post(
     "/api/v1/workspaces/{workspace_id}/assistant",
     tags=["Assistant"],
     summary="Query bounded RAG assistant",
     response_model=AssistantProposal,
+    responses={
+        200: {"model": AssistantProposal, "description": "Structured assistant proposal with citations"},
+        503: {"model": ErrorEnvelope, "description": "Assistant feature disabled by runtime configuration"},
+    },
 )
-def query_assistant(workspace_id: str, payload: AssistantRequest) -> AssistantProposal:
+def query_assistant(
+    workspace_id: str,
+    payload: AssistantRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> AssistantProposal:
     """Query bounded corpus assistant for explainable screening or PICO proposals (Implemented in C06)."""
-    stub_not_implemented("query_assistant")
-    raise NotImplementedError
+    if not settings.llm_enabled and not settings.rag_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Operation 'query_assistant' is disabled by default runtime configuration. Configure LLM_ENABLED=true to activate.",
+        )
+
+    ws = db.query(WorkspaceModel).filter_by(id=workspace_id).first()
+    if not ws:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workspace '{workspace_id}' not found",
+        )
+
+    # Resolve latest published corpus revision for workspace
+    rev = (
+        db.query(CorpusRevisionModel)
+        .filter_by(workspace_id=workspace_id, state=CorpusRevisionState.PUBLISHED.value)
+        .order_by(CorpusRevisionModel.created_at.desc())
+        .first()
+    )
+    if not rev:
+        rev = (
+            db.query(CorpusRevisionModel)
+            .filter_by(workspace_id=workspace_id)
+            .order_by(CorpusRevisionModel.created_at.desc())
+            .first()
+        )
+    if not rev:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Workspace '{workspace_id}' has no corpus revision to query",
+        )
+
+    from app.workflows.assistant import BoundedEvidenceAssistant
+    assistant = BoundedEvidenceAssistant()
+    return assistant.answer_query(
+        workspace_id=workspace_id,
+        corpus_revision_id=rev.id,
+        request=payload,
+    )
+

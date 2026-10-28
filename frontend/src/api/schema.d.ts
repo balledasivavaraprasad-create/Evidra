@@ -404,6 +404,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspace_id}/screening/rank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compute ML-prioritized screening order
+         * @description Compute ML-prioritized screening order for workbench triage without automatic exclusions.
+         */
+        post: operations["get_screening_rank_api_v1_workspaces__workspace_id__screening_rank_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -433,7 +453,7 @@ export interface paths {
         };
         /**
          * Readiness probe
-         * @description Check if the application and business SQLite database are ready to serve.
+         * @description Check if the application, SQLite database, migrations, and storage are ready to serve.
          */
         get: operations["health_ready_health_ready_get"];
         put?: never;
@@ -1230,6 +1250,24 @@ export interface components {
             workspace_id: string;
         };
         /**
+         * RankedGroupItem
+         * @description Priority scoring item for screening workbench ordering.
+         */
+        RankedGroupItem: {
+            /** Group Id */
+            group_id: string;
+            /**
+             * Rank
+             * @description 1-indexed priority rank
+             */
+            rank: number;
+            /**
+             * Score
+             * @description Priority score; higher indicates higher inclusion likelihood
+             */
+            score: number;
+        };
+        /**
          * RecordRevisionResponse
          * @description Normalized, immutable metadata and text snapshot for an ingested literature record.
          */
@@ -1405,6 +1443,41 @@ export interface components {
          * @enum {string}
          */
         ScreeningEvidenceSource: "metadata" | "rule" | "ml" | "llm" | "human";
+        /**
+         * ScreeningRankRequest
+         * @description Request to compute or retrieve ML-prioritized screening order.
+         */
+        ScreeningRankRequest: {
+            /**
+             * Limit
+             * @description Maximum number of groups to return
+             * @default 100
+             */
+            limit: number;
+            /**
+             * Revision Id
+             * @description Corpus revision to rank; defaults to latest published
+             */
+            revision_id?: string | null;
+        };
+        /**
+         * ScreeningRankResponse
+         * @description Prioritized ordering recommendation for screening workbench.
+         */
+        ScreeningRankResponse: {
+            /** Model Version */
+            model_version?: string | null;
+            /** Ranked Groups */
+            ranked_groups?: components["schemas"]["RankedGroupItem"][];
+            /** Reason */
+            reason?: string | null;
+            /** Revision Id */
+            revision_id: string;
+            /** Status */
+            status: string;
+            /** Workspace Id */
+            workspace_id: string;
+        };
         /**
          * SearchExecutionCreate
          * @description Request to execute a search query against a specific source provider.
@@ -1982,7 +2055,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description Structured assistant proposal with citations */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1998,6 +2071,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Assistant feature disabled by runtime configuration */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
         };
@@ -2237,6 +2319,41 @@ export interface operations {
             };
         };
     };
+    get_screening_rank_api_v1_workspaces__workspace_id__screening_rank_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ScreeningRankRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreeningRankResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health_live_health_live_get: {
         parameters: {
             query?: never;
@@ -2268,7 +2385,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Service and database ready */
+            /** @description Service, database, migrations, and disk ready */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2279,7 +2396,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Database connection unavailable */
+            /** @description Service readiness check failed */
             503: {
                 headers: {
                     [name: string]: unknown;
