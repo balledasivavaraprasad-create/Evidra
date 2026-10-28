@@ -143,10 +143,16 @@ def project_effective_group_decision(
     if conflict:
         return (EffectiveDecisionState.CONFLICT, None, None, True)
 
-    # 2. Check for latest human screen decision event
+    # 2. Check for latest human screen decision event or conflict resolution
     latest_event = (
         db.query(ReviewEventModel)
-        .filter_by(group_id=group_id, event_type=DecisionEventType.SCREEN_DECISION.value)
+        .filter(
+            ReviewEventModel.group_id == group_id,
+            ReviewEventModel.event_type.in_([
+                DecisionEventType.SCREEN_DECISION.value,
+                DecisionEventType.CONFLICT_RESOLUTION.value,
+            ]),
+        )
         .order_by(ReviewEventModel.sequence.desc())
         .first()
     )
@@ -172,7 +178,7 @@ def project_effective_group_decision(
     if latest_event:
         try:
             payload = json.loads(latest_event.payload_json)
-            status_str = payload.get("status")
+            status_str = payload.get("status") or payload.get("chosen_status")
             if status_str == EligibilityStatus.INCLUDE.value:
                 return (EffectiveDecisionState.INCLUDE, latest_event, screen_res, False)
             elif status_str == EligibilityStatus.EXCLUDE.value:
