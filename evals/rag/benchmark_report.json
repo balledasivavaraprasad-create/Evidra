@@ -1,0 +1,30 @@
+{
+  "benchmark_name": "evidra_corpus_rag_comparison_v1",
+  "benchmark_sha256": "3f569e292c9a145288184139362082648fc5d44d962b2eb83c786aca91ddd08c",
+  "total_questions": 5,
+  "out_of_domain_questions": 2,
+  "in_domain_questions": 3,
+  "comparisons": {
+    "lexical_retrieval_only": {
+      "abstention_rate": 0.0,
+      "latency_total_ms": 1.0,
+      "latency_per_query_ms": 0.201,
+      "citation_verification_rate": 1.0
+    },
+    "one_pass_cited_rag": {
+      "abstention_rate": 0.4,
+      "verified_citations": 3,
+      "latency_total_ms": 2.19,
+      "latency_per_query_ms": 0.438,
+      "citation_verification_rate": 1.0
+    },
+    "bounded_agent_loop": {
+      "abstention_rate": 0.4,
+      "verified_citations": 3,
+      "latency_total_ms": 1.96,
+      "latency_per_query_ms": 0.393,
+      "citation_verification_rate": 1.0,
+      "out_of_domain_abstention_accuracy": 1.0
+    }
+  }
+}

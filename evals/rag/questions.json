@@ -1,0 +1,46 @@
+{
+  "benchmark_name": "evidra_corpus_rag_comparison_v1",
+  "created_at": "2026-10-28",
+  "questions": [
+    {
+      "id": "q-01",
+      "task": "explain_screening",
+      "target_id": "rec-ml-001",
+      "user_prompt": "What was the observed effect of metformin on HbA1c in adult type 2 diabetes patients?",
+      "expected_abstain": false,
+      "expected_evidence_terms": ["metformin", "HbA1c", "placebo"]
+    },
+    {
+      "id": "q-02",
+      "task": "suggest_query",
+      "target_id": "rec-ml-003",
+      "user_prompt": "Suggest comparative search keywords for metformin versus sulfonylureas in diabetic adults.",
+      "expected_abstain": false,
+      "expected_evidence_terms": ["sulfonylurea", "glimepiride", "metformin"]
+    },
+    {
+      "id": "q-03",
+      "task": "propose_pico",
+      "target_id": "rec-ml-004",
+      "user_prompt": "Extract the population and intervention comparison for extended-release metformin.",
+      "expected_abstain": false,
+      "expected_evidence_terms": ["extended-release", "diabetic"]
+    },
+    {
+      "id": "q-04",
+      "task": "explain_screening",
+      "target_id": "rec-unrelated-999",
+      "user_prompt": "What are the surgical outcomes of laparoscopic cholecystectomy in pediatric patients?",
+      "expected_abstain": true,
+      "expected_evidence_terms": []
+    },
+    {
+      "id": "q-05",
+      "task": "propose_pico",
+      "target_id": "rec-unrelated-888",
+      "user_prompt": "Provide dosage recommendations for mRNA rabies vaccination in wildlife populations.",
+      "expected_abstain": true,
+      "expected_evidence_terms": []
+    }
+  ]
+}
