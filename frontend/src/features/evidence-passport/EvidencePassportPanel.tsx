@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { ErrorState, LoadingRegion, SkeletonCard, SkeletonStatRow } from "../../components/Feedback";
 import {
   ShieldCheck,
   CheckCircle,
@@ -55,6 +56,8 @@ export const EvidencePassportPanel: React.FC<EvidencePassportPanelProps> = ({
   const [submittingCorrection, setSubmittingCorrection] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const abstractRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +68,7 @@ export const EvidencePassportPanel: React.FC<EvidencePassportPanelProps> = ({
       try {
         setLoading(true);
         setActionError(null);
+        setLoadError(null);
         const data = await api.evidence.getBundle(workspaceId, groupId);
         if (isMounted) {
           setBundle(data);
@@ -73,10 +77,7 @@ export const EvidencePassportPanel: React.FC<EvidencePassportPanelProps> = ({
           }
         }
       } catch (err: unknown) {
-        if (isMounted) {
-          const msg = err instanceof Error ? err.message : "Failed to load Evidence Passport";
-          setActionError(msg);
-        }
+        if (isMounted) setLoadError(err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -85,7 +86,7 @@ export const EvidencePassportPanel: React.FC<EvidencePassportPanelProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [workspaceId, groupId]);
+  }, [workspaceId, groupId, reloadKey]);
 
   const handleRevalidate = async () => {
     try {
@@ -239,6 +240,21 @@ export const EvidencePassportPanel: React.FC<EvidencePassportPanelProps> = ({
   });
 
   const summary = bundle?.summary;
+
+  if (loading && !bundle) {
+    return (
+      <LoadingRegion label="Loading the evidence passport" className="space-y-4">
+        <SkeletonStatRow count={4} />
+        <SkeletonCard lines={4} />
+      </LoadingRegion>
+    );
+  }
+
+  if (loadError != null && !bundle) {
+    return (
+      <ErrorState compact error={loadError} onRetry={() => setReloadKey((k) => k + 1)} what="The evidence passport" />
+    );
+  }
 
   return (
     <div className="space-y-4">

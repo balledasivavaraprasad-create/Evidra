@@ -178,7 +178,8 @@ def project_effective_group_decision(
     if latest_event:
         try:
             payload = json.loads(latest_event.payload_json)
-            status_str = payload.get("status") or payload.get("chosen_status")
+            # "decision" is accepted for events written by older builds of the time machine
+            status_str = payload.get("status") or payload.get("chosen_status") or payload.get("decision")
             if status_str == EligibilityStatus.INCLUDE.value:
                 return (EffectiveDecisionState.INCLUDE, latest_event, screen_res, False)
             elif status_str == EligibilityStatus.EXCLUDE.value:

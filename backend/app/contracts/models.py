@@ -350,6 +350,24 @@ class ScreenResult(BaseModel):
     criteria_evidence: list[CriterionEvidence] = Field(default_factory=list)
     method_version: str
 
+    @property
+    def rationale(self) -> str | None:
+        """Human-readable summary of why the machine reached this verdict.
+
+        Derived (not serialized): explanations of failed criteria, falling back to
+        uncertain criteria for "maybe", then the raw reason codes. Several services
+        display this next to automated suggestions.
+        """
+        failed = [c.explanation for c in self.criteria_evidence if c.verdict == CriterionVerdict.FAIL]
+        if failed:
+            return "; ".join(failed)
+        unknown = [c.explanation for c in self.criteria_evidence if c.verdict == CriterionVerdict.UNKNOWN]
+        if unknown and self.status == EligibilityStatus.MAYBE:
+            return "; ".join(unknown)
+        if self.reasons:
+            return ", ".join(self.reasons)
+        return None
+
 
 class DecisionCommand(BaseModel):
     """Reviewer manual inclusion/exclusion/maybe decision."""

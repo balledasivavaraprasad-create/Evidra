@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useTransition } from "react";
+import { Link } from "react-router-dom";
+import { ErrorState, LoadingRegion, SkeletonCard, SkeletonStatRow } from "../../components/Feedback";
 import {
   Clock,
   GitCompare,
@@ -32,7 +34,7 @@ interface SearchEvolutionViewProps {
 export const SearchEvolutionView: React.FC<SearchEvolutionViewProps> = ({ workspaceId }) => {
   const [versions, setVersions] = useState<SearchEvolutionVersionSummary[]>([]);
   const [isLoadingVersions, setIsLoadingVersions] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Comparison selection
@@ -67,8 +69,7 @@ export const SearchEvolutionView: React.FC<SearchEvolutionViewProps> = ({ worksp
         }
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load search evolution history";
-      setError(msg);
+      setError(err);
     } finally {
       setIsLoadingVersions(false);
     }
@@ -283,22 +284,34 @@ export const SearchEvolutionView: React.FC<SearchEvolutionViewProps> = ({ worksp
           </div>
         )}
 
-        {error && (
-          <div className="mt-4 p-3 rounded-lg text-xs bg-rose-950/40 border border-rose-500/40 text-rose-300 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{error}</span>
-          </div>
+        {error != null && !isLoadingVersions && (
+          <ErrorState compact className="mt-4" error={error} onRetry={() => loadVersions(true)} what="Search history" />
         )}
       </div>
 
       {/* Version Selector Ribbon */}
-      {versions.length === 0 && !isLoadingVersions ? (
-        <div className="p-8 text-center bg-slate-900/60 border border-slate-800 rounded-xl">
-          <History className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-          <h3 className="text-sm font-semibold text-slate-300">No Search Versions Recorded</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-            Construct and execute search queries in the Query Builder. Each executed search version will appear here for longitudinal comparison.
+      {isLoadingVersions && versions.length === 0 ? (
+        <LoadingRegion label="Loading search versions" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-3">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+          <div className="lg:col-span-2 space-y-4">
+            <SkeletonStatRow count={4} />
+            <SkeletonCard lines={3} />
+          </div>
+        </LoadingRegion>
+      ) : error != null && versions.length === 0 ? null : versions.length === 0 ? (
+        <div className="p-8 text-center bg-slate-900/60 border border-slate-800 rounded-xl space-y-3">
+          <History className="w-8 h-8 text-slate-600 mx-auto" />
+          <h3 className="text-sm font-semibold text-slate-300">No searches run yet</h3>
+          <p className="text-sm text-slate-400 max-w-md mx-auto">
+            Every search you run in the Query builder is saved as a version and appears here, so you can compare what
+            each version found.
           </p>
+          <Link to={`/reviews/${workspaceId}/search`} className="btn-ghost">
+            Open the query builder
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -528,10 +541,11 @@ export const SearchEvolutionView: React.FC<SearchEvolutionViewProps> = ({ worksp
 
             {/* Records List */}
             {isLoadingDiff ? (
-              <div className="p-8 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
-                <RotateCcw className="w-4 h-4 animate-spin text-indigo-400" />
-                <span>Computing search evolution diff...</span>
-              </div>
+              <LoadingRegion label="Comparing search versions" className="space-y-3">
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+              </LoadingRegion>
             ) : filteredRecords.length === 0 ? (
               <div className="p-8 text-center bg-slate-900/40 border border-slate-800 rounded-xl text-slate-400 text-xs">
                 No records match category filter "{activeCategoryFilter}".

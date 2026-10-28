@@ -15,7 +15,6 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.contracts.enums import (
-    DecisionEventType,
     EffectiveDecisionState,
     JobState,
     SearchEvolutionCategory,
@@ -34,16 +33,15 @@ from app.contracts.models import (
 )
 from app.db.models import (
     GroupMemberModel,
-    PaperGroupModel,
     QueryMembershipModel,
     QueryVersionModel,
     RecordRevisionModel,
     ReviewConflictModel,
-    ReviewEventModel,
     SearchExecutionModel,
     SourceRecordModel,
     WorkspaceModel,
 )
+from app.services.corpus import project_effective_group_decision
 
 logger = logging.getLogger(__name__)
 
@@ -84,64 +82,34 @@ def _resolve_record_screening_state(
 
     group_id = member.group_id
 
-    # 2. Check for active review conflict
-    conflict = (
-        db.query(ReviewConflictModel)
-        .filter(ReviewConflictModel.group_id == group_id, ReviewConflictModel.resolution_event_id.is_(None))
-        .first()
-    )
-    if conflict:
-        return EffectiveDecisionState.CONFLICT, f"Unresolved conflict: {conflict.kind}", None
+    # 2. Reuse the single source of truth for a group's effective decision so the
+    #    time machine always agrees with the review queue: unresolved conflict >
+    #    latest human decision (payload "status"/"chosen_status") > machine
+    #    screening suggestion (MachineResultModel, stage="screening").
+    state, event, screen_res, has_conflict = project_effective_group_decision(db, group_id)
 
-    # 3. Check for human review decision
-    latest_event = (
-        db.query(ReviewEventModel)
-        .filter(
-            ReviewEventModel.group_id == group_id,
-            ReviewEventModel.event_type.in_([
-                DecisionEventType.SCREEN_DECISION.value,
-                DecisionEventType.CONFLICT_RESOLUTION.value,
-            ]),
+    if has_conflict:
+        conflict = (
+            db.query(ReviewConflictModel)
+            .filter(ReviewConflictModel.group_id == group_id, ReviewConflictModel.resolution_event_id.is_(None))
+            .first()
         )
-        .order_by(ReviewEventModel.sequence.desc())
-        .first()
-    )
+        kind = conflict.kind if conflict else "decision"
+        return EffectiveDecisionState.CONFLICT, f"Unresolved conflict: {kind}", None
 
-    if latest_event:
-        try:
-            payload = json.loads(latest_event.payload_json) if latest_event.payload_json else {}
-        except (json.JSONDecodeError, ValueError, TypeError):
-            payload = {}
+    reason: str | None = None
+    if event is not None:
+        reason = event.reason
+        if not reason:
+            try:
+                payload = json.loads(event.payload_json) if event.payload_json else {}
+            except (json.JSONDecodeError, ValueError, TypeError):
+                payload = {}
+            reason = payload.get("reason") or payload.get("notes") or None
+    elif screen_res is not None and screen_res.reasons:
+        reason = ", ".join(screen_res.reasons)
 
-        dec_str = payload.get("decision")
-        reason = payload.get("notes") or (
-            ", ".join(payload.get("exclusion_reasons", [])) if payload.get("exclusion_reasons") else None
-        )
-
-        if dec_str == "include":
-            return EffectiveDecisionState.INCLUDE, reason, None
-        if dec_str == "exclude":
-            return EffectiveDecisionState.EXCLUDE, reason, None
-        if dec_str == "maybe":
-            return EffectiveDecisionState.MAYBE, reason, None
-
-    # 4. Check paper group pre-screen state
-    group = db.query(PaperGroupModel).filter_by(id=group_id).first()
-    if group and group.pre_screen_result_json:
-        try:
-            machine_res = json.loads(group.pre_screen_result_json)
-            pred = machine_res.get("prediction")
-            reason = machine_res.get("rationale")
-            if pred == "include":
-                return EffectiveDecisionState.INCLUDE, reason, None
-            if pred == "exclude":
-                return EffectiveDecisionState.EXCLUDE, reason, None
-            if pred == "maybe":
-                return EffectiveDecisionState.MAYBE, reason, None
-        except (json.JSONDecodeError, ValueError, TypeError) as err:
-            logger.debug('Failed to parse pre_screen_result_json: %s', err)
-
-    return EffectiveDecisionState.UNSCREENED, None, None
+    return state, reason, None
 
 
 def _get_version_record_memberships(
