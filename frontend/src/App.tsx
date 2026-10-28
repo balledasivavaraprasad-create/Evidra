@@ -5,6 +5,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { DashGridBackground } from "./components/DashGridBackground";
 import { LandingPage } from "./features/landing/LandingPage";
 import { WorkspacesPage } from "./features/workspaces/WorkspacesPage";
 import { QueryBuilderPage } from "./features/search/QueryBuilderPage";
@@ -30,8 +31,9 @@ export const App: React.FC = () => {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
+            <DashGridBackground />
             <Header />
-          <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <main id="main-content" className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-10">
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<LandingPage />} />

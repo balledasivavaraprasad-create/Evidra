@@ -1,203 +1,157 @@
 import React, { Suspense, lazy } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  Shield,
-  Layers,
-  Sparkles,
-  GitCompare,
-  FileCheck2,
-  Database,
-  History,
-  CheckCircle,
-  Eye,
-  Cpu,
-  Lock,
-} from "lucide-react";
+import { ArrowRight, Database, GitCompare, FileCheck2 } from "lucide-react";
 import { HeroStatic } from "./HeroStatic";
+import { ReviewWalkthrough } from "./ReviewWalkthrough";
 
 // Lazy-load the heavy 3D scene to keep initial bundle load instantaneous
 const EvidenceScene3D = lazy(() => import("./EvidenceScene3D"));
 
+const WS = "/reviews/ws-synth-001";
+
+const facts = [
+  { title: "Runs fully offline", detail: "Level 1 needs no LLM or GPU" },
+  { title: "Exact evidence spans", detail: "Half-open Unicode code points" },
+  { title: "Nothing is overwritten", detail: "Append-only snapshot history" },
+];
+
+
+const pillars = [
+  {
+    icon: Database,
+    title: "Multi-source ingestion",
+    text: "Queries are translated for each source with synonym control, pagination limits and a visible count before anything is imported.",
+    sampleLabel: "Query",
+    sample: 'metformin[Title] AND "type 2 diabetes"',
+  },
+  {
+    icon: GitCompare,
+    title: "Same study is not the same paper",
+    text: "Grouping obeys cannot-link rules, so a trial protocol and its primary results stay separate records under one study.",
+    sampleLabel: "Candidate pair",
+    sample: "10.1056/nejmoa2024001 · PubMed ~ PMC",
+  },
+  {
+    icon: FileCheck2,
+    title: "Exact-span PICO tagging",
+    text: "Every highlighted span is stored as code-point offsets and checked against a hash of the abstract it came from.",
+    sampleLabel: "Population span [12, 45)",
+    sample: '"adults with type 2 diabetes"',
+  },
+];
+
 export const LandingPage: React.FC = () => {
   return (
-    <div className="space-y-24 pb-24">
-      {/* 1. Hero Section with Scroll-Driven 3D Evidence Observatory */}
-      <section className="relative pt-8 sm:pt-14 pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full text-xs font-mono bg-cyan-950/60 dark:bg-cyan-950/60 light:bg-cyan-50 text-cyan-300 dark:text-cyan-300 light:text-cyan-700 border border-cyan-800/60 dark:border-cyan-800/60 light:border-cyan-200 shadow-sm backdrop-blur">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Evidra Observatory • Systematic Literature Review</span>
-            </div>
-
-            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.12]">
-              Clinical Synthesis with{" "}
-              <span className="text-metallic-silver block sm:inline">Absolute Provenance</span>{" "}
-              and <span className="text-metallic-gold">Zero Guesswork</span>
+    <div className="space-y-28 pb-8">
+      {/* Hero */}
+      <section className="relative pt-6 sm:pt-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
+          <div className="lg:col-span-7 space-y-8">
+            <h1 className="text-[2.6rem] sm:text-6xl lg:text-[4.1rem] text-[var(--text-primary)] max-w-[15ch]">
+              Every inclusion, traced to the sentence that justified it.
             </h1>
 
-            <p className="text-slate-300 dark:text-slate-300 light:text-slate-600 text-base sm:text-lg max-w-2xl leading-relaxed">
-              Evidra unifies <strong>100% deterministic baseline algorithms</strong> with <strong>LangGraph human review checkpoints</strong> to ingest PubMed & Europe PMC records, enforce exact cannot-link deduplication, and extract Unicode-exact PICO evidence spans.
+            <p className="text-[var(--text-secondary)] text-base sm:text-lg max-w-[58ch] leading-relaxed">
+              Evidra pulls records from PubMed and Europe PMC, separates true duplicates from related reports and screens
+              them with deterministic rules. Each decision stays tied to the exact abstract span and the reviewer who made it.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Link
-                to="/reviews"
-                className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-bold text-sm transition shadow-lg shadow-amber-500/20 active:scale-95"
-              >
-                <span>Enter Workspaces</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link to="/reviews" className="btn-gold">
+                Open workspaces
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link
-                to="/reviews/ws-synth-001/records"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl glass-panel-luxury text-slate-100 dark:text-slate-100 light:text-slate-800 font-semibold text-sm transition hover:border-cyan-400"
-              >
-                <Eye className="w-4 h-4 text-cyan-400" />
-                <span>Live Review Workbench</span>
+              <Link to={`${WS}/records`} className="btn-ghost">
+                Go to screening queue
               </Link>
             </div>
 
-            <div className="pt-6 grid grid-cols-3 gap-4 border-t border-slate-800/80 dark:border-slate-800/80 light:border-slate-200 text-xs">
-              <div className="space-y-1">
-                <span className="font-bold text-slate-100 dark:text-slate-100 light:text-slate-900 block text-sm">Level 1 Baseline</span>
-                <span className="text-slate-400">100% LLM-off offline</span>
-              </div>
-              <div className="space-y-1">
-                <span className="font-bold text-slate-100 dark:text-slate-100 light:text-slate-900 block text-sm">Exact Offsets</span>
-                <span className="text-slate-400">Half-open code points</span>
-              </div>
-              <div className="space-y-1">
-                <span className="font-bold text-slate-100 dark:text-slate-100 light:text-slate-900 block text-sm">Snapshot Lineage</span>
-                <span className="text-slate-400">Append-only audit trail</span>
-              </div>
-            </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-[var(--border-subtle)]">
+              {facts.map((f) => (
+                <div key={f.title} className="space-y-1">
+                  <dt className="text-sm font-semibold text-[var(--text-primary)]">{f.title}</dt>
+                  <dd className="text-sm text-[var(--text-muted)]">{f.detail}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          {/* 3D Scene Container with Fallback to Static Evidence Lens */}
-          <div className="lg:col-span-5 relative">
-            <div className="relative glass-panel-luxury p-2">
+          <figure className="lg:col-span-5 space-y-3">
+            <div className="glass-panel-luxury p-1.5 overflow-hidden">
               <Suspense fallback={<HeroStatic />}>
                 <EvidenceScene3D />
               </Suspense>
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between pointer-events-none px-3 py-1.5 rounded-lg bg-slate-950/70 backdrop-blur border border-slate-800/70 text-[11px] font-mono text-slate-400">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  3D Knowledge Lattice Active
-                </span>
-                <span>Scroll to orbit & track</span>
-              </div>
             </div>
-          </div>
+            <figcaption className="flex items-center justify-between px-1 text-xs text-[var(--text-muted)]">
+              <span className="inline-flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-gold)]" />
+                Evidence lens with live PICO beacons
+              </span>
+              <span>Scroll to orbit</span>
+            </figcaption>
+          </figure>
         </div>
       </section>
 
-      {/* 2. Interactive Feature Showcases (Apple-Style Pillar Cards) */}
-      <section className="space-y-12">
-        <div className="text-center max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <span>Rigorous Evidence Architecture</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            Engineered for Precision, Provenance, & Performance
+      {/* Workflow sequence */}
+      <section aria-labelledby="workflow-heading" className="space-y-10">
+        <div className="max-w-2xl space-y-3">
+          <h2 id="workflow-heading" className="text-3xl sm:text-4xl text-[var(--text-primary)]">
+            How a review moves through Evidra
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base">
-            Every decision, span extraction, and duplicate resolution is persisted immutably with cryptographic text hashes.
+          <p className="text-[var(--text-secondary)]">
+            Follow five records from a single query to a locked snapshot. Press play, or pick a stage to see what Evidra does
+            and why.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Multi-Source Literature Ingestion */}
-          <div className="glass-panel-luxury p-6 sm:p-8 space-y-5 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                <Database className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold">Multi-Source Ingestion</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Connect directly to PubMed and Europe PMC APIs with automatic Boolean AST query translation, synonym controls, and pagination quotas.
-              </p>
-            </div>
-            <div className="p-3.5 rounded-lg bg-slate-950/60 border border-slate-800 text-xs font-mono space-y-1.5">
-              <div className="text-cyan-400 font-semibold flex items-center justify-between">
-                <span>AST Query Engine</span>
-                <span className="text-[10px] text-emerald-400">OPTIMIZED</span>
-              </div>
-              <p className="text-slate-400 truncate">metformin[Title] AND &quot;type 2 diabetes&quot;</p>
-            </div>
-          </div>
+        <ReviewWalkthrough />
+      </section>
 
-          {/* Card 2: Deterministic Deduplication Engine */}
-          <div className="glass-panel-luxury p-6 sm:p-8 space-y-5 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                <GitCompare className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold">Same Study ≠ Same Paper</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Separates trial protocols from primary results and follow-up reports. Graph partitioning strictly obeys cannot-link assertions without false merges.
-              </p>
-            </div>
-            <div className="p-3.5 rounded-lg bg-slate-950/60 border border-slate-800 text-xs font-mono space-y-1.5">
-              <div className="text-amber-400 font-semibold flex items-center justify-between">
-                <span>Candidate Pair</span>
-                <span className="text-[10px] text-amber-300">100% DOI MATCH</span>
-              </div>
-              <p className="text-slate-400 truncate">10.1056/nejmoa2024001 • PubMed ~ PMC</p>
-            </div>
-          </div>
+      {/* Pillars */}
+      <section aria-labelledby="pillars-heading" className="space-y-10">
+        <div className="max-w-2xl space-y-3">
+          <h2 id="pillars-heading" className="text-3xl sm:text-4xl text-[var(--text-primary)]">
+            Built for reviews that have to stand up to scrutiny
+          </h2>
+          <p className="text-[var(--text-secondary)]">
+            Decisions, extracted spans and duplicate resolutions are written once and never silently changed.
+          </p>
+        </div>
 
-          {/* Card 3: Exact Unicode PICO Spans */}
-          <div className="glass-panel-luxury p-6 sm:p-8 space-y-5 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                <FileCheck2 className="w-6 h-6" />
+        <div className="glass-panel grid grid-cols-1 md:grid-cols-3 md:divide-x divide-y md:divide-y-0 divide-[var(--border-subtle)] overflow-hidden">
+          {pillars.map(({ icon: Icon, title, text, sampleLabel, sample }) => (
+            <article key={title} className="flex flex-col justify-between gap-8 p-7 sm:p-8">
+              <div className="space-y-4">
+                <Icon className="w-6 h-6 text-[var(--accent-gold)]" strokeWidth={1.5} />
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h3>
+                <p className="text-sm leading-relaxed text-[var(--text-muted)]">{text}</p>
               </div>
-              <h3 className="text-xl font-bold">Exact-Span PICO Tagging</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Highlights Population, Intervention, Comparison, and Outcome spans using Unicode half-open code point indices verified against immutable text hashes.
-              </p>
-            </div>
-            <div className="p-3.5 rounded-lg bg-slate-950/60 border border-slate-800 text-xs font-mono space-y-1.5">
-              <div className="text-purple-400 font-semibold flex items-center justify-between">
-                <span>Verified Evidence Span</span>
-                <span className="text-[10px] text-cyan-300">[12, 45) CP</span>
+              <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-base)]/60 px-4 py-3 space-y-1">
+                <p className="text-xs text-[var(--text-muted)]">{sampleLabel}</p>
+                <p className="font-mono text-[13px] text-[var(--accent-steel)] truncate">{sample}</p>
               </div>
-              <p className="text-slate-400 truncate">&quot;adults with type 2 diabetes&quot;</p>
-            </div>
-          </div>
+            </article>
+          ))}
         </div>
       </section>
 
-      {/* 3. Deep-Dive Interactive Live Preview Banner */}
-      <section className="glass-panel-luxury p-8 sm:p-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-amber-500/10 to-transparent blur-3xl pointer-events-none" />
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-          <div className="lg:col-span-8 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Level 1 Integration Verified</span>
-            </div>
-            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Ready to Experience Systematic Review Acceleration?
-            </h3>
-            <p className="text-slate-300 text-sm sm:text-base max-w-2xl">
-              Launch into the synthetic benchmark workspace to test live duplicate overrides, mandatory exclusion reason modals, real-time conflict banners, and CSV export.
+      {/* Call to action */}
+      <section className="glass-panel-luxury px-8 py-10 sm:px-12 sm:py-12">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="space-y-3 max-w-2xl">
+            <h2 className="text-3xl text-[var(--text-primary)]">Try it on the synthetic benchmark review</h2>
+            <p className="text-[var(--text-secondary)]">
+              Override a duplicate, exclude a record with a reason, resolve a conflict and export the included studies as CSV.
             </p>
           </div>
-          <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-3 justify-center">
-            <Link
-              to="/reviews/ws-synth-001/records"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition active:scale-95"
-            >
-              <span>Launch Review Queue</span>
+          <div className="flex flex-wrap gap-3 shrink-0">
+            <Link to={`${WS}/records`} className="btn-gold">
+              Open the review queue
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link
-              to="/reviews/ws-synth-001/duplicates"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-medium text-sm transition"
-            >
-              <span>Inspect Deduplication Pairs</span>
+            <Link to={`${WS}/duplicates`} className="btn-ghost">
+              Inspect duplicate pairs
             </Link>
           </div>
         </div>

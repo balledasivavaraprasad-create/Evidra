@@ -1,23 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  Layers,
-  Search,
-  Filter,
-  Copy,
-  History,
-  Activity,
-  CheckCircle2,
-  AlertCircle,
-  Brain,
-  Sparkles,
-  Sun,
-  Moon,
-  Clock,
-  HelpCircle,
-} from "lucide-react";
+import { Sparkles, Sun, Moon } from "lucide-react";
 import { api } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
+
+const WS = "/reviews/ws-synth-001";
+
+const navGroups: Array<Array<{ to: string; label: string; title: string }>> = [
+  [
+    { to: "/", label: "Overview", title: "Overview" },
+    { to: "/reviews", label: "Workspaces", title: "Review workspaces" },
+  ],
+  [
+    { to: `${WS}/search`, label: "Query", title: "Query builder" },
+    { to: `${WS}/records`, label: "Screening", title: "Screening queue" },
+    { to: `${WS}/ml-ranking`, label: "ML ranking", title: "ML prioritization" },
+    { to: `${WS}/duplicates`, label: "Duplicates", title: "Deduplication" },
+    { to: `${WS}/history`, label: "Lineage", title: "Audit lineage" },
+    { to: `${WS}/radar`, label: "PICO radar", title: "Missing-evidence radar" },
+    { to: `${WS}/devils-advocate`, label: "Devil's advocate", title: "Devil's advocate reviewer" },
+    { to: `${WS}/search-evolution`, label: "Evolution", title: "Search evolution" },
+  ],
+];
 
 export const Header: React.FC = () => {
   const location = useLocation();
@@ -46,94 +50,74 @@ export const Header: React.FC = () => {
     };
   }, []);
 
-  const navLinks = [
-    { to: "/", label: "Overview", icon: Sparkles },
-    { to: "/reviews", label: "Workspaces", icon: Layers },
-    { to: "/reviews/ws-synth-001/search", label: "Query Builder", icon: Search },
-    { to: "/reviews/ws-synth-001/records", label: "Screening Queue", icon: Filter },
-    { to: "/reviews/ws-synth-001/ml-ranking", label: "ML Prioritization", icon: Brain },
-    { to: "/reviews/ws-synth-001/duplicates", label: "Deduplication", icon: Copy },
-    { to: "/reviews/ws-synth-001/history", label: "Audit Lineage", icon: History },
-    { to: "/reviews/ws-synth-001/radar", label: "PICO Radar", icon: HelpCircle },
-    { to: "/reviews/ws-synth-001/devils-advocate", label: "Devil's Advocate", icon: AlertCircle },
-    { to: "/reviews/ws-synth-001/search-evolution", label: "Search Evolution", icon: Clock },
-  ];
+  const statusLabel = backendStatus === "ready" ? "Connected" : backendStatus === "checking" ? "Connecting" : "Offline";
+  const statusDot =
+    backendStatus === "ready" ? "bg-emerald-400" : backendStatus === "checking" ? "bg-amber-400 animate-pulse" : "bg-rose-400";
 
   return (
-    <header className="border-b border-slate-800/80 dark:border-slate-800/80 light:border-slate-200 bg-slate-950/80 dark:bg-slate-950/80 light:bg-white/80 backdrop-blur-md sticky top-0 z-50">
+    <header className="sticky top-0 z-50 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/80 backdrop-blur-xl">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-500 p-0.5 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-              </div>
-            </div>
-            <div>
-              <span className="font-extrabold text-lg tracking-tight flex items-center gap-1.5 text-slate-100 dark:text-slate-100 light:text-slate-900">
-                Evidra
-                <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                  SLR v1
-                </span>
-              </span>
-            </div>
-          </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap lg:flex-nowrap items-center gap-x-8">
+        <Link to="/" className="flex items-center gap-2.5 h-16 shrink-0" aria-label="Evidra home">
+          <span className="grid place-items-center w-8 h-8 rounded-lg border border-[var(--border-gold)] bg-[var(--gold-glow)]">
+            <Sparkles className="w-4 h-4 text-[var(--accent-gold)]" strokeWidth={1.75} />
+          </span>
+          <span className="font-serif text-[1.35rem] font-medium tracking-tight text-[var(--text-primary)]">Evidra</span>
+        </Link>
 
-          <nav className="hidden md:flex items-center gap-1" aria-label="Main Navigation">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = location.pathname === link.to;
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    isActive
-                      ? "bg-slate-800/90 dark:bg-slate-800/90 light:bg-slate-100 text-amber-400 dark:text-amber-400 light:text-amber-600 border border-slate-700 dark:border-slate-700 light:border-slate-300 shadow-sm"
-                      : "text-slate-400 hover:text-slate-100 dark:hover:text-slate-100 light:hover:text-slate-900 hover:bg-slate-900/60 dark:hover:bg-slate-900/60 light:hover:bg-slate-100/60"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+        <nav
+          className="order-last lg:order-none w-full lg:w-auto lg:flex-1 min-w-0 -mx-1 lg:mx-0 overflow-x-auto no-scrollbar border-t border-[var(--border-subtle)] lg:border-0"
+          aria-label="Main navigation"
+        >
+          <ul className="flex items-center h-11 lg:h-16 whitespace-nowrap">
+            {navGroups.map((group, gi) => (
+              <React.Fragment key={gi}>
+                {gi > 0 && <li aria-hidden="true" className="mx-2 h-4 w-px bg-[var(--border-silver)] shrink-0" />}
+                {group.map((link) => {
+                  const isActive = location.pathname === link.to;
+                  return (
+                    <li key={link.to} className="h-full">
+                      <Link
+                        to={link.to}
+                        title={link.title}
+                        aria-current={isActive ? "page" : undefined}
+                        className={`relative flex items-center h-full px-2.5 text-[13px] font-medium ${
+                          isActive
+                            ? "text-[var(--text-primary)]"
+                            : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                        }`}
+                      >
+                        {link.label}
+                        {isActive && (
+                          <span className="absolute left-2.5 right-2.5 bottom-0 h-0.5 rounded-full bg-[var(--accent-gold)]" />
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </ul>
+        </nav>
 
-        <div className="flex items-center gap-3">
-          {/* Theme Toggle Button */}
+        <div className="ml-auto lg:ml-0 flex items-center gap-4 h-16 shrink-0">
+          <span
+            className="hidden sm:inline-flex items-center gap-2 text-xs text-[var(--text-muted)]"
+            title={`Backend service: ${backendStatus}`}
+            role="status"
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+            {statusLabel}
+          </span>
           <button
             onClick={toggleTheme}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            className="p-2 rounded-xl glass-panel hover:border-amber-400 text-slate-300 hover:text-amber-400 transition"
+            className="grid place-items-center w-9 h-9 rounded-lg border border-[var(--border-silver)] text-[var(--text-secondary)] hover:text-[var(--accent-gold)] hover:border-[var(--border-gold)]"
           >
-            {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+            {theme === "dark" ? <Sun className="w-4 h-4" strokeWidth={1.75} /> : <Moon className="w-4 h-4" strokeWidth={1.75} />}
           </button>
-
-          {/* Backend Health Badge */}
-          <div
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border ${
-              backendStatus === "ready"
-                ? "bg-emerald-950/60 text-emerald-300 border-emerald-800/60 shadow-sm shadow-emerald-950/50"
-                : backendStatus === "checking"
-                ? "bg-amber-950/60 text-amber-300 border-amber-800/60"
-                : "bg-rose-950/60 text-rose-300 border-rose-800/60"
-            }`}
-            title={`Backend Service: ${backendStatus}`}
-          >
-            {backendStatus === "ready" ? (
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-            ) : backendStatus === "checking" ? (
-              <Activity className="w-3 h-3 text-amber-400 animate-spin" />
-            ) : (
-              <AlertCircle className="w-3 h-3 text-rose-400" />
-            )}
-            <span className="capitalize">{backendStatus}</span>
-          </div>
         </div>
       </div>
     </header>

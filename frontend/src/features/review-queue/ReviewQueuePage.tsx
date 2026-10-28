@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Scale } from "lucide-react";
 import { useParams, Link } from "react-router-dom";
 import {
   BookOpen,
@@ -238,19 +239,18 @@ export const ReviewQueuePage: React.FC = () => {
   return (
     <div className="space-y-6 pb-16">
       {/* Top Header & Actions Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-cyan-400" />
-            <span>Screening Review Workbench</span>
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-5 border-b border-slate-800 pb-6">
+        <div className="space-y-2">
+          <h1 className="text-xl font-bold text-white flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>Screening review workbench</span>
             {revisionId && (
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                 Rev: {revisionId.slice(0, 10)}
               </span>
             )}
           </h1>
-          <p className="text-slate-400 text-xs">
-            Review literature abstracts, annotate PICO entities, verify machine suggestions, and export audit-ready evidence.
+          <p className="text-slate-400 text-sm max-w-[70ch]">
+            Read each abstract, tag PICO evidence, check machine suggestions and export an audit-ready decision set.
           </p>
         </div>
 
@@ -277,7 +277,7 @@ export const ReviewQueuePage: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 hover:text-white rounded-lg text-xs font-medium transition border border-amber-800/60"
             title="View Devil's Advocate Exclusion Challenge Dashboard"
           >
-            <span>⚖️</span>
+            <Scale className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Devil's Advocate</span>
           </Link>
           <button
@@ -471,7 +471,7 @@ export const ReviewQueuePage: React.FC = () => {
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    <span>⚖️</span>
+                    <Scale className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>Devil's Advocate</span>
                   </button>
                   <button

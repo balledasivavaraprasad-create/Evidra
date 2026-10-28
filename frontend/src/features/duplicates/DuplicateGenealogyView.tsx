@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AlertTriangle } from "lucide-react";
 import {
   api,
   DuplicateGroupGenealogyResponse,
@@ -220,7 +221,7 @@ export const DuplicateGenealogyView: React.FC<DuplicateGenealogyViewProps> = ({
         <div className="p-4 bg-red-950/60 border border-red-700/80 rounded-xl space-y-2">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-bold text-red-300 flex items-center gap-2">
-              <span>⚠️</span> Decision Conflict Detected Across Merged Records
+              <AlertTriangle className="w-4 h-4" aria-hidden="true" /> Decision Conflict Detected Across Merged Records
             </h4>
             <span className="text-xs font-mono text-red-400 uppercase tracking-wider">Action Required</span>
           </div>
