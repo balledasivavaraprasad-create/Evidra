@@ -123,9 +123,16 @@ Evidra is organized into 4 parallel work streams governed by [24 implementation 
 - **Node.js:** `>= 24.22.1` with `npm`
 - **Docker & Docker Compose:** Optional for single-host container deployment
 
+### Hosted demo on Render
+
+See [docs/deploy-render.md](docs/deploy-render.md): set up from `render.yaml`, private behind a shared site password, with the demo review preloaded.
+
 ### 2. Single-Host Docker Deployment (Fastest)
 ```bash
 # Build and run the entire unified system (Backend API + Frontend SPA + SQLite WAL)
+# Production mode needs a secret key and the shared site password people will type to open it
+export SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+export SITE_PASSWORD='choose-a-password'
 docker compose -f infra/docker-compose.yml up --build
 
 # Verify readiness

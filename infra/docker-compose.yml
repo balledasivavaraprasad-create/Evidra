@@ -11,8 +11,12 @@ services:
       - "8000:8000"
     environment:
       - APP_ENV=production
-      - AUTH_MODE=local
-      - SECRET_KEY=evidra-production-deployment-key-32chars-min
+      # Production refuses AUTH_MODE=local; the shared-password gate keeps the demo private.
+      - AUTH_MODE=password
+      # Set both in infra/.env or your shell (never commit real values):
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY to a random string of at least 32 characters}
+      - SITE_PASSWORD=${SITE_PASSWORD:?Set SITE_PASSWORD to the password people will type to open the site}
+      - SEED_DEMO=${SEED_DEMO:-true}
       - DATA_DIR=/app/data
       - DATABASE_URL=sqlite:////app/data/review.sqlite
       - CHECKPOINT_DATABASE_URL=sqlite:////app/data/checkpoints.sqlite

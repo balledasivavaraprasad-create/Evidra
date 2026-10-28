@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Sparkles, Sun, Moon } from "lucide-react";
+import { LogOut, Sparkles, Sun, Moon } from "lucide-react";
 import { api } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 const WS = "/reviews/ws-synth-001";
 
@@ -26,6 +27,7 @@ const navGroups: Array<Array<{ to: string; label: string; title: string }>> = [
 export const Header: React.FC = () => {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { authRequired, signOut } = useAuth();
   const [backendStatus, setBackendStatus] = useState<"checking" | "ready" | "offline">("checking");
 
   useEffect(() => {
@@ -111,6 +113,17 @@ export const Header: React.FC = () => {
             <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
             {statusLabel}
           </span>
+          {authRequired && (
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              aria-label="Sign out"
+              title="Sign out"
+              className="grid place-items-center w-9 h-9 rounded-lg border border-[var(--border-silver)] text-[var(--text-secondary)] hover:text-[var(--accent-gold)] hover:border-[var(--border-gold)]"
+            >
+              <LogOut className="w-4 h-4" strokeWidth={1.75} />
+            </button>
+          )}
           <button
             onClick={toggleTheme}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}

@@ -25,7 +25,17 @@ class Settings(BaseSettings):
         description="SQLite database URL for LangGraph checkpoints",
     )
 
-    auth_mode: Literal["local", "production"] = "local"
+    # local: no login (development). password: one shared site password gates the API
+    # (hosted demos). production: reserved for an external identity provider.
+    auth_mode: Literal["local", "password", "production"] = "local"
+    site_password: str | None = Field(
+        default=None,
+        description="Shared password required when AUTH_MODE=password (minimum 8 characters)",
+    )
+    session_cookie_secure: bool | None = Field(
+        default=None,
+        description="Override the session cookie Secure flag (defaults to True in production)",
+    )
     secret_key: str = Field(
         default="dev-insecure-secret-key-change-in-production-only",
         description="Session signing and encryption secret key",
@@ -67,8 +77,10 @@ class Settings(BaseSettings):
             if self.auth_mode == "local":
                 raise ValueError(
                     "AUTH_MODE='local' is not permitted in production. "
-                    "Configure an authenticated identity provider."
+                    "Use AUTH_MODE=password with SITE_PASSWORD, or configure an authenticated identity provider."
                 )
+        if self.auth_mode == "password" and (not self.site_password or len(self.site_password) < 8):
+            raise ValueError("AUTH_MODE='password' requires SITE_PASSWORD with at least 8 characters.")
         return self
 
 
