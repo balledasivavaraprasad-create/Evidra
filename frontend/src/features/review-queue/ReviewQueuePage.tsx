@@ -65,9 +65,6 @@ export const ReviewQueuePage: React.FC = () => {
   // 409 Stale Concurrency State
   const [concurrencyConflict, setConcurrencyConflict] = useState<boolean>(false);
 
-  const [groupVersions, setGroupVersions] = useState<Record<string, number>>({});
-  const getVersion = (id: string) => groupVersions[id] || 1;
-
   // Active Tab: Reader vs Audit Timeline vs Member Copies vs AI Assistant
   const [activeTab, setActiveTab] = useState<"reader" | "radar" | "passport" | "audit" | "members" | "assistant" | "devils_advocate">("reader");
   const [articleRadar, setArticleRadar] = useState<ArticleRadarResponse | null>(null);
@@ -177,7 +174,8 @@ export const ReviewQueuePage: React.FC = () => {
     setErrorBanner(null);
     setConcurrencyConflict(false);
     try {
-      const currentVersion = getVersion(selectedGroup.id);
+      const currentVersion =
+        (groupDetail?.group?.id === selectedGroup.id ? groupDetail.group.row_version : selectedGroup.row_version) ?? 1;
       await api.groups.recordDecision(selectedGroup.id, {
         status: status as any,
         reason: reasonText || (status === "include" ? "Meets clinical criteria" : "Uncertain eligibility"),
@@ -185,23 +183,40 @@ export const ReviewQueuePage: React.FC = () => {
       });
 
       setStatusMessage(`Decision '${status.toUpperCase()}' successfully saved for group ${selectedGroup.id}.`);
-      setGroupVersions((prev) => ({ ...prev, [selectedGroup.id]: currentVersion + 1 }));
 
-      // Update local group effective status
+      // Refetch group detail to get the latest row_version and update the list entry
+      const updatedDetail = await api.groups.getDetail(selectedGroup.id, revisionId || undefined);
+      setGroupDetail(updatedDetail);
+
+      // Update local group in list with new row_version and decision
       setGroups((prev) =>
         prev.map((g) =>
           g.id === selectedGroup.id
-            ? { ...g, effective_status: status as any, has_human_decision: true }
+            ? {
+                ...g,
+                ...updatedDetail.group,
+                effective_status: status as any,
+                has_human_decision: true,
+                row_version: updatedDetail.group.row_version,
+              }
             : g
         )
       );
-      // Refresh detail
-      const updatedDetail = await api.groups.getDetail(selectedGroup.id, revisionId || undefined);
-      setGroupDetail(updatedDetail);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 409) {
-        setConcurrencyConflict(true);
-        setErrorBanner("Stale version conflict (409): Another reviewer has updated this group. Please reload to inspect.");
+        setConcurrencyConflict(false);
+        try {
+          const freshDetail = await api.groups.getDetail(selectedGroup.id, revisionId || undefined);
+          setGroupDetail(freshDetail);
+          setGroups((prev) =>
+            prev.map((g) =>
+              g.id === selectedGroup.id ? { ...g, ...freshDetail.group, row_version: freshDetail.group.row_version } : g
+            )
+          );
+        } catch {
+          // Ignore secondary fetch errors on 409 refresh
+        }
+        setErrorBanner("This paper was updated. Your view has been refreshed — please choose again.");
       } else {
         const msg = err instanceof Error ? err.message : "Failed to record screening decision";
         setErrorBanner(msg);
@@ -222,15 +237,54 @@ export const ReviewQueuePage: React.FC = () => {
   const handleSavePico = async (spans: PicoSpan[]) => {
     if (!selectedGroup) return;
     const rep = selectedGroup.representative_revision;
-    const currentVersion = getVersion(selectedGroup.id);
-    await api.groups.savePico(selectedGroup.id, {
-      record_revision_id: rep.id,
-      content_hash: rep.content_hash,
-      expected_version: currentVersion,
-      spans,
-    });
-    setStatusMessage("PICO annotations saved with verified Unicode code-point spans.");
-    setGroupVersions((prev) => ({ ...prev, [selectedGroup.id]: currentVersion + 1 }));
+    const currentVersion =
+      (groupDetail?.group?.id === selectedGroup.id ? groupDetail.group.row_version : selectedGroup.row_version) ?? 1;
+    setErrorBanner(null);
+    try {
+      await api.groups.savePico(selectedGroup.id, {
+        record_revision_id: rep.id,
+        content_hash: rep.content_hash,
+        expected_version: currentVersion,
+        spans,
+      });
+      setStatusMessage("PICO annotations saved with verified Unicode code-point spans.");
+
+      // Refetch detail and update list entry
+      const updatedDetail = await api.groups.getDetail(selectedGroup.id, revisionId || undefined);
+      setGroupDetail(updatedDetail);
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === selectedGroup.id
+            ? {
+                ...g,
+                ...updatedDetail.group,
+                row_version: updatedDetail.group.row_version,
+              }
+            : g
+        )
+      );
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 409) {
+        setConcurrencyConflict(false);
+        try {
+          const freshDetail = await api.groups.getDetail(selectedGroup.id, revisionId || undefined);
+          setGroupDetail(freshDetail);
+          setGroups((prev) =>
+            prev.map((g) =>
+              g.id === selectedGroup.id ? { ...g, ...freshDetail.group, row_version: freshDetail.group.row_version } : g
+            )
+          );
+        } catch {
+          // ignore
+        }
+        setErrorBanner("This paper was updated. Your view has been refreshed — please choose again.");
+      } else {
+        const msg = err instanceof Error ? err.message : "Failed to save PICO annotations";
+        setErrorBanner(msg);
+      }
+      // Re-throw so the PICO editor shows its own error instead of a false "saved" state
+      throw err;
+    }
   };
 
   const handleExportCsv = async () => {
@@ -417,7 +471,9 @@ export const ReviewQueuePage: React.FC = () => {
           <div className="text-xs font-mono text-slate-400 px-1 flex items-center justify-between">
             <span>Showing {filteredGroups.length} of {groups.length} groups</span>
             {selectedGroup && (
-              <span className="text-[11px] text-slate-500">v{getVersion(selectedGroup.id)}</span>
+              <span className="text-[11px] text-slate-500">
+                v{(groupDetail?.group?.id === selectedGroup.id ? groupDetail.group.row_version : selectedGroup.row_version) ?? 1}
+              </span>
             )}
           </div>
 
