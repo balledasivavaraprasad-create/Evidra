@@ -9,6 +9,7 @@ import {
   Activity,
   CheckCircle2,
   AlertCircle,
+  Brain,
   Sparkles,
   Sun,
   Moon,
@@ -48,6 +49,7 @@ export const Header: React.FC = () => {
     { to: "/reviews", label: "Workspaces", icon: Layers },
     { to: "/reviews/ws-synth-001/search", label: "Query Builder", icon: Search },
     { to: "/reviews/ws-synth-001/records", label: "Screening Queue", icon: Filter },
+    { to: "/reviews/ws-synth-001/ml-ranking", label: "ML Prioritization", icon: Brain },
     { to: "/reviews/ws-synth-001/duplicates", label: "Deduplication", icon: Copy },
     { to: "/reviews/ws-synth-001/history", label: "Audit Lineage", icon: History },
   ];

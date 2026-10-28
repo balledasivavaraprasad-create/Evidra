@@ -953,6 +953,241 @@
         "title": "JobState",
         "type": "string"
       },
+      "MLRankedItem": {
+        "additionalProperties": false,
+        "description": "Prioritized literature item with continuous probability and rank.",
+        "properties": {
+          "abstract_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abstract Text"
+          },
+          "effective_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Status"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "priority_label": {
+            "default": "MEDIUM",
+            "description": "'HIGH', 'MEDIUM', 'LOW', or 'UNSCORED'",
+            "title": "Priority Label",
+            "type": "string"
+          },
+          "rank": {
+            "description": "1-indexed priority rank",
+            "minimum": 1.0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "record_id": {
+            "title": "Record Id",
+            "type": "string"
+          },
+          "score": {
+            "description": "Model priority score; higher = prioritize review",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          },
+          "state": {
+            "description": "'SCORED', 'UNAVAILABLE', or 'OUT_OF_SCOPE'",
+            "title": "State",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id",
+          "title",
+          "score",
+          "rank",
+          "state"
+        ],
+        "title": "MLRankedItem",
+        "type": "object"
+      },
+      "MLRankingRequest": {
+        "additionalProperties": false,
+        "description": "Request to compute or retrieve ML-prioritized queue for a corpus revision.",
+        "properties": {
+          "criteria_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional criteria version constraint",
+            "title": "Criteria Version Id"
+          },
+          "force_recompute": {
+            "default": false,
+            "description": "Bypass machine result cache and force recompute",
+            "title": "Force Recompute",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 100,
+            "description": "Max items to return",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "description": "Pagination offset",
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "review_question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional custom review question override",
+            "title": "Review Question"
+          }
+        },
+        "title": "MLRankingRequest",
+        "type": "object"
+      },
+      "MLRankingResponse": {
+        "additionalProperties": false,
+        "description": "Prioritized review queue response for a corpus revision.",
+        "properties": {
+          "computed_at": {
+            "title": "Computed At",
+            "type": "string"
+          },
+          "criteria_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criteria Version Id"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MLRankedItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "revision_id": {
+            "title": "Revision Id",
+            "type": "string"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "scored_count": {
+            "title": "Scored Count",
+            "type": "integer"
+          },
+          "status": {
+            "description": "'COMPLETED', 'CACHED', 'UNAVAILABLE', 'EMPTY', or 'ERROR'",
+            "title": "Status",
+            "type": "string"
+          },
+          "total_records": {
+            "title": "Total Records",
+            "type": "integer"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "revision_id",
+          "model_version",
+          "scope",
+          "status",
+          "total_records",
+          "scored_count",
+          "computed_at"
+        ],
+        "title": "MLRankingResponse",
+        "type": "object"
+      },
       "PaperGroupDetail": {
         "additionalProperties": false,
         "description": "Detailed view of a paper group including members, machine results, and audit events.",
@@ -3324,6 +3559,185 @@
         "summary": "List published corpus revisions",
         "tags": [
           "Corpus"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/revisions/{revision_id}/ml-ranking": {
+      "get": {
+        "description": "Get paginated ML-prioritized queue for a corpus revision.",
+        "operationId": "get_ml_ranking_api_v1_workspaces__workspace_id__revisions__revision_id__ml_ranking_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision_id",
+            "required": true,
+            "schema": {
+              "title": "Revision Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "force_recompute",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Force Recompute",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MLRankingResponse"
+                }
+              }
+            },
+            "description": "Prioritized ranking order"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Workspace or corpus revision not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get ML review prioritization for corpus revision",
+        "tags": [
+          "Machine Learning"
+        ]
+      },
+      "post": {
+        "description": "Compute, cache, or retrieve prioritized screening queue using verified scikit-learn model.",
+        "operationId": "compute_ml_ranking_api_v1_workspaces__workspace_id__revisions__revision_id__ml_ranking_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision_id",
+            "required": true,
+            "schema": {
+              "title": "Revision Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/MLRankingRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MLRankingResponse"
+                }
+              }
+            },
+            "description": "Computed or cached ML prioritized ranking"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Workspace or corpus revision not found"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Corpus revision too large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compute ML review prioritization for corpus revision",
+        "tags": [
+          "Machine Learning"
         ]
       }
     },

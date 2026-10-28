@@ -42,6 +42,9 @@ export type RetrievalChunk = components["schemas"]["RetrievalChunk"];
 export type ScreeningRankRequest = components["schemas"]["ScreeningRankRequest"];
 export type ScreeningRankResponse = components["schemas"]["ScreeningRankResponse"];
 export type RankedGroupItem = components["schemas"]["RankedGroupItem"];
+export type MLRankingRequest = components["schemas"]["MLRankingRequest"];
+export type MLRankingResponse = components["schemas"]["MLRankingResponse"];
+export type MLRankedItem = components["schemas"]["MLRankedItem"];
 export type RestoreMode = "exact_snapshot" | "latest_decisions";
 
 export interface SnapshotRestoreRequest {
@@ -238,6 +241,29 @@ export const api = {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+  },
+  ml: {
+    computeRanking: (workspaceId: string, revisionId: string, payload?: MLRankingRequest) =>
+      request<MLRankingResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/revisions/${encodeURIComponent(revisionId)}/ml-ranking`,
+        {
+          method: "POST",
+          body: payload ? JSON.stringify(payload) : undefined,
+        }
+      ),
+    getRanking: (workspaceId: string, revisionId: string, limit = 100, offset = 0, forceRecompute = false) => {
+      const q = new URLSearchParams({
+        limit: String(limit),
+        offset: String(offset),
+        force_recompute: String(forceRecompute),
+      });
+      return request<MLRankingResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/revisions/${encodeURIComponent(revisionId)}/ml-ranking?${q.toString()}`,
+        {
+          method: "GET",
+        }
+      );
+    },
   },
 };
 

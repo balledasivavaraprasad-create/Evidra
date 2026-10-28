@@ -619,3 +619,52 @@ class ScreeningRankResponse(BaseModel):
     ranked_groups: list[RankedGroupItem] = Field(default_factory=list)
     reason: str | None = None
 
+
+class MLRankedItem(BaseModel):
+    """Prioritized literature item with continuous probability and rank."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    record_id: str
+    group_id: str | None = None
+    title: str
+    abstract_text: str | None = None
+    score: float = Field(ge=0.0, le=1.0, description="Model priority score; higher = prioritize review")
+    rank: int = Field(ge=1, description="1-indexed priority rank")
+    state: str = Field(description="'SCORED', 'UNAVAILABLE', or 'OUT_OF_SCOPE'")
+    reason: str | None = None
+    priority_label: str = Field(default="MEDIUM", description="'HIGH', 'MEDIUM', 'LOW', or 'UNSCORED'")
+    effective_status: str | None = None
+
+
+class MLRankingRequest(BaseModel):
+    """Request to compute or retrieve ML-prioritized queue for a corpus revision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    review_question: str | None = Field(default=None, description="Optional custom review question override")
+    criteria_version_id: str | None = Field(default=None, description="Optional criteria version constraint")
+    force_recompute: bool = Field(default=False, description="Bypass machine result cache and force recompute")
+    limit: int = Field(default=100, ge=1, le=1000, description="Max items to return")
+    offset: int = Field(default=0, ge=0, description="Pagination offset")
+
+
+class MLRankingResponse(BaseModel):
+    """Prioritized review queue response for a corpus revision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    revision_id: str
+    criteria_version_id: str | None = None
+    model_version: str
+    scope: str
+    status: str = Field(description="'COMPLETED', 'CACHED', 'UNAVAILABLE', 'EMPTY', or 'ERROR'")
+    reason: str | None = None
+    total_records: int
+    scored_count: int
+    items: list[MLRankedItem] = Field(default_factory=list)
+    computed_at: str
+    duration_ms: int | None = None
+
+
