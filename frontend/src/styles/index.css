@@ -322,6 +322,15 @@
     --accent-cyan: #2f5f8f;
     --accent-blue: #3f55a8;
 
+    --pico-p: #2f5f8f;
+    --pico-i: #6b4fa8;
+    --pico-c: #8a6420;
+    --pico-o: #2f7a52;
+
+    --status-include: #2f7a52;
+    --status-exclude: #b4434b;
+    --status-maybe: #a8701f;
+
     --shadow-card: 0 1px 2px rgba(15, 21, 32, 0.04), 0 16px 36px -22px rgba(15, 21, 32, 0.22);
     color-scheme: light;
   }
@@ -840,4 +849,51 @@ html.light {
   --color-zinc-800: oklch(0.926 0.007 258);
   --color-zinc-900: oklch(0.966 0.004 258);
   --color-zinc-950: oklch(0.985 0.002 258);
+}
+
+/* Review walkthrough (landing) */
+.wt-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+.wt-small {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+}
+@keyframes wt-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes wt-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wt-pop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.wt-fade {
+  animation: wt-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.wt-pop {
+  animation: wt-pop-in 0.45s ease backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .walkthrough-dot {
+    display: none;
+  }
 }

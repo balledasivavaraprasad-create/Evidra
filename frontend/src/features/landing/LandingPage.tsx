@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Database, GitCompare, FileCheck2 } from "lucide-react";
 import { HeroStatic } from "./HeroStatic";
+import { ReviewWalkthrough } from "./ReviewWalkthrough";
 
 // Lazy-load the heavy 3D scene to keep initial bundle load instantaneous
 const EvidenceScene3D = lazy(() => import("./EvidenceScene3D"));
@@ -14,13 +15,6 @@ const facts = [
   { title: "Nothing is overwritten", detail: "Append-only snapshot history" },
 ];
 
-const steps = [
-  { to: `${WS}/search`, title: "Search", text: "Build Boolean queries for PubMed and Europe PMC, then import the approved records." },
-  { to: `${WS}/duplicates`, title: "Deduplicate", text: "Group the same paper across sources without merging protocols, results and follow-ups." },
-  { to: `${WS}/records`, title: "Screen", text: "Include, exclude with a recorded reason, or mark maybe. Model scores stay suggestions." },
-  { to: `${WS}/radar`, title: "Extract PICO", text: "Tag population, intervention, comparator and outcome against the saved abstract." },
-  { to: `${WS}/history`, title: "Audit", text: "Compare versions and restore any earlier snapshot exactly as it was." },
-];
 
 const pillars = [
   {
@@ -106,24 +100,12 @@ export const LandingPage: React.FC = () => {
             How a review moves through Evidra
           </h2>
           <p className="text-[var(--text-secondary)]">
-            Five stages, each with its own workspace. Open any of them to see the synthetic benchmark review in that state.
+            Follow five records from a single query to a locked snapshot. Press play, or pick a stage to see what Evidra does
+            and why.
           </p>
         </div>
 
-        <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-px rounded-2xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--border-subtle)]">
-          {steps.map((step, i) => (
-            <li key={step.title} className="bg-[var(--bg-surface)]">
-              <Link to={step.to} className="group flex h-full flex-col gap-3 p-6 hover:bg-[var(--bg-raised)]">
-                <span className="font-serif text-2xl text-[var(--accent-gold)]">{i + 1}</span>
-                <span className="flex items-center justify-between font-semibold text-[var(--text-primary)]">
-                  {step.title}
-                  <ArrowRight className="w-4 h-4 text-[var(--text-muted)] opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition" />
-                </span>
-                <span className="text-sm leading-relaxed text-[var(--text-muted)]">{step.text}</span>
-              </Link>
-            </li>
-          ))}
-        </ol>
+        <ReviewWalkthrough />
       </section>
 
       {/* Pillars */}
