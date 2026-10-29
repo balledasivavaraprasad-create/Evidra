@@ -19,9 +19,6 @@ const STEPS: Array<{ key: StepKey; label: string; hint: string }> = [
   { key: "screen", label: "Screen", hint: "Decide on each paper" },
 ];
 
-/** A new review starts with a blank PICO; the editor would otherwise prefill its built-in example. */
-const BLANK_PICO = { population: "", intervention: "", comparator: "", outcome: "" };
-
 type LoadState =
   | { status: "loading" }
   | { status: "error"; error: unknown }
@@ -195,7 +192,8 @@ const SetupView: React.FC<{ workspaceId: string; data: SetupData }> = ({ workspa
             <div>
               <h2 className="text-sm font-semibold text-white">Import finished</h2>
               <p className="text-xs text-slate-300">
-                {importJob.processed_items ?? 0} records were imported into this review. Next, screen them.
+                {importJob.processed_items ?? 0} records were imported into this review. They are screened automatically;
+                open screening to follow progress.
               </p>
             </div>
           </div>
@@ -213,7 +211,6 @@ const SetupView: React.FC<{ workspaceId: string; data: SetupData }> = ({ workspa
           workspaceId={workspaceId}
           savedCriteria={data.criteria}
           defaultQuestion={workspace?.title}
-          defaultPico={BLANK_PICO}
           onCriteriaSaved={(crit) => {
             setCriteriaVersion(crit);
             window.setTimeout(() => goTo("search"), 450);

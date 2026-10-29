@@ -27,10 +27,24 @@ def test_capabilities_flags_off_by_default(client: TestClient, monkeypatch: pyte
     assert validated.rag_enabled is False
 
 
-def test_capabilities_flags_on(client: TestClient, monkeypatch: pytest.MonkeyPatch):
-    """When LLM and RAG are enabled in settings, flags accurately reflect true."""
+def test_llm_on_without_a_key_is_reported_off(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+    """Switching AI on is not enough: with no API key the UI must see it as off, not offer it and fail."""
     monkeypatch.setattr(settings, "auth_mode", "local")
     monkeypatch.setattr(settings, "llm_enabled", True)
+    monkeypatch.setattr(settings, "llm_api_key", None)
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_ENABLED", raising=False)
+    monkeypatch.setattr(settings, "rag_enabled", False)
+
+    assert client.get("/api/v1/capabilities").json() == {"llm_enabled": False, "rag_enabled": False}
+
+
+def test_capabilities_flags_on(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+    """When LLM and RAG are enabled in settings (and a key is set), flags accurately reflect true."""
+    monkeypatch.setattr(settings, "auth_mode", "local")
+    monkeypatch.setattr(settings, "llm_enabled", True)
+    monkeypatch.setattr(settings, "llm_api_key", "test-key-not-real")
+    monkeypatch.delenv("LLM_ENABLED", raising=False)
     monkeypatch.setattr(settings, "rag_enabled", True)
 
     response = client.get("/api/v1/capabilities")

@@ -30,21 +30,34 @@ def run_corpus_pipeline_job(db: Session, job) -> None:
     import json
 
     from app.contracts.models import ErrorEnvelope
-    from app.services.jobs import fail_job, update_job_progress
+    from app.services.jobs import fail_job, safe_error_message, update_job_progress
     from app.workflows.pipeline import run_review_pipeline
 
+    job_id = job.id  # read now: after a database error the job object cannot be touched until rollback
+    workspace_id = job.workspace_id
     try:
-        update_job_progress(db, job.id, processed_items=0, total_items=1, stage="running_review_graph")
+        update_job_progress(db, job.id, processed_items=0, total_items=1, stage="processing")
         payload = {}
         if getattr(job, "payload_json", None):
             payload = json.loads(job.payload_json)
         crit_id = payload.get("criteria_version_id")
         result = run_review_pipeline(
-            workspace_id=job.workspace_id,
+            workspace_id=workspace_id,
             job_id=job.id,
             criteria_version_id=crit_id,
             db=db,
         )
+        revision_id = result.get("corpus_revision_id")
+        if revision_id and not result.get("error"):
+            # Evidence claims, radar and challenges are made here, once, so no GET has to write them
+            from app.services.derived import precompute_review_artifacts
+
+            try:
+                made = precompute_review_artifacts(db, workspace_id, revision_id)
+                logger.info("Prepared evidence for job %s: %s", job.id, made)
+            except Exception:
+                db.rollback()
+                logger.exception("Could not prepare evidence artifacts for job %s", job.id)
         if result.get("error"):
             fail_job(db, job.id, ErrorEnvelope(code="WORKFLOW_ERROR", message=result["error"]))
         elif result.get("__interrupt__"):
@@ -52,10 +65,13 @@ def run_corpus_pipeline_job(db: Session, job) -> None:
             job.stage = "waiting_human_review"
             db.commit()
         else:
-            update_job_progress(db, job.id, processed_items=1, total_items=1, stage="completed", state=JobState.SUCCEEDED)
+            update_job_progress(db, job.id, processed_items=1, total_items=1, stage="done", state=JobState.SUCCEEDED)
     except Exception as e:
-        logger.exception("Failed to execute corpus review graph for job %s", job.id)
-        fail_job(db, job.id, ErrorEnvelope(code="EXECUTION_ERROR", message=str(e)))
+        # After a database error the session refuses further work until it is rolled back; without
+        # this the failure itself could not be recorded and the job stayed "running" forever.
+        db.rollback()
+        logger.exception("Failed to execute corpus review graph for job %s", job_id)
+        fail_job(db, job_id, ErrorEnvelope(code="EXECUTION_ERROR", message=safe_error_message(e)))
 
 
 def process_single_job(job_id: str, db: Session | None = None) -> None:

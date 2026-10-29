@@ -1,0 +1,158 @@
+{
+  "pico_terms": {
+    "pubmed": {
+      "query": "(((\"SGLT2 inhibitor\"[Title/Abstract] OR \"empagliflozin\"[Title/Abstract] OR \"dapagliflozin\"[Title/Abstract] OR \"canagliflozin\"[Title/Abstract]) AND \"type 2 diabetes\"[Title/Abstract])) AND (\"2019\"[Date - Publication] : \"2026\"[Date - Publication])",
+      "status": 200,
+      "body": {
+        "header": {
+          "type": "esearch",
+          "version": "0.3"
+        },
+        "esearchresult": {
+          "count": "4084"
+        }
+      }
+    },
+    "europepmc": {
+      "query": "(((TITLE_ABS:\"SGLT2 inhibitor\" OR TITLE_ABS:\"empagliflozin\" OR TITLE_ABS:\"dapagliflozin\" OR TITLE_ABS:\"canagliflozin\") AND TITLE_ABS:\"type 2 diabetes\")) AND (FIRST_PDATE:[2019-01-01 TO 2026-12-31])",
+      "status": 200,
+      "body": {
+        "version": "6.9",
+        "hitCount": 3821,
+        "nextCursorMark": "AoIIQUsM/ig1NTUzODQzMg==",
+        "nextPageUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28%28%28TITLE_ABS%3A%22SGLT2+inhibitor%22+OR+TITLE_ABS%3A%22empagliflozin%22+OR+TITLE_ABS%3A%22dapagliflozin%22+OR+TITLE_ABS%3A%22canagliflozin%22%29+AND+TITLE_ABS%3A%22type+2+diabetes%22%29%29+AND+%28FIRST_PDATE%3A%5B2019-01-01+TO+2026-12-31%5D%29&cursorMark=AoIIQUsM%2Fig1NTUzODQzMg%3D%3D&resultType=lite&pageSize=1&format=json",
+        "request": {
+          "queryString": "(((TITLE_ABS:\"SGLT2 inhibitor\" OR TITLE_ABS:\"empagliflozin\" OR TITLE_ABS:\"dapagliflozin\" OR TITLE_ABS:\"canagliflozin\") AND TITLE_ABS:\"type 2 diabetes\")) AND (FIRST_PDATE:[2019-01-01 TO 2026-12-31])",
+          "resultType": "lite",
+          "cursorMark": "*",
+          "pageSize": 1,
+          "sort": "",
+          "synonym": false
+        },
+        "resultList": {
+          "result": [
+            {
+              "id": "42132163",
+              "source": "MED",
+              "pmid": "42132163",
+              "pmcid": "PMC13279346",
+              "fullTextIdList": {
+                "fullTextId": [
+                  "PMC13279346"
+                ]
+              },
+              "doi": "10.1161/jaha.125.046238",
+              "title": "Comparative Effectiveness of Individual Sodium Glucose Transporter 2 Inhibitors on Cardiovascular Outcomes in Type 2 Diabetes With Moderate Cardiovascular Risk: Emulation of a Target Trial.",
+              "authorString": "Zehra A, Deng Y, Swarna KS, Herrin J, Polley EC, Neumiller JJ, Galindo RJ, Umpierrez GE, Ross JS, Brito JP, Montori VM, Borah BJ, Maron BA, Mickelson MM, McCoy RG.",
+              "journalTitle": "J Am Heart Assoc",
+              "issue": "10",
+              "journalVolume": "15",
+              "pubYear": "2026",
+              "journalIssn": "2047-9980",
+              "pageInfo": "e046238",
+              "pubType": "comparative study; research support, non-u.s. gov't; research-article; journal article",
+              "isOpenAccess": "Y",
+              "inEPMC": "Y",
+              "inPMC": "Y",
+              "citedByCount": 0,
+              "hasReferences": "Y",
+              "hasTextMinedTerms": "Y",
+              "hasDbCrossReferences": "N",
+              "hasPDF": "Y",
+              "hasBook": "N",
+              "hasSuppl": "Y",
+              "hasLabsLinks": "N",
+              "hasTMAccessionNumbers": "Y",
+              "tmAccessionTypeList": {
+                "accessionType": [
+                  "nct",
+                  "doi"
+                ]
+              },
+              "firstPublicationDate": "2026-05-14",
+              "firstIndexDate": "2026-05-15"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "pico_sentence": {
+    "pubmed": {
+      "query": "((\"empagliflozin\"[Title/Abstract] AND (\"type 2 diabetes\"[Title/Abstract] AND \"hospitalized\"[Title/Abstract] AND \"heart failure\"[Title/Abstract]))) AND (\"2019\"[Date - Publication] : \"2026\"[Date - Publication])",
+      "status": 200,
+      "body": {
+        "header": {
+          "type": "esearch",
+          "version": "0.3"
+        },
+        "esearchresult": {
+          "count": "16"
+        }
+      }
+    },
+    "europepmc": {
+      "query": "((TITLE_ABS:\"empagliflozin\" AND (TITLE_ABS:\"type 2 diabetes\" AND TITLE_ABS:\"hospitalized\" AND TITLE_ABS:\"heart failure\"))) AND (FIRST_PDATE:[2019-01-01 TO 2026-12-31])",
+      "status": 200,
+      "body": {
+        "version": "6.9",
+        "hitCount": 15,
+        "nextCursorMark": "AoIIQKyAnSg1Mzg3MjQ5OQ==",
+        "nextPageUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28%28TITLE_ABS%3A%22empagliflozin%22+AND+%28TITLE_ABS%3A%22type+2+diabetes%22+AND+TITLE_ABS%3A%22hospitalized%22+AND+TITLE_ABS%3A%22heart+failure%22%29%29%29+AND+%28FIRST_PDATE%3A%5B2019-01-01+TO+2026-12-31%5D%29&cursorMark=AoIIQKyAnSg1Mzg3MjQ5OQ%3D%3D&resultType=lite&pageSize=1&format=json",
+        "request": {
+          "queryString": "((TITLE_ABS:\"empagliflozin\" AND (TITLE_ABS:\"type 2 diabetes\" AND TITLE_ABS:\"hospitalized\" AND TITLE_ABS:\"heart failure\"))) AND (FIRST_PDATE:[2019-01-01 TO 2026-12-31])",
+          "resultType": "lite",
+          "cursorMark": "*",
+          "pageSize": 1,
+          "sort": "",
+          "synonym": false
+        },
+        "resultList": {
+          "result": [
+            {
+              "id": "40968746",
+              "source": "MED",
+              "pmid": "40968746",
+              "pmcid": "PMC12719827",
+              "fullTextIdList": {
+                "fullTextId": [
+                  "PMC12719827"
+                ]
+              },
+              "doi": "10.1002/ehf2.15408",
+              "title": "SGLT2 inhibitors for the prevention and treatment of heart failure: A scientific statement of the HFA and the HFAI.",
+              "authorString": "Metra M, Tomasoni D, Adamo M, Amir O, Anker SD, Bayes-Genis A, Boehm M, Butler J, Chioncel O, Filippatos G, Gustafsson F, Jankowska EA, Kaski JC, Moura B, Petrie MC, Ponikowski P, Rakisheva A, Ristic A, Roubille F, Savarese G, Seferovic P, van der Meer P, Volterrani M, Coats AJ, Chopra VK, Rosano G.",
+              "journalTitle": "ESC Heart Fail",
+              "issue": "6",
+              "journalVolume": "12",
+              "pubYear": "2025",
+              "journalIssn": "2055-5822",
+              "pageInfo": "3806-3825",
+              "pubType": "review-article; review; journal article",
+              "isOpenAccess": "Y",
+              "inEPMC": "Y",
+              "inPMC": "Y",
+              "citedByCount": 15,
+              "hasReferences": "Y",
+              "hasTextMinedTerms": "Y",
+              "hasDbCrossReferences": "N",
+              "hasPDF": "Y",
+              "hasBook": "N",
+              "hasSuppl": "Y",
+              "hasLabsLinks": "Y",
+              "hasTMAccessionNumbers": "Y",
+              "tmAccessionTypeList": {
+                "accessionType": [
+                  "nct"
+                ]
+              },
+              "firstPublicationDate": "2025-09-19",
+              "firstIndexDate": "2025-09-20"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "_recorded_on": "2026-10-29 (real responses; bodies kept as returned)"
+}

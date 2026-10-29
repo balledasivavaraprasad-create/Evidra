@@ -5,6 +5,23 @@ import { api, type AssistantProposal, type AssistantRequest, ApiError, type Capa
 export const CALM_ASSISTANT_DISABLED_NOTE =
   "AI assistant is turned off in this demo. Rules-based screening and manual review work as normal.";
 
+/** Why the AI model could not answer (bad key, quota, timeout...), shown above the fallback text. */
+export const ModelErrorNotice: React.FC<{ message: string | null | undefined }> = ({ message }) =>
+  message ? (
+    <div
+      role="alert"
+      data-testid="assistant-model-error"
+      className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-2.5"
+    >
+      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+      <div>
+        <p className="font-medium text-amber-300">The AI model couldn't answer</p>
+        <p className="text-amber-200/80 mt-0.5">{message}</p>
+        <p className="text-amber-200/60 mt-1">What follows is the paper's own text, not a model answer.</p>
+      </div>
+    </div>
+  ) : null;
+
 interface AssistantPanelProps {
   workspaceId: string;
   targetGroupId: string;
@@ -208,6 +225,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
         {/* Proposal Result */}
         {proposal && (
           <div className="mt-4 pt-4 border-t border-slate-800 space-y-3">
+            <ModelErrorNotice message={proposal.model_error} />
             <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-2">
               <div className="text-xs font-semibold text-slate-200 flex items-center justify-between">
                 <span>Assistant Proposal</span>

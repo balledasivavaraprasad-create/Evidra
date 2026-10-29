@@ -25,9 +25,26 @@ export function withSelection(
   return list.map((e) => (e.id === id ? { ...e, selected_for_import: selected } : e));
 }
 
+/** A count that found nothing has nothing to import, whatever its saved tick says. */
+export function isImportable(exec: Pick<SearchExecutionResponse, "hit_count">): boolean {
+  return exec.hit_count > 0;
+}
+
+/** Whether a row shows as ticked: ticked on the server and with something to import. */
+export function isTicked(exec: Pick<SearchExecutionResponse, "hit_count" | "selected_for_import">): boolean {
+  return exec.selected_for_import && isImportable(exec);
+}
+
 /** Ids of the ticked rows, each once. */
 export function selectedIds(list: readonly SearchExecutionResponse[]): string[] {
-  return [...new Set(list.filter((e) => e.selected_for_import).map((e) => e.id))];
+  return [...new Set(list.filter(isTicked).map((e) => e.id))];
+}
+
+export const SOURCE_LABELS: Record<string, string> = { pubmed: "PubMed", europepmc: "Europe PMC" };
+
+/** Shown next to the button that was pressed when its count found nothing. */
+export function nothingFoundMessage(source: string): string {
+  return `Nothing found on ${SOURCE_LABELS[source] ?? source}`;
 }
 
 /** How a count is labelled in the list: its source and the last 8 characters of its id. */

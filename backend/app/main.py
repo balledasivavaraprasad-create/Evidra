@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,6 +39,8 @@ from app.contracts.models import (
     ConflictResolveRequest,
     CorpusDiffResponse,
     CorpusRevisionResponse,
+    CriteriaSuggestRequest,
+    CriteriaSuggestResponse,
     CriteriaVersionCreate,
     CriteriaVersionResponse,
     CriterionDefinition,
@@ -109,7 +112,11 @@ from app.services.access import enforce_review_access
 from app.services.corpus import (
     get_paper_group_detail,
     list_paper_groups_in_revision,
-    process_corpus,
+)
+from app.services.devils_advocate import (
+    get_or_generate_challenge,
+    get_workspace_challenge_dashboard,
+    record_challenge_disposition,
 )
 from app.services.devils_advocate import (
     get_or_generate_challenge,
@@ -136,6 +143,7 @@ from app.services.imports import trigger_import
 from app.services.jobs import (
     cancel_job,
     get_job_by_id,
+    queue_corpus_processing,
     recover_stuck_jobs,
     to_job_response,
 )
@@ -183,6 +191,7 @@ from app.services.workspace_state import (
     set_execution_selection,
 )
 from app.settings import settings
+from app.sources.errors import SourceUnavailableError, describe_source_error
 from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
 from app.sources.translator import translate_query
@@ -294,6 +303,13 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         details=None,
     )
     return JSONResponse(status_code=exc.status_code, content=envelope.model_dump())
+
+
+@app.exception_handler(SourceUnavailableError)
+async def source_unavailable_handler(request: Request, exc: SourceUnavailableError) -> JSONResponse:
+    """A literature source is down or slow: a plain 502 the reviewer can read, safe to retry."""
+    envelope = ErrorEnvelope(code="SOURCE_UNAVAILABLE", message=str(exc), retryable=True, details=None)
+    return JSONResponse(status_code=status.HTTP_502_BAD_GATEWAY, content=envelope.model_dump())
 
 
 @app.exception_handler(RequestValidationError)
@@ -412,8 +428,11 @@ def health_ready(db: Session = Depends(get_db)) -> JSONResponse:  # noqa: B008
 )
 def get_capabilities() -> CapabilitiesResponse:
     """Return runtime system capabilities (safe public boolean flags from settings)."""
+    from app.gateway.adapter import HTTPXModelAdapter
+
     return CapabilitiesResponse(
-        llm_enabled=bool(settings.llm_enabled),
+        # On only when it is switched on AND a key is set; otherwise the UI says it is off
+        llm_enabled=bool(settings.llm_enabled) and HTTPXModelAdapter(default_model=settings.llm_model_alias).is_enabled(),
         rag_enabled=bool(settings.rag_enabled),
     )
 
@@ -639,6 +658,51 @@ def get_latest_criteria_version(
 
 
 @app.post(
+    "/api/v1/workspaces/{workspace_id}/criteria/suggest",
+    tags=["Criteria"],
+    summary="Suggest screening rules from the review question and PICO",
+    response_model=CriteriaSuggestResponse,
+)
+def suggest_criteria(
+    workspace_id: str,
+    payload: CriteriaSuggestRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> CriteriaSuggestResponse:
+    """Build screening rules from the PICO. Nothing is saved; the reviewer edits and saves them.
+
+    Fully deterministic unless AI is enabled, in which case synonym keywords may be added to the
+    population and intervention rules (marked as AI-suggested). AI failure never blocks the rules.
+    """
+    ws = db.query(WorkspaceModel).filter_by(id=workspace_id).first()
+    if not ws:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workspace '{workspace_id}' not found",
+        )
+
+    from app.gateway.synonyms import build_synonym_provider, prefetch_synonyms
+    from app.screening.generate import normalise_pico, rules_from_pico, split_keywords
+
+    provider, _ = build_synonym_provider()
+    synonyms = None
+    if provider is not None:
+        fields = normalise_pico(payload.pico)
+        synonyms = prefetch_synonyms(
+            provider,
+            {
+                "Population": split_keywords(fields["population"], population=True),
+                "Intervention": split_keywords(fields["intervention"]),
+            },
+        )
+    rules = rules_from_pico(ws.title, payload.question, payload.pico, synonyms=synonyms)
+    used = any(r.ai_suggested_keywords for r in rules)
+    notice = None
+    if provider is not None and not used and provider.problems:
+        notice = f"AI synonyms were skipped: {provider.problems[0]}"
+    return CriteriaSuggestResponse(criteria=rules, ai_synonyms_used=used, notice=notice)
+
+
+@app.post(
     "/api/v1/workspaces/{workspace_id}/queries",
     tags=["Queries"],
     summary="Save a new query version",
@@ -742,12 +806,15 @@ def execute_search_count(
         synonym_expansion=payload.synonym_expansion,
     )
 
-    if payload.source == SourceNamespace.PUBMED:
-        adapter = PubMedAdapter()
-        res = adapter.search_count(q_row.id, exact_query, payload.cap)
-    elif payload.source == SourceNamespace.EUROPEPMC:
-        adapter = EuropePMCAdapter()
-        res = adapter.search_count(q_row.id, exact_query, payload.synonym_expansion, payload.cap)
+    if payload.source in (SourceNamespace.PUBMED, SourceNamespace.EUROPEPMC):
+        try:
+            if payload.source == SourceNamespace.PUBMED:
+                res = PubMedAdapter().search_count(q_row.id, exact_query, payload.cap)
+            else:
+                res = EuropePMCAdapter().search_count(q_row.id, exact_query, payload.synonym_expansion, payload.cap)
+        except (httpx.HTTPError, ValueError, KeyError) as exc:
+            logger.warning("Count on %s failed: %s", payload.source.value, type(exc).__name__)
+            raise SourceUnavailableError(payload.source.value, describe_source_error(exc)) from exc
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -772,11 +839,13 @@ def execute_search_count(
         partial=res.partial,
         cap=res.cap,
         raw_hash=res.raw_hash,
+        # Nothing found means nothing to import: never tick a 0-hit count
+        selected_for_import=res.hit_count > 0,
     )
     db.add(exec_model)
     db.commit()
     db.refresh(exec_model)
-    return res
+    return res.model_copy(update={"selected_for_import": exec_model.selected_for_import})
 
 
 @app.post(
@@ -854,12 +923,31 @@ def list_corpus_revisions(workspace_id: str, db: Session = Depends(get_db)) -> l
 @app.post(
     "/api/v1/workspaces/{workspace_id}/process-corpus",
     tags=["Corpus"],
-    summary="Trigger deterministic deduplication, screening, and PICO extraction",
-    response_model=CorpusRevisionResponse,
+    summary="Queue deduplication, screening, and PICO extraction",
+    response_model=JobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
 )
-def run_process_corpus(workspace_id: str, db: Session = Depends(get_db)) -> CorpusRevisionResponse:  # noqa: B008
-    """Run full deterministic review pipeline on imported workspace records."""
-    return process_corpus(db=db, workspace_id=workspace_id)
+def run_process_corpus(
+    workspace_id: str,
+    criteria_version_id: str | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> JobResponse:
+    """Queue processing of the imported records and return the job to poll (GET /jobs/{id}).
+
+    Screens with ``criteria_version_id`` when given, else the newest saved criteria version.
+    The job's stage reads "queued", "processing", then "done".
+    """
+    if not db.query(WorkspaceModel.id).filter_by(id=workspace_id).first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Workspace '{workspace_id}' not found")
+    if criteria_version_id and not db.query(CriteriaVersionModel.id).filter_by(
+        id=criteria_version_id, workspace_id=workspace_id
+    ).first():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Criteria version '{criteria_version_id}' not found",
+        )
+    job = queue_corpus_processing(db, workspace_id, criteria_version_id=criteria_version_id, trigger="manual")
+    return to_job_response(job)
 
 
 @app.get(
@@ -1147,8 +1235,17 @@ def query_assistant(
             detail=f"Workspace '{workspace_id}' has no corpus revision to query",
         )
 
+    from app.gateway.adapter import HTTPXModelAdapter
+    from app.services.evidence import SqliteEvidenceRepository
     from app.workflows.assistant import BoundedEvidenceAssistant
-    assistant = BoundedEvidenceAssistant()
+
+    # The key and model come from settings (server side only); with no key the adapter reports AI
+    # as disabled and the assistant answers from the paper's own text.
+    assistant = BoundedEvidenceAssistant(
+        retrieval_repo=SqliteEvidenceRepository(db),
+        gateway=HTTPXModelAdapter(default_model=settings.llm_model_alias),
+        model_alias=settings.llm_model_alias,
+    )
     return assistant.answer_query(
         workspace_id=workspace_id,
         corpus_revision_id=rev.id,
@@ -1381,6 +1478,7 @@ def get_group_radar_detail(
         db=db,
         workspace_id=workspace_id,
         group_id=group_id,
+        persist=False,
     )
 
 
@@ -1512,11 +1610,12 @@ def get_group_devils_advocate_challenge(
     group_id: str,
     db: Session = Depends(get_db),  # noqa: B008
 ) -> DevilsAdvocateChallengeResponse:
-    """Retrieve or compute Devil's Advocate adversarial challenge for a paper group."""
+    """Retrieve the stored Devil's Advocate challenge for a paper group; never saves anything."""
     return get_or_generate_challenge(
         db=db,
         workspace_id=workspace_id,
         group_id=group_id,
+        persist=False,
     )
 
 

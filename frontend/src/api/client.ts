@@ -5,6 +5,8 @@ export type WorkspaceResponse = components["schemas"]["WorkspaceResponse"];
 export type CriteriaVersionCreate = components["schemas"]["CriteriaVersionCreate"];
 export type CriteriaVersionResponse = components["schemas"]["CriteriaVersionResponse"];
 export type CriterionDefinition = components["schemas"]["CriterionDefinition"];
+export type CriteriaSuggestRequest = components["schemas"]["CriteriaSuggestRequest"];
+export type CriteriaSuggestResponse = components["schemas"]["CriteriaSuggestResponse"];
 export type QueryVersionCreate = components["schemas"]["QueryVersionCreate"];
 export type QueryVersionResponse = components["schemas"]["QueryVersionResponse"];
 export type QueryASTNodeInput = components["schemas"]["QueryASTNode-Input"];
@@ -273,6 +275,12 @@ export const api = {
     /** Newest saved version; rejects with a 404 ApiError when nothing has been saved yet. */
     latest: (workspaceId: string) =>
       request<CriteriaVersionResponse>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/criteria`),
+    /** Screening rules built from the question and PICO. Nothing is saved. */
+    suggest: (workspaceId: string, payload: CriteriaSuggestRequest) =>
+      request<CriteriaSuggestResponse>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/criteria/suggest`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     create: (workspaceId: string, payload: CriteriaVersionCreate) =>
       request<CriteriaVersionResponse>(`/api/v1/workspaces/${workspaceId}/criteria`, {
         method: "POST",
@@ -329,7 +337,8 @@ export const api = {
       const url = criteriaVersionId
         ? `/api/v1/workspaces/${workspaceId}/process-corpus?criteria_version_id=${encodeURIComponent(criteriaVersionId)}`
         : `/api/v1/workspaces/${workspaceId}/process-corpus`;
-      return request<CorpusRevisionResponse>(url, { method: "POST" });
+      // Processing runs as a job: this returns it (202) and the caller polls api.jobs.get
+      return request<JobResponse>(url, { method: "POST" });
     },
     listGroups: (revisionId: string, status?: string, limit = 50, offset = 0) => {
       const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });

@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.contracts.enums import JobKind, JobState
@@ -59,6 +60,49 @@ def create_job(
     db.commit()
     db.refresh(job)
     return job
+
+
+def queue_corpus_processing(
+    db: Session,
+    workspace_id: str,
+    criteria_version_id: str | None = None,
+    trigger: str = "manual",
+    request_key: str | None = None,
+) -> JobModel:
+    """Queue deduplication, screening and PICO extraction for a workspace's imported records.
+
+    If one is already waiting in the queue for this workspace it is returned instead of adding a
+    second, so a double click never queues the corpus twice. A job that is already running is not
+    reused: it may have read the records before the newest import landed, so a new one follows it.
+    The job's stage reads "queued", then "processing", then "done".
+    """
+    active = (
+        db.query(JobModel)
+        .filter(
+            JobModel.workspace_id == workspace_id,
+            JobModel.kind == JobKind.SCREEN.value,
+            JobModel.state == JobState.QUEUED.value,
+        )
+        .order_by(JobModel.created_at.desc())
+        .first()
+    )
+    if active is not None:
+        return active
+    return create_job(
+        db,
+        workspace_id=workspace_id,
+        kind=JobKind.SCREEN,
+        request_key=request_key or f"process-corpus:{uuid4()}",
+        payload={"criteria_version_id": criteria_version_id, "trigger": trigger},
+        total_items=1,
+    )
+
+
+def safe_error_message(exc: BaseException) -> str:
+    """An error text that is fine to show a reviewer: a database error's SQL and values stay in the log."""
+    if isinstance(exc, SQLAlchemyError):
+        return f"A database error stopped this job ({type(exc.__cause__ or exc).__name__}). It was logged for the team."
+    return str(exc)[:300] or type(exc).__name__
 
 
 def get_job_by_id(db: Session, job_id: str) -> JobModel:

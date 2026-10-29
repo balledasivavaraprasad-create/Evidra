@@ -9,7 +9,9 @@ from app.contracts.models import (
     RetrievalChunk,
 )
 from app.contracts.ports import AssistantPort, EvidenceRetrievalPort
+from app.gateway.messages import describe_gateway_failure
 from app.gateway.protocol import (
+    GatewayErrorCode,
     GatewayRequest,
     ModelGatewayProtocol,
 )
@@ -69,6 +71,7 @@ class BoundedEvidenceAssistant(AssistantPort):
         # 2. Retrieve authorized evidence chunks
         query_text = f"{request.target_id} {request.user_prompt}".strip()
         chunks = self._retrieve_chunks(workspace_id, corpus_revision_id, query_text)
+        chunks = self._with_target_first(workspace_id, corpus_revision_id, request.target_id, chunks)
 
         # 3. Controlled reformulation follow-up if 0 chunks found
         if not chunks:
@@ -109,6 +112,7 @@ class BoundedEvidenceAssistant(AssistantPort):
                 citations=[first_chunk],
                 confidence_rationale="Rule-based deterministic extraction summary (AI disabled by policy).",
                 requires_human_approval=True,
+                model_error=describe_gateway_failure(GatewayErrorCode.DISABLED, None),
             )
 
         # 6. Invoke bounded model gateway
@@ -132,10 +136,14 @@ class BoundedEvidenceAssistant(AssistantPort):
                 "instructions": (
                     "Formulate a factual recommendation strictly based on provided evidence_chunks. "
                     "Every assertion must include citation_handles matching the evidence. "
-                    "If evidence does not support an answer, output: 'ABSTAIN: Insufficient evidence'."
+                    "If evidence does not support an answer, set proposal_text to 'ABSTAIN: Insufficient evidence'. "
+                    'Reply with JSON only: {"proposal_text": "your answer, citing handles like [PUBMED:123]", '
+                    '"cited_handles": ["[PUBMED:123]"], "confidence_rationale": "one sentence on how well the evidence supports it"}.'
                 ),
             },
-            max_tokens=500,
+            # Gemini's thinking tokens count against this, so leave room for the answer itself
+            max_tokens=2000,
+            timeout_seconds=40.0,
         )
 
         resp = self.gateway.invoke(req)
@@ -146,8 +154,9 @@ class BoundedEvidenceAssistant(AssistantPort):
                 task=request.task,
                 proposal_text=f"Deterministic fallback proposal based on {first_chunk.citation_handle}: {first_chunk.title}",
                 citations=[first_chunk],
-                confidence_rationale=f"Model invocation yielded error ({resp.error_code}); fallback used.",
+                confidence_rationale="The AI model could not answer, so this is the paper's own text; fallback used.",
                 requires_human_approval=True,
+                model_error=describe_gateway_failure(resp.error_code, resp.error_message),
             )
 
         model_output = resp.data.get("proposal_text", "")
@@ -198,6 +207,22 @@ class BoundedEvidenceAssistant(AssistantPort):
             confidence_rationale=rationale,
             requires_human_approval=True,
         )
+
+    def _with_target_first(
+        self,
+        workspace_id: str,
+        corpus_revision_id: str,
+        target_id: str,
+        chunks: list[RetrievalChunk],
+    ) -> list[RetrievalChunk]:
+        """Put the paper the question is about first, so the answer is about it and not a neighbour."""
+        find = getattr(self.retrieval_repo, "chunk_for_target", None)
+        if not callable(find):
+            return chunks
+        target = find(workspace_id=workspace_id, corpus_revision_id=corpus_revision_id, target_id=target_id)
+        if target is None:
+            return chunks
+        return [target, *[c for c in chunks if c.record_revision_id != target.record_revision_id]][:6]
 
     def _retrieve_chunks(
         self,

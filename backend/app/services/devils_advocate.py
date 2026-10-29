@@ -246,8 +246,13 @@ def get_or_generate_challenge(
     workspace_id: str,
     group_id: str,
     payload: DevilsAdvocateGenerateRequest | None = None,
+    persist: bool = True,
 ) -> DevilsAdvocateChallengeResponse:
-    """Retrieve existing active challenge or generate a new Devil's Advocate assessment."""
+    """Retrieve existing active challenge or generate a new Devil's Advocate assessment.
+
+    With ``persist=False`` (a GET) a missing challenge is computed for the response but not saved.
+    Processing and the explicit generate action save it.
+    """
     group, rep_rev = _resolve_paper_group(db, workspace_id, group_id)
 
     force_refresh = payload.force_refresh if payload else False
@@ -306,7 +311,7 @@ def get_or_generate_challenge(
         recommendation = ChallengeRecommendation.UPHOLD_EXCLUSION
 
     # Deactivate existing challenges if refreshing
-    if existing and force_refresh:
+    if persist and existing and force_refresh:
         existing.is_active = False
         existing.updated_at = utc_now()
 
@@ -328,8 +333,9 @@ def get_or_generate_challenge(
         created_at=utc_now(),
         updated_at=utc_now(),
     )
-    db.add(challenge)
-    db.commit()
+    if persist:
+        db.add(challenge)
+        db.commit()
 
     return _model_to_response(challenge)
 

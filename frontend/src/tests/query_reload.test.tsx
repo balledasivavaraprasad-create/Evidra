@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderToString } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
+import { api } from "../api/client";
 import type {
   CriteriaVersionResponse,
   JobResponse,
@@ -12,6 +14,9 @@ import { QueryBuilder } from "../features/search/QueryBuilder";
 import { ImportWorkflow } from "../features/runs/ImportWorkflow";
 import {
   executionLabel,
+  isImportable,
+  isTicked,
+  nothingFoundMessage,
   selectedIds,
   sortExecutions,
   upsertExecution,
@@ -19,6 +24,7 @@ import {
 } from "../features/search/executions";
 import { splitPicoTerms, termsFromPico } from "../features/search/searchTerms";
 import { loadSetupData, newestJob } from "../features/search/setupData";
+import { importPhase, isProcessingDone, processingLine, processingLookupDone } from "../features/runs/processing";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -293,7 +299,11 @@ const job = (over: Partial<JobResponse>): JobResponse =>
 
 describe("the import workflow resumes the latest job", () => {
   const render = (initialJob: JobResponse | null) =>
-    renderToString(<ImportWorkflow workspaceId="ws-1" selectedExecutionIds={[]} initialJob={initialJob} />);
+    renderToString(
+      <MemoryRouter>
+        <ImportWorkflow workspaceId="ws-1" selectedExecutionIds={[]} initialJob={initialJob} />
+      </MemoryRouter>,
+    );
 
   it("shows a running import with its progress and a cancel button", () => {
     const markup = render(job({ state: "running", progress: 0.5, processed_items: 200 }));
@@ -387,5 +397,130 @@ describe("loading the setup page's data", () => {
       [failing]: () => new Response("Internal Server Error", { status: 500, headers: { "content-type": "text/plain" } }),
     });
     await expect(loadSetupData("ws-1")).rejects.toMatchObject({ status: 500 });
+  });
+});
+
+describe("a count that finds nothing", () => {
+  const found = exec("aaaaaaaa11111111", { hit_count: 1200 });
+  // Older saved data could still say "ticked" for a 0-hit count
+  const empty = exec("bbbbbbbb22222222", { source: "europepmc", hit_count: 0, selected_for_import: true });
+
+  it("is never counted as ticked for import", () => {
+    expect(isImportable(empty)).toBe(false);
+    expect(isTicked(empty)).toBe(false);
+    expect(selectedIds([found, empty])).toEqual([found.id]);
+  });
+
+  it("is named after its source", () => {
+    expect(nothingFoundMessage("europepmc")).toBe("Nothing found on Europe PMC");
+    expect(nothingFoundMessage("pubmed")).toBe("Nothing found on PubMed");
+  });
+
+  it("shows as unticked, locked and labelled in the list", () => {
+    const markup = renderToString(
+      <QueryBuilder workspaceId="ws-1" criteriaVersionId="crit-1" savedQuery={savedQuery} savedExecutions={[found, empty]} />,
+    ).replace(/<!-- -->/g, "");
+    const tag = inputTag(markup, /Import europepmc · 22222222/);
+    expect(tag).not.toMatch(/\schecked=""/);
+    expect(tag).toMatch(/\sdisabled=""/);
+    expect(markup).toContain("Nothing found on Europe PMC");
+    expect(markup).toContain("1 of 2 selected for import");
+    expect(inputTag(markup, /Import pubmed · 11111111/)).toMatch(/\schecked=""/);
+  });
+});
+
+describe("a source that does not answer", () => {
+  it("surfaces the server's plain message instead of a generic failure", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({ code: "SOURCE_UNAVAILABLE", message: "Europe PMC didn't respond: the request timed out", retryable: true }),
+          { status: 502, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+    const err = await api.queries.executeSearch("qv-1", { source: "europepmc", synonym_expansion: false }).catch((e) => e);
+    expect(err.message).toBe("Europe PMC didn't respond: the request timed out");
+    expect(err.code).toBe("SOURCE_UNAVAILABLE");
+  });
+});
+
+describe("import flows into processing", () => {
+  const imp = (over: Partial<JobResponse> = {}) => job({ id: "imp", created_at: "2026-10-29T10:00:00Z", ...over });
+  const proc = (over: Partial<JobResponse> = {}) =>
+    job({ id: "proc", kind: "screen", created_at: "2026-10-29T10:01:00Z", state: "queued", ...over });
+
+  it("reads Importing -> Processing -> Ready", () => {
+    expect(importPhase(imp({ state: "running" }), null)).toBe("importing");
+    expect(importPhase(imp({ state: "queued" }), null)).toBe("importing");
+    expect(importPhase(imp({ state: "succeeded" }), proc({ state: "queued" }))).toBe("processing");
+    expect(importPhase(imp({ state: "succeeded" }), proc({ state: "running" }))).toBe("processing");
+    expect(importPhase(imp({ state: "succeeded" }), proc({ state: "succeeded" }))).toBe("ready");
+  });
+
+  it("treats processing that paused for the reviewer as ready: the papers are there", () => {
+    const paused = proc({ state: "waiting_human" });
+    expect(isProcessingDone(paused)).toBe(true);
+    expect(importPhase(imp({ state: "succeeded" }), paused)).toBe("ready");
+  });
+
+  it("reports a stopped import or stopped processing, not Ready", () => {
+    expect(importPhase(imp({ state: "failed" }), null)).toBe("import-failed");
+    expect(importPhase(imp({ state: "partial" }), null)).toBe("import-failed");
+    expect(importPhase(imp({ state: "succeeded" }), proc({ state: "failed" }))).toBe("processing-failed");
+  });
+
+  it("never says Ready before it has looked up the processing job", () => {
+    // Just after an import finishes there is "no processing job yet" only because we haven't asked
+    expect(importPhase(imp({ state: "succeeded" }), null, false)).toBe("processing");
+    expect(importPhase(imp({ state: "succeeded" }), null, true)).toBe("ready");
+    expect(importPhase(imp({ state: "running" }), null, false)).toBe("importing");
+    expect(importPhase(imp({ state: "failed" }), null, false)).toBe("import-failed");
+  });
+
+  it("an import that finishes while the page is open is not 'known' until it has looked again", () => {
+    // Regression: announcing the completion used to mark it "finished before load", skipping the lookup
+    const base = { loaded: true, importId: "imp", lookedUpFor: null, finishedBeforeLoadId: null };
+    expect(processingLookupDone(base)).toBe(false);
+    expect(processingLookupDone({ ...base, lookedUpFor: "imp" })).toBe(true);
+    expect(processingLookupDone({ ...base, lookedUpFor: "an-older-import" })).toBe(false);
+  });
+
+  it("an import that was already finished when the page opened is known after the first lookup", () => {
+    const base = { loaded: false, importId: "imp", lookedUpFor: null, finishedBeforeLoadId: "imp" };
+    expect(processingLookupDone(base)).toBe(false); // first lookup not back yet
+    expect(processingLookupDone({ ...base, loaded: true })).toBe(true);
+    expect(processingLookupDone({ ...base, loaded: true, finishedBeforeLoadId: "another" })).toBe(false);
+    expect(processingLookupDone({ ...base, loaded: true, importId: undefined })).toBe(false);
+  });
+
+  it("ignores a processing job that is older than the import", () => {
+    const older = proc({ created_at: "2026-10-28T10:00:00Z", state: "running" });
+    expect(importPhase(imp({ state: "succeeded" }), older)).toBe("ready");
+  });
+
+  it("describes what processing is doing", () => {
+    expect(processingLine(proc({ state: "queued" }))).toBe("Waiting to start");
+    expect(processingLine(proc({ state: "running" }))).toMatch(/duplicates.*screening.*PICO/i);
+  });
+
+  it("the import panel shows the steps, and Go to screening only when ready", () => {
+    const panel = (state: JobResponse["state"]) =>
+      renderToString(
+        <MemoryRouter>
+          <ImportWorkflow workspaceId="ws-1" selectedExecutionIds={[]} initialJob={imp({ state })} />
+        </MemoryRouter>,
+      ).replace(/<!-- -->/g, "");
+    const running = panel("running");
+    expect(running).toContain("Importing");
+    expect(running).toContain("Processing");
+    expect(running).toContain("Ready");
+    expect(running).not.toContain("Go to screening");
+    // A finished import whose processing has not been looked up yet is still Processing, never Ready
+    const checking = panel("succeeded");
+    expect(checking).toContain("Checking on processing");
+    expect(checking).not.toContain("Go to screening");
+    expect(panel("failed")).not.toContain("Go to screening");
   });
 });

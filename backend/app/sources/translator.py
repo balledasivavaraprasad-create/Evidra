@@ -1,6 +1,7 @@
 """Translate abstract Boolean AST queries into provider-specific query syntax."""
 from app.contracts.enums import BooleanOperator, SourceNamespace
 from app.contracts.models import QueryASTNode
+from app.terms import search_phrases
 
 
 def _escape_phrase(term: str) -> str:
@@ -9,11 +10,17 @@ def _escape_phrase(term: str) -> str:
     return clean
 
 
+def _join_phrases(clauses: list[str]) -> str:
+    """One clause as is; several (a long term split into phrases) must all match."""
+    if not clauses:
+        return ""
+    return clauses[0] if len(clauses) == 1 else "(" + " AND ".join(clauses) + ")"
+
+
 def translate_pubmed_ast(node: QueryASTNode) -> str:
     """Recursively translate AST to PubMed query with Title/Abstract field tags."""
     if node.term is not None:
-        phrase = _escape_phrase(node.term)
-        return f'"{phrase}"[Title/Abstract]'
+        return _join_phrases([f'"{p}"[Title/Abstract]' for p in search_phrases(_escape_phrase(node.term))])
 
     if not node.children:
         return ""
@@ -34,8 +41,7 @@ def translate_pubmed_ast(node: QueryASTNode) -> str:
 def translate_europepmc_ast(node: QueryASTNode) -> str:
     """Recursively translate AST to Europe PMC query syntax with TITLE_ABS prefix."""
     if node.term is not None:
-        phrase = _escape_phrase(node.term)
-        return f'TITLE_ABS:"{phrase}"'
+        return _join_phrases([f'TITLE_ABS:"{p}"' for p in search_phrases(_escape_phrase(node.term))])
 
     if not node.children:
         return ""

@@ -21,7 +21,14 @@ from app.db.models import (
     SourceRecordModel,
     WorkspaceModel,
 )
-from app.services.jobs import create_job, fail_job, to_job_response, update_job_progress
+from app.services.jobs import (
+    create_job,
+    fail_job,
+    queue_corpus_processing,
+    safe_error_message,
+    to_job_response,
+    update_job_progress,
+)
 from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
 
@@ -204,7 +211,7 @@ def run_import_job(db: Session, job: JobModel) -> None:
                         job_id=job.id,
                         processed_items=total_imported,
                         total_items=len(pmids),
-                        stage="importing_pubmed_records",
+                        stage="importing",
                     )
 
             elif exec_row.source == SourceNamespace.EUROPEPMC.value:
@@ -232,26 +239,34 @@ def run_import_job(db: Session, job: JobModel) -> None:
                         job_id=job.id,
                         processed_items=total_imported,
                         total_items=cap,
-                        stage="importing_europepmc_records",
+                        stage="importing",
                     )
                     cursor = next_cursor
 
-        # Mark succeeded
+        # Queue processing before marking the import done, so there is never a moment when the
+        # import has finished and no processing job exists yet.
+        queue_corpus_processing(
+            db,
+            workspace_id=job.workspace_id,
+            trigger="import",
+            request_key=f"process-after-import:{job.id}",
+        )
         update_job_progress(
             db=db,
             job_id=job.id,
             processed_items=total_imported,
             total_items=total_imported if total_imported > 0 else 1,
-            stage="completed",
+            stage="done",
             state=JobState.SUCCEEDED,
         )
 
     except Exception as exc:
+        db.rollback()  # a failed flush leaves the session unusable until rolled back
         logger.exception("Import job %s failed", job.id)
         is_partial = job.processed_items > 0
         error_env = ErrorEnvelope(
             code="IMPORT_EXECUTION_ERROR",
-            message=str(exc),
+            message=safe_error_message(exc),
             retryable=True,
         )
         fail_job(db, job.id, error_env, partial=is_partial)

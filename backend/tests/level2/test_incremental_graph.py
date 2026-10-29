@@ -286,9 +286,11 @@ def test_criteria_change_invalidates_screening_but_preserves_pico_reuse(db_sessi
         assert res2["recomputed_screening_count"] == 1
         assert res2["reused_screening_count"] == 0
 
-        # PICO does NOT depend on criteria -> reused 100%!
-        assert res2["reused_pico_count"] == 1
-        assert res2["recomputed_pico_count"] == 0
+        # PICO now follows the review's own P/I/C/O words: this criteria version names a population
+        # the first run did not, so the cached PICO is not reused. (Criteria changes that keep the
+        # same PICO still reuse it: tests/pico/test_review_patterns.py.)
+        assert res2["reused_pico_count"] == 0
+        assert res2["recomputed_pico_count"] == 1
 
 
 def test_known_source_record_gains_new_query_membership_without_duplicate_fetch(db_session: Session):
