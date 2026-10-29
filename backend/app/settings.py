@@ -67,7 +67,8 @@ class Settings(BaseSettings):
         description="OpenAI-compatible endpoint (default: Gemini)",
     )
     llm_api_key: str | None = Field(default=None, description="Provider API key. Server-side only; never logged or sent to the browser")
-    llm_model_alias: str = Field(default="gemini-2.5-flash", description="Approved model name used for requests")
+    # gemini-2.5-flash is allowed too, but Google no longer serves it to new keys (it points to gemini-3.8-flash)
+    llm_model_alias: str = Field(default="gemini-3.8-flash", description="Approved model name used for requests")
     llm_max_budget_cents: int = Field(default=500, description="Spend limit in cents")
     langsmith_tracing: bool = False
 

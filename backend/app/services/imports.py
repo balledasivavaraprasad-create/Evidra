@@ -25,6 +25,7 @@ from app.services.jobs import (
     create_job,
     fail_job,
     queue_corpus_processing,
+    safe_error_message,
     to_job_response,
     update_job_progress,
 )
@@ -260,11 +261,12 @@ def run_import_job(db: Session, job: JobModel) -> None:
         )
 
     except Exception as exc:
+        db.rollback()  # a failed flush leaves the session unusable until rolled back
         logger.exception("Import job %s failed", job.id)
         is_partial = job.processed_items > 0
         error_env = ErrorEnvelope(
             code="IMPORT_EXECUTION_ERROR",
-            message=str(exc),
+            message=safe_error_message(exc),
             retryable=True,
         )
         fail_job(db, job.id, error_env, partial=is_partial)

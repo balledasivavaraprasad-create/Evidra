@@ -4,12 +4,12 @@ from __future__ import annotations
 import re
 
 from app.contracts.enums import CriterionVerdict, ScreeningEvidenceSource
-from app.terms import keyword_pattern  # noqa: F401 - shared with the PICO patterns
 from app.contracts.models import (
     CriterionDefinition,
     CriterionEvidence,
     RecordRevisionResponse,
 )
+from app.terms import keyword_pattern
 
 METHOD_VERSION = "screening-rules-v1.0.0"
 

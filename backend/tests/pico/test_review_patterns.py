@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -98,7 +97,15 @@ class TestMethodVersionIsTheCacheKey:
         a = extractor_for(EMPRISE_PICO).method_version
         b = extractor_for({**EMPRISE_PICO, "intervention": "dapagliflozin"}).method_version
         assert a != b
-        assert a.startswith(METHOD_VERSION + "+review:")
+        assert a.startswith(METHOD_VERSION + "+r:")
+
+    def test_the_method_version_fits_its_database_column(self):
+        """SQLite ignores column lengths and Postgres does not: a 36-character version once broke processing."""
+        from app.db.models import MachineResultModel
+
+        limit = MachineResultModel.__table__.c.method_version.type.length
+        for pico in (EMPRISE_PICO, SGLT2_PICO, {"population": "x", "intervention": "y" * 400}):
+            assert len(extractor_for(pico).method_version) <= limit
 
     def test_the_same_keywords_are_the_same_method_whatever_else_changes(self):
         base = rules_from_pico("t", "q", EMPRISE_PICO)

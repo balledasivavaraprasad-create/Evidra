@@ -1,11 +1,10 @@
 """Deterministic rule-based PICO span extractor implementing PicoPort."""
+import hashlib
 import re
+from collections.abc import Mapping, Sequence
 
 from app.contracts.enums import PicoLabel
 from app.contracts.models import PicoResult, PicoSpan, RecordRevisionResponse
-import hashlib
-from collections.abc import Mapping, Sequence
-
 from app.pico.patterns import COMPILED_RULES, PicoRule, build_review_rules
 from app.pico.validator import compute_text_hash
 
@@ -50,8 +49,9 @@ class RuleBasedPicoExtractor:
                     f"{label.value}:{','.join(sorted(k.lower() for k in kws))}"
                     for label, kws in sorted(review_terms.items(), key=lambda kv: kv[0].value)
                 ).encode("utf-8")
-            ).hexdigest()[:10]
-            self.method_version = f"{method_version}+review:{digest}"
+            ).hexdigest()[:8]
+            # machine_results.method_version is VARCHAR(32): Postgres enforces it, SQLite does not
+            self.method_version = f"{method_version}+r:{digest}"
         self.provenance = provenance
 
     def extract_from_text(

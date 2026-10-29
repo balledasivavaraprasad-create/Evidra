@@ -24,10 +24,18 @@ export function isProcessingFailed(job: JobResponse | null | undefined): boolean
 /**
  * Importing -> Processing -> Ready for the newest import and the newest processing job.
  * A processing job counts for this import only if it was created at or after the import.
+ * `processingKnown` is false until the lookup of the processing job has completed.
  */
-export function importPhase(importJob: JobResponse, processingJob: JobResponse | null): ImportPhase {
+export function importPhase(
+  importJob: JobResponse,
+  processingJob: JobResponse | null,
+  processingKnown = true,
+): ImportPhase {
   if (isActiveJob(importJob)) return "importing";
   if (importJob.state !== "succeeded") return "import-failed";
+  // An import that just finished has queued processing. Until we have looked that job up, "no job
+  // yet" means we don't know, not that it is ready: never flash Ready early.
+  if (!processingKnown) return "processing";
   const forThisImport = processingJob && processingJob.created_at >= importJob.created_at ? processingJob : null;
   if (!forThisImport) return "ready"; // an import from before imports were processed automatically
   if (isActiveJob(forThisImport)) return "processing";

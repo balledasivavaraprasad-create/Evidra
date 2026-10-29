@@ -53,7 +53,7 @@ def precompute_review_artifacts(db: Session, workspace_id: str, revision_id: str
                 if summary.effective_status == EffectiveDecisionState.EXCLUDE:
                     get_or_generate_challenge(db, workspace_id, summary.id, persist=True)
                     counts["challenges"] += 1
-            except Exception:  # noqa: BLE001 - one paper must not stop the rest
+            except Exception:
                 db.rollback()
                 counts["failed"] += 1
                 logger.exception("Could not prepare evidence for group %s", summary.id)

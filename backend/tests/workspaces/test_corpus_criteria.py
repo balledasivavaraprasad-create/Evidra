@@ -1,9 +1,8 @@
 """process_corpus: per-workspace fallback criteria and an explicit criteria_version_id."""
-import json
 
 from fastapi.testclient import TestClient
 
-from app.db.models import CriteriaVersionModel, CorpusRevisionModel
+from app.db.models import CorpusRevisionModel, CriteriaVersionModel
 from app.services.corpus import process_corpus
 from app.worker import poll_and_execute_next
 

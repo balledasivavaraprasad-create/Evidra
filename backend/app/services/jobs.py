@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.contracts.enums import JobKind, JobState
@@ -95,6 +96,13 @@ def queue_corpus_processing(
         payload={"criteria_version_id": criteria_version_id, "trigger": trigger},
         total_items=1,
     )
+
+
+def safe_error_message(exc: BaseException) -> str:
+    """An error text that is fine to show a reviewer: a database error's SQL and values stay in the log."""
+    if isinstance(exc, SQLAlchemyError):
+        return f"A database error stopped this job ({type(exc.__cause__ or exc).__name__}). It was logged for the team."
+    return str(exc)[:300] or type(exc).__name__
 
 
 def get_job_by_id(db: Session, job_id: str) -> JobModel:

@@ -12,6 +12,7 @@ const POLL_MS = 2000;
 export function useProcessingJob(workspaceId: string, onFinished?: (job: JobResponse) => void) {
   const [job, setJob] = useState<JobResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const finishedRef = useRef(onFinished);
   finishedRef.current = onFinished;
 
@@ -22,6 +23,8 @@ export function useProcessingJob(workspaceId: string, onFinished?: (job: JobResp
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't check on processing");
+    } finally {
+      setLoaded(true);
     }
   }, [workspaceId]);
 
@@ -49,5 +52,5 @@ export function useProcessingJob(workspaceId: string, onFinished?: (job: JobResp
     };
   }, [activeId]);
 
-  return { job, error, track: setJob, refresh };
+  return { job, error, loaded, track: setJob, refresh };
 }

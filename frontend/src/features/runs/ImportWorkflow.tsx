@@ -76,6 +76,8 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const processing = useProcessingJob(workspaceId);
+  // The import whose processing job has been looked up since it finished in this session
+  const [lookedUpFor, setLookedUpFor] = useState<string | null>(null);
 
   const pollTimerRef = useRef<number | null>(null);
   const backoffDelayRef = useRef<number>(1000);
@@ -108,10 +110,24 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
 
   // The moment an import succeeds it has queued processing: pick that job up so it can be followed
   const importState = activeJob?.state;
+  const importId = activeJob?.id;
   useEffect(() => {
-    if (importState === "succeeded") void processing.refresh();
+    if (importState !== "succeeded" || !importId) return;
+    let current = true;
+    void processing.refresh().finally(() => {
+      if (current) setLookedUpFor(importId);
+    });
+    return () => {
+      current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importState]);
+  }, [importState, importId]);
+
+  // Known once the lookup after this import finished is done (or, for an import that was already
+  // finished when the page opened, once the first lookup is done)
+  const finishedBeforeLoad = alreadyFinishedRef.current === importId && lookedUpFor !== importId;
+  const processingKnown = processing.loaded && (lookedUpFor === importId || finishedBeforeLoad);
+  const phase = activeJob ? importPhase(activeJob, processing.job, processingKnown) : null;
 
   const retryProcessing = async () => {
     try {
@@ -339,13 +355,18 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
             <span>{Math.round(activeJob.progress * 100)}%</span>
           </div>
 
-          <PhaseSteps phase={importPhase(activeJob, processing.job)} />
-          {importPhase(activeJob, processing.job) === "processing" && processing.job && (
+          {phase && <PhaseSteps phase={phase} />}
+          {phase === "processing" && !processing.job && (
+            <p role="status" className="mt-2 text-xs text-slate-300">
+              Import finished. Checking on processing...
+            </p>
+          )}
+          {phase === "processing" && processing.job && (
             <p role="status" className="mt-2 text-xs text-slate-300">
               {processingLine(processing.job)}. You can open the screening page now; papers appear as soon as this finishes.
             </p>
           )}
-          {importPhase(activeJob, processing.job) === "processing-failed" && processing.job && (
+          {phase === "processing-failed" && processing.job && (
             <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded border border-red-800/60 bg-red-950/50 p-2.5 text-xs text-red-300">
               <span>Processing stopped: {processingLine(processing.job)}</span>
               <button type="button" onClick={retryProcessing} className="rounded bg-slate-800 px-3 py-1 text-slate-100 hover:bg-slate-700">
@@ -353,7 +374,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
               </button>
             </div>
           )}
-          {importPhase(activeJob, processing.job) === "ready" && (
+          {phase === "ready" && (
             <div className="mt-3">
               <Link to={`/reviews/${workspaceId}/records`} className="btn-gold inline-flex items-center gap-2">
                 Go to screening

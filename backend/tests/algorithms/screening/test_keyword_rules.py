@@ -7,7 +7,11 @@ from datetime import UTC, datetime
 import pytest
 
 from app.contracts.enums import CriterionVerdict, EligibilityStatus, SourceNamespace
-from app.contracts.models import CriteriaVersionResponse, CriterionDefinition, RecordRevisionResponse
+from app.contracts.models import (
+    CriteriaVersionResponse,
+    CriterionDefinition,
+    RecordRevisionResponse,
+)
 from app.gateway.protocol import GatewayErrorCode, GatewayRequest, GatewayResponse
 from app.gateway.synonyms import SynonymProvider
 from app.screening import ScreeningEngine

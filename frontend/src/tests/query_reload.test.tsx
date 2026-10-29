@@ -471,6 +471,14 @@ describe("import flows into processing", () => {
     expect(importPhase(imp({ state: "succeeded" }), proc({ state: "failed" }))).toBe("processing-failed");
   });
 
+  it("never says Ready before it has looked up the processing job", () => {
+    // Just after an import finishes there is "no processing job yet" only because we haven't asked
+    expect(importPhase(imp({ state: "succeeded" }), null, false)).toBe("processing");
+    expect(importPhase(imp({ state: "succeeded" }), null, true)).toBe("ready");
+    expect(importPhase(imp({ state: "running" }), null, false)).toBe("importing");
+    expect(importPhase(imp({ state: "failed" }), null, false)).toBe("import-failed");
+  });
+
   it("ignores a processing job that is older than the import", () => {
     const older = proc({ created_at: "2026-10-28T10:00:00Z", state: "running" });
     expect(importPhase(imp({ state: "succeeded" }), older)).toBe("ready");
@@ -493,9 +501,10 @@ describe("import flows into processing", () => {
     expect(running).toContain("Processing");
     expect(running).toContain("Ready");
     expect(running).not.toContain("Go to screening");
-    const ready = panel("succeeded"); // no processing job known yet for this import: nothing left to wait for
-    expect(ready).toContain("Go to screening");
-    expect(ready).toContain('href="/reviews/ws-1/records"');
+    // A finished import whose processing has not been looked up yet is still Processing, never Ready
+    const checking = panel("succeeded");
+    expect(checking).toContain("Checking on processing");
+    expect(checking).not.toContain("Go to screening");
     expect(panel("failed")).not.toContain("Go to screening");
   });
 });
