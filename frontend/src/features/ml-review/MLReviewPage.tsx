@@ -43,6 +43,9 @@ export const MLReviewPage: React.FC = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   const [humanDecisions, setHumanDecisions] = useState<Record<string, string>>({});
+  const [decisionReason, setDecisionReason] = useState("");
+  const [savingDecision, setSavingDecision] = useState(false);
+  const [decisionMessage, setDecisionMessage] = useState<string | null>(null);
 
   // 1. Load active revision and initial ML ranking
   const fetchRanking = useCallback(async (revId: string, force = false) => {
@@ -57,9 +60,10 @@ export const MLReviewPage: React.FC = () => {
         force_recompute: force,
       });
       setRankingData(res);
+      setUsingSampleData(false);
       const items = res.items || [];
-      if (items.length > 0 && !selectedRecordId) {
-        setSelectedRecordId(items[0].record_id);
+      if (items.length > 0) {
+        setSelectedRecordId((previous) => previous ?? items[0].record_id);
       }
     } catch (err: unknown) {
       if (isServiceUnreachable(err)) {
@@ -76,7 +80,7 @@ export const MLReviewPage: React.FC = () => {
       setLoading(false);
       setRecomputing(false);
     }
-  }, [workspaceId, selectedRecordId]);
+  }, [workspaceId]);
 
   useEffect(() => {
     let mounted = true;
@@ -99,13 +103,14 @@ export const MLReviewPage: React.FC = () => {
             if (mounted) setBaselineGroups([]);
           }
 
+          setUsingSampleData(false);
           await fetchRanking(activeRevId);
         } else {
           // No processed corpus yet: show the empty state, not sample data
           setRankingData(null);
           setBaselineGroups([]);
+          setUsingSampleData(false);
         }
-        if (mounted) setUsingSampleData(false);
       } catch (err: unknown) {
         if (!mounted) return;
         if (isServiceUnreachable(err)) {
@@ -165,8 +170,38 @@ export const MLReviewPage: React.FC = () => {
   }, [displayedItems, selectedRecordId]);
 
   // Handle human reviewer decision
-  const handleReviewDecision = (recordId: string, decision: "include" | "exclude" | "maybe") => {
-    setHumanDecisions((prev) => ({ ...prev, [recordId]: decision }));
+  const handleReviewDecision = async (recordId: string, decision: "include" | "exclude" | "maybe") => {
+    const item = rankingData?.items?.find((record) => record.record_id === recordId);
+    if (usingSampleData || !item?.group_id || !revisionId) {
+      setErrorBanner("Sample data cannot save decisions. Open a live review to continue.");
+      return;
+    }
+    if (decision === "exclude" && !decisionReason.trim()) {
+      setErrorBanner("Enter an evidence-based exclusion reason before saving.");
+      return;
+    }
+    setSavingDecision(true);
+    setErrorBanner(null);
+    setDecisionMessage(null);
+    try {
+      const group = baselineGroups.find((g) => g.id === item.group_id)
+        ?? (await api.groups.getDetail(item.group_id, revisionId)).group;
+      await api.groups.recordDecision(item.group_id, {
+        status: decision,
+        reason: decisionReason.trim() || (decision === "include" ? "Meets saved review criteria" : "Uncertain eligibility"),
+        expected_version: group.row_version,
+      });
+      // Only show a saved decision after the server confirms its append-only event.
+      setHumanDecisions((prev) => ({ ...prev, [recordId]: decision }));
+      setBaselineGroups((prev) => prev.map((g) => g.id === group.id
+        ? { ...g, row_version: g.row_version + 1 } : g));
+      setDecisionMessage(`Saved ${decision} decision.`);
+      setDecisionReason("");
+    } catch (err: unknown) {
+      setErrorBanner(err instanceof Error ? err.message : "Decision was not saved. Reload and try again.");
+    } finally {
+      setSavingDecision(false);
+    }
   };
 
   return (
@@ -186,7 +221,7 @@ export const MLReviewPage: React.FC = () => {
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-400">
-            Trained review queue ranking using verified TF-IDF + calibrated Logistic Regression.
+            Review queue ranking from a verified model. Confirm eligibility against your saved protocol.
           </p>
         </div>
 
@@ -206,7 +241,7 @@ export const MLReviewPage: React.FC = () => {
             data-testid="recompute-ranking-btn"
           >
             <RotateCcw className={`w-4 h-4 ${recomputing ? "animate-spin" : ""}`} />
-            {recomputing ? "Recomputing..." : "Recompute Model"}
+            {recomputing ? "Refreshing..." : "Refresh Ranking"}
           </button>
         </div>
       </div>
@@ -237,7 +272,7 @@ export const MLReviewPage: React.FC = () => {
           <span className="text-slate-500 font-medium">Model Artifact</span>
           <div className="flex items-center gap-1.5 text-slate-200 font-mono">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            {rankingData?.model_version || "ml_ranker:v1.0.0"}
+            {rankingData?.model_version || "No model loaded"}
           </div>
         </div>
 
@@ -314,6 +349,12 @@ export const MLReviewPage: React.FC = () => {
       </div>
 
       {usingSampleData && <SampleDataNotice onRetry={() => setReloadKey((k) => k + 1)} />}
+      {rankingData?.status === "UNAVAILABLE" && (
+        <p role="status" className="text-sm text-amber-300">
+          {rankingData.reason || "ML ranking is unavailable. Use the Manual Screening Queue."}
+        </p>
+      )}
+      {decisionMessage && <p role="status" className="text-sm text-emerald-300">{decisionMessage}</p>}
 
       {/* Main Review Grid */}
       {loading ? (
@@ -329,6 +370,8 @@ export const MLReviewPage: React.FC = () => {
           <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
             {selectedPriority !== "ALL"
               ? `No papers found in the '${selectedPriority}' priority tier.`
+              : rankingData?.status === "UNAVAILABLE"
+              ? "Ranking is unavailable. Your papers remain available in the Manual Screening Queue."
               : "This corpus revision has no records available for review."}
           </p>
         </div>
@@ -432,7 +475,7 @@ export const MLReviewPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col items-end flex-shrink-0 bg-slate-950/60 border border-slate-800 p-3 rounded-xl min-w-[130px]">
-                  <span className="text-[11px] text-slate-400">Inclusion Probability</span>
+                  <span className="text-[11px] text-slate-400">Ranking Score</span>
                   <div className="flex items-baseline gap-1 mt-0.5">
                     <span className="text-2xl font-black text-indigo-400 font-mono">
                       {selectedItem.state === "SCORED"
@@ -460,15 +503,11 @@ export const MLReviewPage: React.FC = () => {
               <div className="p-3.5 rounded-xl bg-slate-950/40 border border-slate-800/80 text-xs text-slate-300 space-y-1">
                 <div className="flex items-center gap-1.5 font-semibold text-slate-200">
                   <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Model Recommendation Rationale</span>
+                  <span>About this ranking score</span>
                 </div>
                 <p className="text-slate-400 leading-relaxed">
                   {selectedItem.state === "SCORED"
-                    ? selectedItem.score >= 0.7
-                      ? "High vocabulary match with randomized clinical trial designs, intervention endpoints (HbA1c), and target human diabetic cohorts."
-                      : selectedItem.score >= 0.4
-                      ? "Moderate semantic match. Check whether intervention and comparator match clinical review criteria."
-                      : "Low clinical relevance score. Likely animal/preclinical, review note, or unrelated design."
+                    ? "This score orders papers for review. It is not an eligibility probability or evidence that a criterion is met. Verify the abstract against your saved protocol."
                     : selectedItem.reason === "MISSING_ABSTRACT"
                     ? "Abstract text is missing or shorter than 10 characters; prioritization is unavailable without textual content."
                     : "Out of model domain scope."}
@@ -500,8 +539,16 @@ export const MLReviewPage: React.FC = () => {
                   </span>
                 </div>
 
+                <label className="block text-xs text-slate-300">
+                  Decision reason / supporting evidence (required for exclusion)
+                  <textarea value={decisionReason} onChange={(event) => setDecisionReason(event.target.value)}
+                    className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 p-2"
+                    rows={2} />
+                </label>
+
                 <div className="flex items-center gap-3">
                   <button
+                    disabled={savingDecision}
                     onClick={() => handleReviewDecision(selectedItem.record_id, "include")}
                     className={`flex-1 py-2.5 px-3 rounded-xl border flex items-center justify-center gap-2 text-sm font-semibold transition-all ${
                       humanDecisions[selectedItem.record_id] === "include"
@@ -515,6 +562,7 @@ export const MLReviewPage: React.FC = () => {
                   </button>
 
                   <button
+                    disabled={savingDecision}
                     onClick={() => handleReviewDecision(selectedItem.record_id, "maybe")}
                     className={`flex-1 py-2.5 px-3 rounded-xl border flex items-center justify-center gap-2 text-sm font-semibold transition-all ${
                       humanDecisions[selectedItem.record_id] === "maybe"
@@ -528,6 +576,7 @@ export const MLReviewPage: React.FC = () => {
                   </button>
 
                   <button
+                    disabled={savingDecision}
                     onClick={() => handleReviewDecision(selectedItem.record_id, "exclude")}
                     className={`flex-1 py-2.5 px-3 rounded-xl border flex items-center justify-center gap-2 text-sm font-semibold transition-all ${
                       humanDecisions[selectedItem.record_id] === "exclude"

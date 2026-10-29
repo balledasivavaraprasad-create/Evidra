@@ -13,6 +13,7 @@ from app.ml_feature.dataset import (
     compute_records_hash,
     create_leakage_free_split,
 )
+from app.ml_feature.evaluation import evaluate_scores, operating_threshold
 from app.ml_feature.pipeline import build_pipeline, extract_texts_and_labels
 from app.ml_feature.types import ArtifactManifest, RecordInput, TrainConfig
 
@@ -86,6 +87,18 @@ def train_ranker(
             metrics["val_mean_neg_score"] = round(sum(neg_scores) / len(neg_scores), 4)
 
     # 5. Serialize model file
+    threshold = 0.5
+    if val_recs and {r.label for r in val_recs} == {0, 1}:
+        threshold = operating_threshold(val_labels, probs)
+    # Threshold selection and preprocessing never use final-test labels.
+    for name, partition in (("val", val_recs), ("test", test_recs)):
+        if not partition:
+            continue
+        texts, labels = extract_texts_and_labels(partition)
+        scores = pipeline.predict_proba(texts)[:, list(pipeline.classes_).index(1)]
+        evidence = evaluate_scores(labels, scores, threshold=threshold, ids=[r.id for r in partition])
+        metrics.update({f"{name}_{key}": float(value) for key, value in evidence.items()
+                        if isinstance(value, (int, float)) and value is not None})
     model_path = out_path / "model.joblib"
     joblib.dump(pipeline, model_path)
     model_sha256 = compute_file_sha256(model_path)
@@ -104,7 +117,7 @@ def train_ranker(
         val_hash=val_hash,
         test_hash=test_hash,
         model_file_sha256=model_sha256,
-        config=config.model_dump(),
+        config={**config.model_dump(), "operating_threshold": threshold},
         metrics=metrics,
     )
 

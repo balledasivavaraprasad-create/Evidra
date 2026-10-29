@@ -32,7 +32,7 @@ def build_pipeline(config: TrainConfig) -> Pipeline:
 def extract_texts_and_labels(records: list[RecordInput]) -> tuple[list[str], list[int]]:
     """Extract canonical texts and integer labels from record inputs."""
     texts = [prepare_text(r.title, r.abstract_text) for r in records]
-    labels = [int(r.label) for r in records if r.label is not None]
+    labels = [r.label for r in records if r.label in (0, 1)]
     if len(texts) != len(labels):
         raise ValueError("All records must possess an integer label (0 or 1)")
     return texts, labels

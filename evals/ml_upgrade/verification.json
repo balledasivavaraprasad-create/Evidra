@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-29",
+  "branch": "codex/dev-c-advanced-ml",
+  "base_commit": "066aa9a405c882ae2962a8238cd9142a94a15503",
+  "implemented": true,
+  "tested": true,
+  "deployed": false,
+  "challenger_promoted": false,
+  "checks": [
+    {
+      "command": "backend/.venv/bin/python -m pytest -q backend/tests (before changes)",
+      "result": "277 passed; 2 existing deprecation warnings"
+    },
+    {
+      "command": "cd backend; .venv/bin/python -m pytest -q tests",
+      "result": "304 passed; 2 existing deprecation warnings"
+    },
+    {
+      "command": "cd backend; .venv/bin/ruff check app/ml_feature app/screening/ml app/services/screening_rank.py tests/ml_feature scripts/serve_ml_upgrade_test.py",
+      "result": "passed"
+    },
+    {
+      "command": "cd backend; uv --cache-dir /tmp/evidra-uv-cache lock --check --offline",
+      "result": "passed; 119 packages resolved"
+    },
+    {
+      "command": "cd frontend; npm run api:check",
+      "result": "passed; generated types unchanged"
+    },
+    {
+      "command": "cd frontend; npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "cd frontend; npm run test:unit",
+      "result": "106 passed in 15 test files"
+    },
+    {
+      "command": "cd frontend; npm run build",
+      "result": "passed; existing large-chunk warning"
+    },
+    {
+      "command": "cd frontend; npm exec -- playwright test --config playwright.ml-upgrade.config.ts",
+      "result": "1 passed; isolated synthetic DB; decisions persist across reload"
+    },
+    {
+      "command": "python3 scripts/ci/validate_stage.py",
+      "result": "passed"
+    },
+    {
+      "command": "python3 scripts/validate_prompts.py",
+      "result": "passed; original 24-task DAG unchanged"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "baseline_failures": {
+    "ruff": {
+      "baseline": 62,
+      "current": 62,
+      "introduced": 0
+    },
+    "planning_validation": "Same six errors on pristine base and working tree: Windows links, psycopg-extra validator mismatch, outdated frontend metadata"
+  },
+  "benchmark": {
+    "report": "wilson-final/report.json",
+    "dataset_records": 2142,
+    "test_records": 428,
+    "test_positives": 23,
+    "selected_on_development": "baseline-0",
+    "test_not_used_for_selection": true,
+    "topic": "Wilson disease; not metformin validation",
+    "boosters": [
+      "XGBoost 3.4.1",
+      "CatBoost 1.2.10"
+    ],
+    "active_learning": "active-learning.json; retrospective only"
+  },
+  "unverified": [
+    "Linux runtime",
+    "hosted GitHub Actions",
+    "production deployment",
+    "validated metformin model improvement"
+  ],
+  "dependency_hashes": {
+    "backend/pyproject.toml": "aefa8f81c15ef22cd46d5dcb151f932e64946b1ba244ff29f626c537d60bf573",
+    "backend/uv.lock": "7d184dae9b3773fd538793bc7fdd94e5e96fd52f3e5aaf2cd007b7964ed46d8c"
+  }
+}

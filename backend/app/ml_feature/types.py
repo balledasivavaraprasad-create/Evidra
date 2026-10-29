@@ -15,7 +15,7 @@ class RecordInput(BaseModel):
     title: str
     abstract_text: str | None = None
     group_id: str | None = None
-    label: int | None = None  # 1 for priority/include, 0 for exclude
+    label: int | None = Field(default=None, ge=0, le=1, strict=True)
 
 
 class TrainConfig(BaseModel):
