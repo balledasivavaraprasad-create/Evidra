@@ -35,6 +35,9 @@ from app.contracts.enums import (
     DuplicateRelationshipStatus,
     SourceNamespace,
     VulnerabilityFlag,
+    PrismaStage,
+    PrismaValidationSeverity,
+    PrismaStageStatus,
 )
 
 
@@ -1390,3 +1393,221 @@ class DuplicateWorkspaceSummaryResponse(BaseModel):
     pending_candidate_pairs: int
     groups: list[DuplicateWorkspaceSummaryItem] = Field(default_factory=list)
 
+
+
+# ============================================================================
+# PRISMA 2020 Flow & Automated Reporting Contracts
+# ============================================================================
+
+class PrismaSourceBreakdown(BaseModel):
+    """Breakdown of records retrieved from a literature source or database."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_name: str = Field(description="Name or namespace of database, e.g. 'PubMed', 'Europe PMC'")
+    records_count: int = Field(description="Count of records imported from this source")
+    search_execution_ids: list[str] = Field(default_factory=list, description="IDs of search executions contributing to this source")
+
+
+class PrismaExclusionReasonItem(BaseModel):
+    """Categorized screening or eligibility exclusion reason with frequency."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str = Field(description="Scientific or methodological reason for exclusion")
+    count: int = Field(description="Number of records excluded for this reason")
+    percentage: float = Field(description="Percentage among all exclusions at this stage (0.0 to 100.0)")
+    stage: PrismaStage = Field(default=PrismaStage.SCREENING, description="Stage where exclusion occurred")
+
+
+class PrismaValidationIssue(BaseModel):
+    """Explicit consistency, integrity, or pending-decision check in PRISMA flow."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(description="Validation code, e.g. 'UNSCREENED_RECORDS', 'UNRESOLVED_CONFLICTS', 'ARITHMETIC_DISCREPANCY'")
+    message: str = Field(description="Human-readable explanation of the validation or reconciliation issue")
+    severity: PrismaValidationSeverity = Field(description="Issue severity: info, warning, or error")
+    stage: PrismaStage = Field(description="PRISMA flow stage affected")
+    affected_count: int | None = Field(default=None, description="Number of records/groups impacted")
+
+
+class PrismaIdentificationDetails(BaseModel):
+    """PRISMA 2020: Identification of studies via databases and registers."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    database_sources: list[PrismaSourceBreakdown] = Field(default_factory=list)
+    total_database_records: int = Field(description="Records identified from databases")
+    other_sources: list[PrismaSourceBreakdown] = Field(default_factory=list)
+    total_other_records: int = Field(default=0, description="Records identified via other sources")
+    total_identified: int = Field(description="Total records identified before deduplication")
+
+
+class PrismaPreScreeningDetails(BaseModel):
+    """PRISMA 2020: Records removed before screening."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    duplicate_records_removed: int = Field(description="Duplicate records removed prior to screening")
+    other_records_removed: int = Field(default=0, description="Records marked ineligible/withdrawn before screening")
+    other_removal_reasons: list[PrismaExclusionReasonItem] = Field(default_factory=list)
+    total_removed: int = Field(description="Total records removed before screening")
+    records_eligible_for_screening: int = Field(description="Net unique records entering title/abstract screening")
+
+
+class PrismaScreeningDetails(BaseModel):
+    """PRISMA 2020: Screening of title and abstract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    records_screened: int = Field(description="Records screened by title and abstract")
+    records_excluded: int = Field(description="Records excluded during title/abstract screening")
+    exclusion_reasons: list[PrismaExclusionReasonItem] = Field(default_factory=list)
+    records_pending: int = Field(default=0, description="Records remaining unscreened")
+    records_maybe: int = Field(default=0, description="Records with pending Maybe/uncertain assessment")
+    records_conflicts: int = Field(default=0, description="Records with unresolved screening conflicts")
+    records_advancing: int = Field(description="Records advancing beyond title/abstract screening")
+
+
+class PrismaRetrievalDetails(BaseModel):
+    """PRISMA 2020: Full-text retrieval stage."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    is_supported: bool = Field(default=False, description="Whether full-text automated retrieval is supported")
+    status: PrismaStageStatus = Field(default=PrismaStageStatus.NOT_STARTED)
+    reports_sought_for_retrieval: int = Field(default=0)
+    reports_not_retrieved: int = Field(default=0)
+    notes: str = Field(description="Truthful disclosure of full-text retrieval capability")
+
+
+class PrismaEligibilityDetails(BaseModel):
+    """PRISMA 2020: Full-text eligibility assessment."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    is_supported: bool = Field(default=False, description="Whether full-text screening stage is implemented")
+    status: PrismaStageStatus = Field(default=PrismaStageStatus.NOT_STARTED)
+    reports_assessed: int = Field(default=0)
+    reports_excluded: int = Field(default=0)
+    exclusion_reasons: list[PrismaExclusionReasonItem] = Field(default_factory=list)
+    notes: str = Field(description="Truthful disclosure of eligibility assessment capability")
+
+
+class PrismaIncludedDetails(BaseModel):
+    """PRISMA 2020: Included studies and reports in systematic review."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    studies_included: int = Field(description="Unique study groups included in review")
+    reports_included: int = Field(description="Total publication reports (records) included across all studies")
+    studies_included_title_abstract: int = Field(description="Studies included at title/abstract screening")
+    notes: str | None = None
+
+
+class PrismaStages(BaseModel):
+    """Composite container of all PRISMA 2020 flow stages."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    identification: PrismaIdentificationDetails
+    pre_screening: PrismaPreScreeningDetails
+    screening: PrismaScreeningDetails
+    retrieval: PrismaRetrievalDetails
+    eligibility: PrismaEligibilityDetails
+    included: PrismaIncludedDetails
+
+
+class PrismaReconciliationSummary(BaseModel):
+    """Mathematical reconciliation between input, intermediate, and output counts."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    is_reconciled: bool = Field(description="True if all flow arithmetic reconciles exactly")
+    identification_balance: int = Field(description="total_identified - (total_removed + records_eligible)")
+    screening_balance: int = Field(description="records_eligible - (records_screened + records_pending)")
+    discrepancy_explanation: str | None = None
+
+
+class PrismaReportResponse(BaseModel):
+    """Full PRISMA 2020 flow diagram report response with audited counts and provenance."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    workspace_title: str
+    generated_at: datetime
+    is_live: bool = Field(default=True, description="True if computed live from current database records")
+    snapshot_id: str | None = None
+    corpus_revision_id: str | None = None
+    query_version_id: str | None = None
+    schema_version: str = Field(default="2020.1")
+    stages: PrismaStages
+    validation_issues: list[PrismaValidationIssue] = Field(default_factory=list)
+    reconciliation: PrismaReconciliationSummary
+    exclusion_reasons_summary: list[PrismaExclusionReasonItem] = Field(default_factory=list)
+
+
+class PrismaSnapshotCreateRequest(BaseModel):
+    """Request payload to create an immutable PRISMA report snapshot."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, max_length=256, description="Human-friendly label for report snapshot")
+    notes: str | None = Field(default=None, max_length=2000, description="Optional notes on review milestone or publication version")
+    actor_id: str = Field(default="reviewer", max_length=128)
+
+
+class PrismaSnapshotSummaryItem(BaseModel):
+    """Summary of saved PRISMA report snapshot."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    snapshot_id: str
+    workspace_id: str
+    name: str
+    schema_version: str
+    corpus_revision_id: str | None = None
+    query_version_id: str | None = None
+    total_identified: int
+    duplicates_removed: int
+    records_screened: int
+    studies_included: int
+    has_warnings: bool
+    created_by: str
+    created_at: datetime
+
+
+class PrismaStageRecordItem(BaseModel):
+    """Summary of individual study or record contributing to a PRISMA stage count."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    group_id: str | None = None
+    source_record_id: str | None = None
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    year: int | None = None
+    journal: str | None = None
+    doi: str | None = None
+    pmid: str | None = None
+    source_namespace: str | None = None
+    decision: str
+    decision_reason: str | None = None
+    is_canonical: bool = False
+    is_duplicate: bool = False
+
+
+class PrismaStageRecordsResponse(BaseModel):
+    """Detailed record drill-down for a selected PRISMA stage or node."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    stage_key: str
+    stage_label: str
+    total_count: int
+    limit: int
+    offset: int
+    records: list[PrismaStageRecordItem] = Field(default_factory=list)

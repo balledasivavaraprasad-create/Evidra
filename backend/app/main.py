@@ -11,19 +11,26 @@ from typing import Any
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.auth import (
+    LOCAL_USER_ID,
+    SessionAuthMiddleware,
+    accounts_enabled,
+    auth_router,
+    current_user_id,
+    get_or_create_local_user,
+)
 from app.contracts.enums import (
     CorpusRevisionState,
-    JobKind,
     EffectiveDecisionState,
+    JobKind,
+    PrismaStage,
     SourceNamespace,
 )
 from app.contracts.models import (
-    DashboardReviewSummary,
-    SearchExecutionSelectionUpdate,
     ArticleRadarResponse,
     AssistantProposal,
     AssistantRequest,
@@ -34,8 +41,18 @@ from app.contracts.models import (
     CriteriaVersionCreate,
     CriteriaVersionResponse,
     CriterionDefinition,
+    DashboardReviewSummary,
     DecisionCommand,
     DedupOverrideRequest,
+    DevilsAdvocateChallengeResponse,
+    DevilsAdvocateDashboardResponse,
+    DevilsAdvocateDispositionRequest,
+    DevilsAdvocateGenerateRequest,
+    DuplicateGroupGenealogyResponse,
+    DuplicateReconcileRequest,
+    DuplicateReverseMergeRequest,
+    DuplicateSplitRequest,
+    DuplicateWorkspaceSummaryResponse,
     ErrorDetail,
     ErrorEnvelope,
     EvidenceCorrectionRequest,
@@ -53,20 +70,15 @@ from app.contracts.models import (
     PaperGroupDetail,
     PaperGroupSummary,
     PicoOverrideRequest,
+    PrismaReportResponse,
+    PrismaSnapshotCreateRequest,
+    PrismaSnapshotSummaryItem,
+    PrismaStageRecordsResponse,
     QueryASTNode,
     QueryVersionCreate,
     QueryVersionResponse,
     RadarConfirmRequest,
     RadarCorrectRequest,
-    DevilsAdvocateChallengeResponse,
-    DevilsAdvocateDashboardResponse,
-    DevilsAdvocateDispositionRequest,
-    DevilsAdvocateGenerateRequest,
-    DuplicateGroupGenealogyResponse,
-    DuplicateReconcileRequest,
-    DuplicateReverseMergeRequest,
-    DuplicateSplitRequest,
-    DuplicateWorkspaceSummaryResponse,
     RadarFlagConflictRequest,
     RadarFlagUncertainRequest,
     ReviewEventResponse,
@@ -77,6 +89,7 @@ from app.contracts.models import (
     SearchEvolutionVersionSummary,
     SearchExecutionCreate,
     SearchExecutionResponse,
+    SearchExecutionSelectionUpdate,
     SearchRestoreRequest,
     SearchRestoreResponse,
     WorkspaceCreate,
@@ -92,17 +105,16 @@ from app.db.models import (
 )
 from app.db.session import get_db
 from app.ml_feature.service import execute_ml_ranking
-from app.services.workspace_state import (
-    dashboard_summaries,
-    latest_query_version,
-    list_executions,
-    list_jobs,
-    set_execution_selection,
-)
+from app.services.access import enforce_review_access
 from app.services.corpus import (
     get_paper_group_detail,
     list_paper_groups_in_revision,
     process_corpus,
+)
+from app.services.devils_advocate import (
+    get_or_generate_challenge,
+    get_workspace_challenge_dashboard,
+    record_challenge_disposition,
 )
 from app.services.evidence_passport import (
     apply_reviewer_correction,
@@ -113,9 +125,6 @@ from app.services.evidence_passport import (
     revalidate_group_evidence,
 )
 from app.services.exports import export_corpus_studies
-from app.services.imports import trigger_import
-from app.services.jobs import cancel_job, get_job_by_id, recover_stuck_jobs, to_job_response
-from app.worker import _get_worker_session, run_worker_daemon
 from app.services.genealogy import (
     get_duplicate_group_genealogy,
     get_workspace_duplicate_overview,
@@ -123,10 +132,20 @@ from app.services.genealogy import (
     reverse_merge_event,
     split_duplicate_group,
 )
-from app.services.devils_advocate import (
-    get_or_generate_challenge,
-    get_workspace_challenge_dashboard,
-    record_challenge_disposition,
+from app.services.imports import trigger_import
+from app.services.jobs import (
+    cancel_job,
+    get_job_by_id,
+    recover_stuck_jobs,
+    to_job_response,
+)
+from app.services.prisma import (
+    compute_prisma_flow_report,
+    export_prisma_csv,
+    get_prisma_snapshot,
+    get_prisma_stage_records,
+    list_prisma_snapshots,
+    save_prisma_snapshot,
 )
 from app.services.radar import (
     confirm_radar_field,
@@ -156,19 +175,18 @@ from app.services.snapshots import (
 from app.services.snapshots import (
     restore_corpus_snapshot as svc_restore_corpus_snapshot,
 )
-from app.auth import (
-    LOCAL_USER_ID,
-    SessionAuthMiddleware,
-    accounts_enabled,
-    auth_router,
-    current_user_id,
-    get_or_create_local_user,
+from app.services.workspace_state import (
+    dashboard_summaries,
+    latest_query_version,
+    list_executions,
+    list_jobs,
+    set_execution_selection,
 )
-from app.services.access import enforce_review_access
 from app.settings import settings
 from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
 from app.sources.translator import translate_query
+from app.worker import _get_worker_session, run_worker_daemon
 
 logger = logging.getLogger(__name__)
 
@@ -1669,6 +1687,137 @@ def reverse_merge_event_endpoint(
         workspace_id=workspace_id,
         group_id=group_id,
         payload=payload,
+    )
+
+
+# ============================================================================
+# PRISMA 2020 Flow Diagram & Reporting Endpoints
+# ============================================================================
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/prisma",
+    response_model=PrismaReportResponse,
+    tags=["PRISMA Flow & Reporting"],
+)
+def get_prisma_flow_endpoint(
+    workspace_id: str,
+    corpus_revision_id: str | None = None,
+    query_version_id: str | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> PrismaReportResponse:
+    """Compute complete PRISMA 2020 flow report directly from persisted review data."""
+    return compute_prisma_flow_report(
+        db=db,
+        workspace_id=workspace_id,
+        corpus_revision_id=corpus_revision_id,
+        query_version_id=query_version_id,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/prisma/records",
+    response_model=PrismaStageRecordsResponse,
+    tags=["PRISMA Flow & Reporting"],
+)
+def get_prisma_stage_records_endpoint(
+    workspace_id: str,
+    stage: PrismaStage,
+    limit: int = 50,
+    offset: int = 0,
+    corpus_revision_id: str | None = None,
+    query_version_id: str | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> PrismaStageRecordsResponse:
+    """Retrieve detailed record drill-down for any node/box in the PRISMA diagram."""
+    return get_prisma_stage_records(
+        db=db,
+        workspace_id=workspace_id,
+        stage=stage,
+        limit=limit,
+        offset=offset,
+        corpus_revision_id=corpus_revision_id,
+        query_version_id=query_version_id,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/prisma/export/csv",
+    tags=["PRISMA Flow & Reporting"],
+)
+def export_prisma_csv_endpoint(
+    workspace_id: str,
+    corpus_revision_id: str | None = None,
+    query_version_id: str | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> Response:
+    """Export PRISMA 2020 metrics and exclusion reasons as a sanitized CSV table."""
+    csv_content = export_prisma_csv(
+        db=db,
+        workspace_id=workspace_id,
+        corpus_revision_id=corpus_revision_id,
+        query_version_id=query_version_id,
+    )
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="prisma_flow_{workspace_id}.csv"'
+        },
+    )
+
+
+@app.post(
+    "/api/v1/workspaces/{workspace_id}/prisma/snapshots",
+    response_model=PrismaSnapshotSummaryItem,
+    status_code=status.HTTP_201_CREATED,
+    tags=["PRISMA Flow & Reporting"],
+)
+def create_prisma_snapshot_endpoint(
+    workspace_id: str,
+    payload: PrismaSnapshotCreateRequest,
+    corpus_revision_id: str | None = None,
+    query_version_id: str | None = None,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> PrismaSnapshotSummaryItem:
+    """Save an immutable PRISMA flow snapshot for manuscript submission or protocol auditing."""
+    return save_prisma_snapshot(
+        db=db,
+        workspace_id=workspace_id,
+        payload=payload,
+        corpus_revision_id=corpus_revision_id,
+        query_version_id=query_version_id,
+    )
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/prisma/snapshots",
+    response_model=list[PrismaSnapshotSummaryItem],
+    tags=["PRISMA Flow & Reporting"],
+)
+def list_prisma_snapshots_endpoint(
+    workspace_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> list[PrismaSnapshotSummaryItem]:
+    """List historical PRISMA snapshots for a review workspace."""
+    return list_prisma_snapshots(db=db, workspace_id=workspace_id)
+
+
+@app.get(
+    "/api/v1/workspaces/{workspace_id}/prisma/snapshots/{snapshot_id}",
+    response_model=PrismaReportResponse,
+    tags=["PRISMA Flow & Reporting"],
+)
+def get_prisma_snapshot_endpoint(
+    workspace_id: str,
+    snapshot_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> PrismaReportResponse:
+    """Retrieve an immutable historical PRISMA snapshot."""
+    return get_prisma_snapshot(
+        db=db,
+        workspace_id=workspace_id,
+        snapshot_id=snapshot_id,
     )
 
 

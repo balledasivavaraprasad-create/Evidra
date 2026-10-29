@@ -165,3 +165,39 @@ def test_unowned_legacy_reviews_are_hidden(client, accounts, db_session):
     _signup(client, "new@example.com")
     assert client.get("/api/v1/workspaces").json() == []
     assert client.get("/api/v1/workspaces/ws-synth-001/revisions").status_code == 404
+
+
+def test_prisma_endpoints_enforce_user_review_ownership(client, accounts, db_session):
+    """PRISMA endpoints must return 404 to a second signed-in user for another user's review."""
+    _signup(client, "user1@example.com")
+    res = client.post("/api/v1/workspaces", json={"title": "User 1 Review"})
+    assert res.status_code == 201
+    ws_id = res.json()["id"]
+
+    # Owner can access PRISMA endpoints
+    assert client.get(f"/api/v1/workspaces/{ws_id}/prisma").status_code == 200
+    assert client.get(f"/api/v1/workspaces/{ws_id}/prisma/snapshots").status_code == 200
+
+    snap_res = client.post(
+        f"/api/v1/workspaces/{ws_id}/prisma/snapshots",
+        json={"name": "Baseline Snapshot", "notes": "Initial snapshot"},
+    )
+    assert snap_res.status_code == 201
+    snap_id = snap_res.json()["snapshot_id"]
+    assert client.get(f"/api/v1/workspaces/{ws_id}/prisma/snapshots/{snap_id}").status_code == 200
+
+    # Second user signs in
+    client.cookies.clear()
+    _signup(client, "user2@example.com")
+
+    # Second user accessing User 1's PRISMA endpoints receives 404 (not 403 or 200)
+    assert client.get(f"/api/v1/workspaces/{ws_id}/prisma").status_code == 404
+    assert client.get(f"/api/v1/workspaces/{ws_id}/prisma/records?stage=screening").status_code == 404
+    assert client.get(f"/api/v1/workspaces/{ws_id}/prisma/export/csv").status_code == 404
+    assert client.get(f"/api/v1/workspaces/{ws_id}/prisma/snapshots").status_code == 404
+    assert client.post(f"/api/v1/workspaces/{ws_id}/prisma/snapshots", json={"name": "Unauthorized"}).status_code == 404
+    assert client.get(f"/api/v1/workspaces/{ws_id}/prisma/snapshots/{snap_id}").status_code == 404
+
+    # User 2 combining their own workspace with User 1's snapshot_id is also rejected with 404
+    user2_ws = client.post("/api/v1/workspaces", json={"title": "User 2 Review"}).json()["id"]
+    assert client.get(f"/api/v1/workspaces/{user2_ws}/prisma/snapshots/{snap_id}").status_code == 404

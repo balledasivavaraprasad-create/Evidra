@@ -20,6 +20,7 @@ from app.db.models import (
     ExportModel,
     JobModel,
     PaperGroupModel,
+    PrismaSnapshotModel,
     QueryVersionModel,
     ReviewConflictModel,
     SearchExecutionModel,
@@ -68,6 +69,14 @@ def _merge_event_ws(db: Session, value: str) -> str | None:
     return row[0] if row else None
 
 
+def _snapshot_ws(db: Session, value: str) -> str | None:
+    row = db.query(CorpusRevisionModel.workspace_id).filter_by(id=value).first()
+    if row:
+        return row[0]
+    row = db.query(PrismaSnapshotModel.workspace_id).filter_by(id=value).first()
+    return row[0] if row else None
+
+
 def execution_workspace_id(db: Session, execution_id: str) -> str | None:
     row = (
         db.query(QueryVersionModel.workspace_id)
@@ -92,7 +101,8 @@ RESOLVERS: dict[str, Callable[[Session, str], str | None]] = {
     "conflict_id": _conflict_ws,
     "event_id": _merge_event_ws,
     "execution_id": execution_workspace_id,
-    "snapshot_id": _revision_ws,
+    "snapshot_id": _snapshot_ws,
+    "prisma_snapshot_id": _snapshot_ws,
 }
 
 

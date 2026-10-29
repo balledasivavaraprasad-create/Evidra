@@ -99,6 +99,26 @@ export type DuplicateReverseMergeRequest = components["schemas"]["DuplicateRever
 export type DuplicateRelationshipStatus = components["schemas"]["DuplicateRelationshipStatus"];
 export type DuplicateConflictClassification = components["schemas"]["DuplicateConflictClassification"];
 export type DuplicateMergeOperation = components["schemas"]["DuplicateMergeOperation"];
+export type PrismaReportResponse = components["schemas"]["PrismaReportResponse"];
+export type PrismaStages = components["schemas"]["PrismaStages"];
+export type PrismaIdentificationDetails = components["schemas"]["PrismaIdentificationDetails"];
+export type PrismaPreScreeningDetails = components["schemas"]["PrismaPreScreeningDetails"];
+export type PrismaScreeningDetails = components["schemas"]["PrismaScreeningDetails"];
+export type PrismaRetrievalDetails = components["schemas"]["PrismaRetrievalDetails"];
+export type PrismaEligibilityDetails = components["schemas"]["PrismaEligibilityDetails"];
+export type PrismaIncludedDetails = components["schemas"]["PrismaIncludedDetails"];
+export type PrismaSourceBreakdown = components["schemas"]["PrismaSourceBreakdown"];
+export type PrismaExclusionReasonItem = components["schemas"]["PrismaExclusionReasonItem"];
+export type PrismaValidationIssue = components["schemas"]["PrismaValidationIssue"];
+export type PrismaValidationSeverity = components["schemas"]["PrismaValidationSeverity"];
+export type PrismaStage = components["schemas"]["PrismaStage"];
+export type PrismaStageStatus = components["schemas"]["PrismaStageStatus"];
+export type PrismaReconciliationSummary = components["schemas"]["PrismaReconciliationSummary"];
+export type PrismaSnapshotCreateRequest = components["schemas"]["PrismaSnapshotCreateRequest"];
+export type PrismaSnapshotSummaryItem = components["schemas"]["PrismaSnapshotSummaryItem"];
+export type PrismaStageRecordItem = components["schemas"]["PrismaStageRecordItem"];
+export type PrismaStageRecordsResponse = components["schemas"]["PrismaStageRecordsResponse"];
+
 export type RestoreMode = "exact_snapshot" | "latest_decisions";
 
 export interface SnapshotRestoreRequest {
@@ -609,6 +629,102 @@ export const api = {
           method: "POST",
           body: JSON.stringify(payload),
         }
+      ),
+  },
+  prisma: {
+    getReport: (
+      workspaceId: string,
+      params?: {
+        corpus_revision_id?: string;
+        query_version_id?: string;
+      }
+    ) => {
+      const q = new URLSearchParams();
+      if (params?.corpus_revision_id) q.set("corpus_revision_id", params.corpus_revision_id);
+      if (params?.query_version_id) q.set("query_version_id", params.query_version_id);
+      const qs = q.toString() ? `?${q.toString()}` : "";
+      return request<PrismaReportResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/prisma${qs}`
+      );
+    },
+    getStageRecords: (
+      workspaceId: string,
+      params: {
+        stage: PrismaStage;
+        limit?: number;
+        offset?: number;
+        corpus_revision_id?: string;
+        query_version_id?: string;
+      }
+    ) => {
+      const q = new URLSearchParams();
+      q.set("stage", params.stage);
+      if (params.limit !== undefined) q.set("limit", String(params.limit));
+      if (params.offset !== undefined) q.set("offset", String(params.offset));
+      if (params.corpus_revision_id) q.set("corpus_revision_id", params.corpus_revision_id);
+      if (params.query_version_id) q.set("query_version_id", params.query_version_id);
+      return request<PrismaStageRecordsResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/prisma/records?${q.toString()}`
+      );
+    },
+    getExportCsvUrl: (
+      workspaceId: string,
+      params?: {
+        corpus_revision_id?: string;
+        query_version_id?: string;
+      }
+    ) => {
+      const q = new URLSearchParams();
+      if (params?.corpus_revision_id) q.set("corpus_revision_id", params.corpus_revision_id);
+      if (params?.query_version_id) q.set("query_version_id", params.query_version_id);
+      const qs = q.toString() ? `?${q.toString()}` : "";
+      return `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/prisma/export/csv${qs}`;
+    },
+    downloadCsv: async (
+      workspaceId: string,
+      params?: {
+        corpus_revision_id?: string;
+        query_version_id?: string;
+      }
+    ) => {
+      const q = new URLSearchParams();
+      if (params?.corpus_revision_id) q.set("corpus_revision_id", params.corpus_revision_id);
+      if (params?.query_version_id) q.set("query_version_id", params.query_version_id);
+      const qs = q.toString() ? `?${q.toString()}` : "";
+      const url = `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/prisma/export/csv${qs}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Failed to download PRISMA CSV: ${res.statusText}`);
+      }
+      return await res.text();
+    },
+    createSnapshot: (
+      workspaceId: string,
+      payload: PrismaSnapshotCreateRequest,
+      params?: {
+        corpus_revision_id?: string;
+        query_version_id?: string;
+      }
+    ) => {
+      const q = new URLSearchParams();
+      if (params?.corpus_revision_id) q.set("corpus_revision_id", params.corpus_revision_id);
+      if (params?.query_version_id) q.set("query_version_id", params.query_version_id);
+      const qs = q.toString() ? `?${q.toString()}` : "";
+      return request<PrismaReportResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/prisma/snapshots${qs}`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      );
+    },
+    listSnapshots: (workspaceId: string) =>
+      request<PrismaSnapshotSummaryItem[]>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/prisma/snapshots`
+      ),
+    getSnapshot: (workspaceId: string, snapshotId: string) =>
+      request<PrismaReportResponse>(
+        `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/prisma/snapshots/${encodeURIComponent(snapshotId)}`
       ),
   },
 };

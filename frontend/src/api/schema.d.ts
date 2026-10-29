@@ -956,6 +956,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspace_id}/prisma": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Prisma Flow Endpoint
+         * @description Compute complete PRISMA 2020 flow report directly from persisted review data.
+         */
+        get: operations["get_prisma_flow_endpoint_api_v1_workspaces__workspace_id__prisma_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/prisma/export/csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Prisma Csv Endpoint
+         * @description Export PRISMA 2020 metrics and exclusion reasons as a sanitized CSV table.
+         */
+        get: operations["export_prisma_csv_endpoint_api_v1_workspaces__workspace_id__prisma_export_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/prisma/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Prisma Stage Records Endpoint
+         * @description Retrieve detailed record drill-down for any node/box in the PRISMA diagram.
+         */
+        get: operations["get_prisma_stage_records_endpoint_api_v1_workspaces__workspace_id__prisma_records_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/prisma/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Prisma Snapshots Endpoint
+         * @description List historical PRISMA snapshots for a review workspace.
+         */
+        get: operations["list_prisma_snapshots_endpoint_api_v1_workspaces__workspace_id__prisma_snapshots_get"];
+        put?: never;
+        /**
+         * Create Prisma Snapshot Endpoint
+         * @description Save an immutable PRISMA flow snapshot for manuscript submission or protocol auditing.
+         */
+        post: operations["create_prisma_snapshot_endpoint_api_v1_workspaces__workspace_id__prisma_snapshots_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/prisma/snapshots/{snapshot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Prisma Snapshot Endpoint
+         * @description Retrieve an immutable historical PRISMA snapshot.
+         */
+        get: operations["get_prisma_snapshot_endpoint_api_v1_workspaces__workspace_id__prisma_snapshots__snapshot_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspace_id}/process-corpus": {
         parameters: {
             query?: never;
@@ -3039,6 +3143,462 @@ export interface components {
              */
             start_cp: number;
         };
+        /**
+         * PrismaEligibilityDetails
+         * @description PRISMA 2020: Full-text eligibility assessment.
+         */
+        PrismaEligibilityDetails: {
+            /** Exclusion Reasons */
+            exclusion_reasons?: components["schemas"]["PrismaExclusionReasonItem"][];
+            /**
+             * Is Supported
+             * @description Whether full-text screening stage is implemented
+             * @default false
+             */
+            is_supported: boolean;
+            /**
+             * Notes
+             * @description Truthful disclosure of eligibility assessment capability
+             */
+            notes: string;
+            /**
+             * Reports Assessed
+             * @default 0
+             */
+            reports_assessed: number;
+            /**
+             * Reports Excluded
+             * @default 0
+             */
+            reports_excluded: number;
+            /** @default not_started */
+            status: components["schemas"]["PrismaStageStatus"];
+        };
+        /**
+         * PrismaExclusionReasonItem
+         * @description Categorized screening or eligibility exclusion reason with frequency.
+         */
+        PrismaExclusionReasonItem: {
+            /**
+             * Count
+             * @description Number of records excluded for this reason
+             */
+            count: number;
+            /**
+             * Percentage
+             * @description Percentage among all exclusions at this stage (0.0 to 100.0)
+             */
+            percentage: number;
+            /**
+             * Reason
+             * @description Scientific or methodological reason for exclusion
+             */
+            reason: string;
+            /**
+             * @description Stage where exclusion occurred
+             * @default screening
+             */
+            stage: components["schemas"]["PrismaStage"];
+        };
+        /**
+         * PrismaIdentificationDetails
+         * @description PRISMA 2020: Identification of studies via databases and registers.
+         */
+        PrismaIdentificationDetails: {
+            /** Database Sources */
+            database_sources?: components["schemas"]["PrismaSourceBreakdown"][];
+            /** Other Sources */
+            other_sources?: components["schemas"]["PrismaSourceBreakdown"][];
+            /**
+             * Total Database Records
+             * @description Records identified from databases
+             */
+            total_database_records: number;
+            /**
+             * Total Identified
+             * @description Total records identified before deduplication
+             */
+            total_identified: number;
+            /**
+             * Total Other Records
+             * @description Records identified via other sources
+             * @default 0
+             */
+            total_other_records: number;
+        };
+        /**
+         * PrismaIncludedDetails
+         * @description PRISMA 2020: Included studies and reports in systematic review.
+         */
+        PrismaIncludedDetails: {
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Reports Included
+             * @description Total publication reports (records) included across all studies
+             */
+            reports_included: number;
+            /**
+             * Studies Included
+             * @description Unique study groups included in review
+             */
+            studies_included: number;
+            /**
+             * Studies Included Title Abstract
+             * @description Studies included at title/abstract screening
+             */
+            studies_included_title_abstract: number;
+        };
+        /**
+         * PrismaPreScreeningDetails
+         * @description PRISMA 2020: Records removed before screening.
+         */
+        PrismaPreScreeningDetails: {
+            /**
+             * Duplicate Records Removed
+             * @description Duplicate records removed prior to screening
+             */
+            duplicate_records_removed: number;
+            /**
+             * Other Records Removed
+             * @description Records marked ineligible/withdrawn before screening
+             * @default 0
+             */
+            other_records_removed: number;
+            /** Other Removal Reasons */
+            other_removal_reasons?: components["schemas"]["PrismaExclusionReasonItem"][];
+            /**
+             * Records Eligible For Screening
+             * @description Net unique records entering title/abstract screening
+             */
+            records_eligible_for_screening: number;
+            /**
+             * Total Removed
+             * @description Total records removed before screening
+             */
+            total_removed: number;
+        };
+        /**
+         * PrismaReconciliationSummary
+         * @description Mathematical reconciliation between input, intermediate, and output counts.
+         */
+        PrismaReconciliationSummary: {
+            /** Discrepancy Explanation */
+            discrepancy_explanation?: string | null;
+            /**
+             * Identification Balance
+             * @description total_identified - (total_removed + records_eligible)
+             */
+            identification_balance: number;
+            /**
+             * Is Reconciled
+             * @description True if all flow arithmetic reconciles exactly
+             */
+            is_reconciled: boolean;
+            /**
+             * Screening Balance
+             * @description records_eligible - (records_screened + records_pending)
+             */
+            screening_balance: number;
+        };
+        /**
+         * PrismaReportResponse
+         * @description Full PRISMA 2020 flow diagram report response with audited counts and provenance.
+         */
+        PrismaReportResponse: {
+            /** Corpus Revision Id */
+            corpus_revision_id?: string | null;
+            /** Exclusion Reasons Summary */
+            exclusion_reasons_summary?: components["schemas"]["PrismaExclusionReasonItem"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /**
+             * Is Live
+             * @description True if computed live from current database records
+             * @default true
+             */
+            is_live: boolean;
+            /** Query Version Id */
+            query_version_id?: string | null;
+            reconciliation: components["schemas"]["PrismaReconciliationSummary"];
+            /**
+             * Schema Version
+             * @default 2020.1
+             */
+            schema_version: string;
+            /** Snapshot Id */
+            snapshot_id?: string | null;
+            stages: components["schemas"]["PrismaStages"];
+            /** Validation Issues */
+            validation_issues?: components["schemas"]["PrismaValidationIssue"][];
+            /** Workspace Id */
+            workspace_id: string;
+            /** Workspace Title */
+            workspace_title: string;
+        };
+        /**
+         * PrismaRetrievalDetails
+         * @description PRISMA 2020: Full-text retrieval stage.
+         */
+        PrismaRetrievalDetails: {
+            /**
+             * Is Supported
+             * @description Whether full-text automated retrieval is supported
+             * @default false
+             */
+            is_supported: boolean;
+            /**
+             * Notes
+             * @description Truthful disclosure of full-text retrieval capability
+             */
+            notes: string;
+            /**
+             * Reports Not Retrieved
+             * @default 0
+             */
+            reports_not_retrieved: number;
+            /**
+             * Reports Sought For Retrieval
+             * @default 0
+             */
+            reports_sought_for_retrieval: number;
+            /** @default not_started */
+            status: components["schemas"]["PrismaStageStatus"];
+        };
+        /**
+         * PrismaScreeningDetails
+         * @description PRISMA 2020: Screening of title and abstract.
+         */
+        PrismaScreeningDetails: {
+            /** Exclusion Reasons */
+            exclusion_reasons?: components["schemas"]["PrismaExclusionReasonItem"][];
+            /**
+             * Records Advancing
+             * @description Records advancing beyond title/abstract screening
+             */
+            records_advancing: number;
+            /**
+             * Records Conflicts
+             * @description Records with unresolved screening conflicts
+             * @default 0
+             */
+            records_conflicts: number;
+            /**
+             * Records Excluded
+             * @description Records excluded during title/abstract screening
+             */
+            records_excluded: number;
+            /**
+             * Records Maybe
+             * @description Records with pending Maybe/uncertain assessment
+             * @default 0
+             */
+            records_maybe: number;
+            /**
+             * Records Pending
+             * @description Records remaining unscreened
+             * @default 0
+             */
+            records_pending: number;
+            /**
+             * Records Screened
+             * @description Records screened by title and abstract
+             */
+            records_screened: number;
+        };
+        /**
+         * PrismaSnapshotCreateRequest
+         * @description Request payload to create an immutable PRISMA report snapshot.
+         */
+        PrismaSnapshotCreateRequest: {
+            /**
+             * Actor Id
+             * @default reviewer
+             */
+            actor_id: string;
+            /**
+             * Name
+             * @description Human-friendly label for report snapshot
+             */
+            name?: string | null;
+            /**
+             * Notes
+             * @description Optional notes on review milestone or publication version
+             */
+            notes?: string | null;
+        };
+        /**
+         * PrismaSnapshotSummaryItem
+         * @description Summary of saved PRISMA report snapshot.
+         */
+        PrismaSnapshotSummaryItem: {
+            /** Corpus Revision Id */
+            corpus_revision_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string;
+            /** Duplicates Removed */
+            duplicates_removed: number;
+            /** Has Warnings */
+            has_warnings: boolean;
+            /** Name */
+            name: string;
+            /** Query Version Id */
+            query_version_id?: string | null;
+            /** Records Screened */
+            records_screened: number;
+            /** Schema Version */
+            schema_version: string;
+            /** Snapshot Id */
+            snapshot_id: string;
+            /** Studies Included */
+            studies_included: number;
+            /** Total Identified */
+            total_identified: number;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /**
+         * PrismaSourceBreakdown
+         * @description Breakdown of records retrieved from a literature source or database.
+         */
+        PrismaSourceBreakdown: {
+            /**
+             * Records Count
+             * @description Count of records imported from this source
+             */
+            records_count: number;
+            /**
+             * Search Execution Ids
+             * @description IDs of search executions contributing to this source
+             */
+            search_execution_ids?: string[];
+            /**
+             * Source Name
+             * @description Name or namespace of database, e.g. 'PubMed', 'Europe PMC'
+             */
+            source_name: string;
+        };
+        /**
+         * PrismaStage
+         * @description PRISMA 2020 flow stages.
+         * @enum {string}
+         */
+        PrismaStage: "identification" | "pre_screening" | "screening" | "retrieval" | "eligibility" | "included";
+        /**
+         * PrismaStageRecordItem
+         * @description Summary of individual study or record contributing to a PRISMA stage count.
+         */
+        PrismaStageRecordItem: {
+            /** Authors */
+            authors?: string[];
+            /** Decision */
+            decision: string;
+            /** Decision Reason */
+            decision_reason?: string | null;
+            /** Doi */
+            doi?: string | null;
+            /** Group Id */
+            group_id?: string | null;
+            /**
+             * Is Canonical
+             * @default false
+             */
+            is_canonical: boolean;
+            /**
+             * Is Duplicate
+             * @default false
+             */
+            is_duplicate: boolean;
+            /** Journal */
+            journal?: string | null;
+            /** Pmid */
+            pmid?: string | null;
+            /** Source Namespace */
+            source_namespace?: string | null;
+            /** Source Record Id */
+            source_record_id?: string | null;
+            /** Title */
+            title: string;
+            /** Year */
+            year?: number | null;
+        };
+        /**
+         * PrismaStageRecordsResponse
+         * @description Detailed record drill-down for a selected PRISMA stage or node.
+         */
+        PrismaStageRecordsResponse: {
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Records */
+            records?: components["schemas"]["PrismaStageRecordItem"][];
+            /** Stage Key */
+            stage_key: string;
+            /** Stage Label */
+            stage_label: string;
+            /** Total Count */
+            total_count: number;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /**
+         * PrismaStageStatus
+         * @description Execution and availability status for PRISMA stages.
+         * @enum {string}
+         */
+        PrismaStageStatus: "completed" | "in_progress" | "not_started" | "unavailable";
+        /**
+         * PrismaStages
+         * @description Composite container of all PRISMA 2020 flow stages.
+         */
+        PrismaStages: {
+            eligibility: components["schemas"]["PrismaEligibilityDetails"];
+            identification: components["schemas"]["PrismaIdentificationDetails"];
+            included: components["schemas"]["PrismaIncludedDetails"];
+            pre_screening: components["schemas"]["PrismaPreScreeningDetails"];
+            retrieval: components["schemas"]["PrismaRetrievalDetails"];
+            screening: components["schemas"]["PrismaScreeningDetails"];
+        };
+        /**
+         * PrismaValidationIssue
+         * @description Explicit consistency, integrity, or pending-decision check in PRISMA flow.
+         */
+        PrismaValidationIssue: {
+            /**
+             * Affected Count
+             * @description Number of records/groups impacted
+             */
+            affected_count?: number | null;
+            /**
+             * Code
+             * @description Validation code, e.g. 'UNSCREENED_RECORDS', 'UNRESOLVED_CONFLICTS', 'ARITHMETIC_DISCREPANCY'
+             */
+            code: string;
+            /**
+             * Message
+             * @description Human-readable explanation of the validation or reconciliation issue
+             */
+            message: string;
+            /** @description Issue severity: info, warning, or error */
+            severity: components["schemas"]["PrismaValidationSeverity"];
+            /** @description PRISMA flow stage affected */
+            stage: components["schemas"]["PrismaStage"];
+        };
+        /**
+         * PrismaValidationSeverity
+         * @description Severity of PRISMA reconciliation and data integrity warnings.
+         * @enum {string}
+         */
+        PrismaValidationSeverity: "info" | "warning" | "error";
         /**
          * QueryASTNode
          * @description Recursive node in a Boolean search query AST.
@@ -5670,6 +6230,212 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_prisma_flow_endpoint_api_v1_workspaces__workspace_id__prisma_get: {
+        parameters: {
+            query?: {
+                corpus_revision_id?: string | null;
+                query_version_id?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrismaReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_prisma_csv_endpoint_api_v1_workspaces__workspace_id__prisma_export_csv_get: {
+        parameters: {
+            query?: {
+                corpus_revision_id?: string | null;
+                query_version_id?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_prisma_stage_records_endpoint_api_v1_workspaces__workspace_id__prisma_records_get: {
+        parameters: {
+            query: {
+                stage: components["schemas"]["PrismaStage"];
+                limit?: number;
+                offset?: number;
+                corpus_revision_id?: string | null;
+                query_version_id?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrismaStageRecordsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_prisma_snapshots_endpoint_api_v1_workspaces__workspace_id__prisma_snapshots_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrismaSnapshotSummaryItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_prisma_snapshot_endpoint_api_v1_workspaces__workspace_id__prisma_snapshots_post: {
+        parameters: {
+            query?: {
+                corpus_revision_id?: string | null;
+                query_version_id?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrismaSnapshotCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrismaSnapshotSummaryItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_prisma_snapshot_endpoint_api_v1_workspaces__workspace_id__prisma_snapshots__snapshot_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                snapshot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrismaReportResponse"];
                 };
             };
             /** @description Validation Error */

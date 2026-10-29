@@ -3533,6 +3533,866 @@
         "title": "PicoSpan",
         "type": "object"
       },
+      "PrismaEligibilityDetails": {
+        "additionalProperties": false,
+        "description": "PRISMA 2020: Full-text eligibility assessment.",
+        "properties": {
+          "exclusion_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/PrismaExclusionReasonItem"
+            },
+            "title": "Exclusion Reasons",
+            "type": "array"
+          },
+          "is_supported": {
+            "default": false,
+            "description": "Whether full-text screening stage is implemented",
+            "title": "Is Supported",
+            "type": "boolean"
+          },
+          "notes": {
+            "description": "Truthful disclosure of eligibility assessment capability",
+            "title": "Notes",
+            "type": "string"
+          },
+          "reports_assessed": {
+            "default": 0,
+            "title": "Reports Assessed",
+            "type": "integer"
+          },
+          "reports_excluded": {
+            "default": 0,
+            "title": "Reports Excluded",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PrismaStageStatus",
+            "default": "not_started"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "title": "PrismaEligibilityDetails",
+        "type": "object"
+      },
+      "PrismaExclusionReasonItem": {
+        "additionalProperties": false,
+        "description": "Categorized screening or eligibility exclusion reason with frequency.",
+        "properties": {
+          "count": {
+            "description": "Number of records excluded for this reason",
+            "title": "Count",
+            "type": "integer"
+          },
+          "percentage": {
+            "description": "Percentage among all exclusions at this stage (0.0 to 100.0)",
+            "title": "Percentage",
+            "type": "number"
+          },
+          "reason": {
+            "description": "Scientific or methodological reason for exclusion",
+            "title": "Reason",
+            "type": "string"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/PrismaStage",
+            "default": "screening",
+            "description": "Stage where exclusion occurred"
+          }
+        },
+        "required": [
+          "reason",
+          "count",
+          "percentage"
+        ],
+        "title": "PrismaExclusionReasonItem",
+        "type": "object"
+      },
+      "PrismaIdentificationDetails": {
+        "additionalProperties": false,
+        "description": "PRISMA 2020: Identification of studies via databases and registers.",
+        "properties": {
+          "database_sources": {
+            "items": {
+              "$ref": "#/components/schemas/PrismaSourceBreakdown"
+            },
+            "title": "Database Sources",
+            "type": "array"
+          },
+          "other_sources": {
+            "items": {
+              "$ref": "#/components/schemas/PrismaSourceBreakdown"
+            },
+            "title": "Other Sources",
+            "type": "array"
+          },
+          "total_database_records": {
+            "description": "Records identified from databases",
+            "title": "Total Database Records",
+            "type": "integer"
+          },
+          "total_identified": {
+            "description": "Total records identified before deduplication",
+            "title": "Total Identified",
+            "type": "integer"
+          },
+          "total_other_records": {
+            "default": 0,
+            "description": "Records identified via other sources",
+            "title": "Total Other Records",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_database_records",
+          "total_identified"
+        ],
+        "title": "PrismaIdentificationDetails",
+        "type": "object"
+      },
+      "PrismaIncludedDetails": {
+        "additionalProperties": false,
+        "description": "PRISMA 2020: Included studies and reports in systematic review.",
+        "properties": {
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "reports_included": {
+            "description": "Total publication reports (records) included across all studies",
+            "title": "Reports Included",
+            "type": "integer"
+          },
+          "studies_included": {
+            "description": "Unique study groups included in review",
+            "title": "Studies Included",
+            "type": "integer"
+          },
+          "studies_included_title_abstract": {
+            "description": "Studies included at title/abstract screening",
+            "title": "Studies Included Title Abstract",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "studies_included",
+          "reports_included",
+          "studies_included_title_abstract"
+        ],
+        "title": "PrismaIncludedDetails",
+        "type": "object"
+      },
+      "PrismaPreScreeningDetails": {
+        "additionalProperties": false,
+        "description": "PRISMA 2020: Records removed before screening.",
+        "properties": {
+          "duplicate_records_removed": {
+            "description": "Duplicate records removed prior to screening",
+            "title": "Duplicate Records Removed",
+            "type": "integer"
+          },
+          "other_records_removed": {
+            "default": 0,
+            "description": "Records marked ineligible/withdrawn before screening",
+            "title": "Other Records Removed",
+            "type": "integer"
+          },
+          "other_removal_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/PrismaExclusionReasonItem"
+            },
+            "title": "Other Removal Reasons",
+            "type": "array"
+          },
+          "records_eligible_for_screening": {
+            "description": "Net unique records entering title/abstract screening",
+            "title": "Records Eligible For Screening",
+            "type": "integer"
+          },
+          "total_removed": {
+            "description": "Total records removed before screening",
+            "title": "Total Removed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "duplicate_records_removed",
+          "total_removed",
+          "records_eligible_for_screening"
+        ],
+        "title": "PrismaPreScreeningDetails",
+        "type": "object"
+      },
+      "PrismaReconciliationSummary": {
+        "additionalProperties": false,
+        "description": "Mathematical reconciliation between input, intermediate, and output counts.",
+        "properties": {
+          "discrepancy_explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discrepancy Explanation"
+          },
+          "identification_balance": {
+            "description": "total_identified - (total_removed + records_eligible)",
+            "title": "Identification Balance",
+            "type": "integer"
+          },
+          "is_reconciled": {
+            "description": "True if all flow arithmetic reconciles exactly",
+            "title": "Is Reconciled",
+            "type": "boolean"
+          },
+          "screening_balance": {
+            "description": "records_eligible - (records_screened + records_pending)",
+            "title": "Screening Balance",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "is_reconciled",
+          "identification_balance",
+          "screening_balance"
+        ],
+        "title": "PrismaReconciliationSummary",
+        "type": "object"
+      },
+      "PrismaReportResponse": {
+        "additionalProperties": false,
+        "description": "Full PRISMA 2020 flow diagram report response with audited counts and provenance.",
+        "properties": {
+          "corpus_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corpus Revision Id"
+          },
+          "exclusion_reasons_summary": {
+            "items": {
+              "$ref": "#/components/schemas/PrismaExclusionReasonItem"
+            },
+            "title": "Exclusion Reasons Summary",
+            "type": "array"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "is_live": {
+            "default": true,
+            "description": "True if computed live from current database records",
+            "title": "Is Live",
+            "type": "boolean"
+          },
+          "query_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Version Id"
+          },
+          "reconciliation": {
+            "$ref": "#/components/schemas/PrismaReconciliationSummary"
+          },
+          "schema_version": {
+            "default": "2020.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "stages": {
+            "$ref": "#/components/schemas/PrismaStages"
+          },
+          "validation_issues": {
+            "items": {
+              "$ref": "#/components/schemas/PrismaValidationIssue"
+            },
+            "title": "Validation Issues",
+            "type": "array"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "workspace_title": {
+            "title": "Workspace Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "workspace_title",
+          "generated_at",
+          "stages",
+          "reconciliation"
+        ],
+        "title": "PrismaReportResponse",
+        "type": "object"
+      },
+      "PrismaRetrievalDetails": {
+        "additionalProperties": false,
+        "description": "PRISMA 2020: Full-text retrieval stage.",
+        "properties": {
+          "is_supported": {
+            "default": false,
+            "description": "Whether full-text automated retrieval is supported",
+            "title": "Is Supported",
+            "type": "boolean"
+          },
+          "notes": {
+            "description": "Truthful disclosure of full-text retrieval capability",
+            "title": "Notes",
+            "type": "string"
+          },
+          "reports_not_retrieved": {
+            "default": 0,
+            "title": "Reports Not Retrieved",
+            "type": "integer"
+          },
+          "reports_sought_for_retrieval": {
+            "default": 0,
+            "title": "Reports Sought For Retrieval",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PrismaStageStatus",
+            "default": "not_started"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "title": "PrismaRetrievalDetails",
+        "type": "object"
+      },
+      "PrismaScreeningDetails": {
+        "additionalProperties": false,
+        "description": "PRISMA 2020: Screening of title and abstract.",
+        "properties": {
+          "exclusion_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/PrismaExclusionReasonItem"
+            },
+            "title": "Exclusion Reasons",
+            "type": "array"
+          },
+          "records_advancing": {
+            "description": "Records advancing beyond title/abstract screening",
+            "title": "Records Advancing",
+            "type": "integer"
+          },
+          "records_conflicts": {
+            "default": 0,
+            "description": "Records with unresolved screening conflicts",
+            "title": "Records Conflicts",
+            "type": "integer"
+          },
+          "records_excluded": {
+            "description": "Records excluded during title/abstract screening",
+            "title": "Records Excluded",
+            "type": "integer"
+          },
+          "records_maybe": {
+            "default": 0,
+            "description": "Records with pending Maybe/uncertain assessment",
+            "title": "Records Maybe",
+            "type": "integer"
+          },
+          "records_pending": {
+            "default": 0,
+            "description": "Records remaining unscreened",
+            "title": "Records Pending",
+            "type": "integer"
+          },
+          "records_screened": {
+            "description": "Records screened by title and abstract",
+            "title": "Records Screened",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "records_screened",
+          "records_excluded",
+          "records_advancing"
+        ],
+        "title": "PrismaScreeningDetails",
+        "type": "object"
+      },
+      "PrismaSnapshotCreateRequest": {
+        "additionalProperties": false,
+        "description": "Request payload to create an immutable PRISMA report snapshot.",
+        "properties": {
+          "actor_id": {
+            "default": "reviewer",
+            "maxLength": 128,
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human-friendly label for report snapshot",
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional notes on review milestone or publication version",
+            "title": "Notes"
+          }
+        },
+        "title": "PrismaSnapshotCreateRequest",
+        "type": "object"
+      },
+      "PrismaSnapshotSummaryItem": {
+        "additionalProperties": false,
+        "description": "Summary of saved PRISMA report snapshot.",
+        "properties": {
+          "corpus_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corpus Revision Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "duplicates_removed": {
+            "title": "Duplicates Removed",
+            "type": "integer"
+          },
+          "has_warnings": {
+            "title": "Has Warnings",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "query_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Version Id"
+          },
+          "records_screened": {
+            "title": "Records Screened",
+            "type": "integer"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "studies_included": {
+            "title": "Studies Included",
+            "type": "integer"
+          },
+          "total_identified": {
+            "title": "Total Identified",
+            "type": "integer"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "workspace_id",
+          "name",
+          "schema_version",
+          "total_identified",
+          "duplicates_removed",
+          "records_screened",
+          "studies_included",
+          "has_warnings",
+          "created_by",
+          "created_at"
+        ],
+        "title": "PrismaSnapshotSummaryItem",
+        "type": "object"
+      },
+      "PrismaSourceBreakdown": {
+        "additionalProperties": false,
+        "description": "Breakdown of records retrieved from a literature source or database.",
+        "properties": {
+          "records_count": {
+            "description": "Count of records imported from this source",
+            "title": "Records Count",
+            "type": "integer"
+          },
+          "search_execution_ids": {
+            "description": "IDs of search executions contributing to this source",
+            "items": {
+              "type": "string"
+            },
+            "title": "Search Execution Ids",
+            "type": "array"
+          },
+          "source_name": {
+            "description": "Name or namespace of database, e.g. 'PubMed', 'Europe PMC'",
+            "title": "Source Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_name",
+          "records_count"
+        ],
+        "title": "PrismaSourceBreakdown",
+        "type": "object"
+      },
+      "PrismaStage": {
+        "description": "PRISMA 2020 flow stages.",
+        "enum": [
+          "identification",
+          "pre_screening",
+          "screening",
+          "retrieval",
+          "eligibility",
+          "included"
+        ],
+        "title": "PrismaStage",
+        "type": "string"
+      },
+      "PrismaStageRecordItem": {
+        "additionalProperties": false,
+        "description": "Summary of individual study or record contributing to a PRISMA stage count.",
+        "properties": {
+          "authors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Authors",
+            "type": "array"
+          },
+          "decision": {
+            "title": "Decision",
+            "type": "string"
+          },
+          "decision_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Reason"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "is_canonical": {
+            "default": false,
+            "title": "Is Canonical",
+            "type": "boolean"
+          },
+          "is_duplicate": {
+            "default": false,
+            "title": "Is Duplicate",
+            "type": "boolean"
+          },
+          "journal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journal"
+          },
+          "pmid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmid"
+          },
+          "source_namespace": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Namespace"
+          },
+          "source_record_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Record Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "required": [
+          "title",
+          "decision"
+        ],
+        "title": "PrismaStageRecordItem",
+        "type": "object"
+      },
+      "PrismaStageRecordsResponse": {
+        "additionalProperties": false,
+        "description": "Detailed record drill-down for a selected PRISMA stage or node.",
+        "properties": {
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/PrismaStageRecordItem"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "stage_key": {
+            "title": "Stage Key",
+            "type": "string"
+          },
+          "stage_label": {
+            "title": "Stage Label",
+            "type": "string"
+          },
+          "total_count": {
+            "title": "Total Count",
+            "type": "integer"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "stage_key",
+          "stage_label",
+          "total_count",
+          "limit",
+          "offset"
+        ],
+        "title": "PrismaStageRecordsResponse",
+        "type": "object"
+      },
+      "PrismaStageStatus": {
+        "description": "Execution and availability status for PRISMA stages.",
+        "enum": [
+          "completed",
+          "in_progress",
+          "not_started",
+          "unavailable"
+        ],
+        "title": "PrismaStageStatus",
+        "type": "string"
+      },
+      "PrismaStages": {
+        "additionalProperties": false,
+        "description": "Composite container of all PRISMA 2020 flow stages.",
+        "properties": {
+          "eligibility": {
+            "$ref": "#/components/schemas/PrismaEligibilityDetails"
+          },
+          "identification": {
+            "$ref": "#/components/schemas/PrismaIdentificationDetails"
+          },
+          "included": {
+            "$ref": "#/components/schemas/PrismaIncludedDetails"
+          },
+          "pre_screening": {
+            "$ref": "#/components/schemas/PrismaPreScreeningDetails"
+          },
+          "retrieval": {
+            "$ref": "#/components/schemas/PrismaRetrievalDetails"
+          },
+          "screening": {
+            "$ref": "#/components/schemas/PrismaScreeningDetails"
+          }
+        },
+        "required": [
+          "identification",
+          "pre_screening",
+          "screening",
+          "retrieval",
+          "eligibility",
+          "included"
+        ],
+        "title": "PrismaStages",
+        "type": "object"
+      },
+      "PrismaValidationIssue": {
+        "additionalProperties": false,
+        "description": "Explicit consistency, integrity, or pending-decision check in PRISMA flow.",
+        "properties": {
+          "affected_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of records/groups impacted",
+            "title": "Affected Count"
+          },
+          "code": {
+            "description": "Validation code, e.g. 'UNSCREENED_RECORDS', 'UNRESOLVED_CONFLICTS', 'ARITHMETIC_DISCREPANCY'",
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable explanation of the validation or reconciliation issue",
+            "title": "Message",
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/PrismaValidationSeverity",
+            "description": "Issue severity: info, warning, or error"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/PrismaStage",
+            "description": "PRISMA flow stage affected"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "severity",
+          "stage"
+        ],
+        "title": "PrismaValidationIssue",
+        "type": "object"
+      },
+      "PrismaValidationSeverity": {
+        "description": "Severity of PRISMA reconciliation and data integrity warnings.",
+        "enum": [
+          "info",
+          "warning",
+          "error"
+        ],
+        "title": "PrismaValidationSeverity",
+        "type": "string"
+      },
       "QueryASTNode-Input": {
         "additionalProperties": false,
         "description": "Recursive node in a Boolean search query AST.",
@@ -8613,6 +9473,439 @@
         "summary": "Review-level PICO evidence coverage matrix and dimension metrics",
         "tags": [
           "Missing-Evidence Radar"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/prisma": {
+      "get": {
+        "description": "Compute complete PRISMA 2020 flow report directly from persisted review data.",
+        "operationId": "get_prisma_flow_endpoint_api_v1_workspaces__workspace_id__prisma_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "corpus_revision_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Corpus Revision Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query_version_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrismaReportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Prisma Flow Endpoint",
+        "tags": [
+          "PRISMA Flow & Reporting"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/prisma/export/csv": {
+      "get": {
+        "description": "Export PRISMA 2020 metrics and exclusion reasons as a sanitized CSV table.",
+        "operationId": "export_prisma_csv_endpoint_api_v1_workspaces__workspace_id__prisma_export_csv_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "corpus_revision_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Corpus Revision Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query_version_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Prisma Csv Endpoint",
+        "tags": [
+          "PRISMA Flow & Reporting"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/prisma/records": {
+      "get": {
+        "description": "Retrieve detailed record drill-down for any node/box in the PRISMA diagram.",
+        "operationId": "get_prisma_stage_records_endpoint_api_v1_workspaces__workspace_id__prisma_records_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stage",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PrismaStage"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "corpus_revision_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Corpus Revision Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query_version_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrismaStageRecordsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Prisma Stage Records Endpoint",
+        "tags": [
+          "PRISMA Flow & Reporting"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/prisma/snapshots": {
+      "get": {
+        "description": "List historical PRISMA snapshots for a review workspace.",
+        "operationId": "list_prisma_snapshots_endpoint_api_v1_workspaces__workspace_id__prisma_snapshots_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PrismaSnapshotSummaryItem"
+                  },
+                  "title": "Response List Prisma Snapshots Endpoint Api V1 Workspaces  Workspace Id  Prisma Snapshots Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Prisma Snapshots Endpoint",
+        "tags": [
+          "PRISMA Flow & Reporting"
+        ]
+      },
+      "post": {
+        "description": "Save an immutable PRISMA flow snapshot for manuscript submission or protocol auditing.",
+        "operationId": "create_prisma_snapshot_endpoint_api_v1_workspaces__workspace_id__prisma_snapshots_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "corpus_revision_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Corpus Revision Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query_version_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query Version Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrismaSnapshotCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrismaSnapshotSummaryItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Prisma Snapshot Endpoint",
+        "tags": [
+          "PRISMA Flow & Reporting"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/prisma/snapshots/{snapshot_id}": {
+      "get": {
+        "description": "Retrieve an immutable historical PRISMA snapshot.",
+        "operationId": "get_prisma_snapshot_endpoint_api_v1_workspaces__workspace_id__prisma_snapshots__snapshot_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "snapshot_id",
+            "required": true,
+            "schema": {
+              "title": "Snapshot Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrismaReportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Prisma Snapshot Endpoint",
+        "tags": [
+          "PRISMA Flow & Reporting"
         ]
       }
     },

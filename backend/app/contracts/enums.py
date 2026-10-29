@@ -283,3 +283,35 @@ class DuplicateMergeOperation(str, Enum):
     REVERSAL = "reversal"
     RECONCILIATION = "reconciliation"
 
+
+
+# ============================================================================
+# PRISMA 2020 Flow & Automated Reporting Enums
+# ============================================================================
+
+class PrismaStage(str, Enum):
+    """PRISMA 2020 flow stages."""
+
+    IDENTIFICATION = "identification"
+    PRE_SCREENING = "pre_screening"
+    SCREENING = "screening"
+    RETRIEVAL = "retrieval"
+    ELIGIBILITY = "eligibility"
+    INCLUDED = "included"
+
+
+class PrismaValidationSeverity(str, Enum):
+    """Severity of PRISMA reconciliation and data integrity warnings."""
+
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+
+
+class PrismaStageStatus(str, Enum):
+    """Execution and availability status for PRISMA stages."""
+
+    COMPLETED = "completed"
+    IN_PROGRESS = "in_progress"
+    NOT_STARTED = "not_started"
+    UNAVAILABLE = "unavailable"
