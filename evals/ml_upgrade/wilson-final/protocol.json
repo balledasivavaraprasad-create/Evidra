@@ -1,0 +1,36 @@
+{
+  "seed": 42,
+  "trials_per_booster": 2,
+  "iterations": 100,
+  "early_stopping": "not used: fixed bounded tree counts; no eval_set touches test data",
+  "libraries": {
+    "scikit-learn": "1.9.1",
+    "catboost": "1.2.10",
+    "joblib": "1.6.0"
+  },
+  "selection": "development precision at >=95% recall; then F2, AP; ties prefer linear baseline",
+  "test_policy": "Frozen test is evaluated only after selection; never tune against this report",
+  "confidence": "Descriptive group-bootstrap AP interval, not prospective clinical validation",
+  "data": {
+    "dataset_name": "SYNERGY-Appenzeller-Herzog_2020-abstract-screening",
+    "review_question": "Comparative effectiveness of common therapies for Wilson disease",
+    "provenance": "Public human-screened review benchmark; not metformin-topic validation",
+    "label_stage": "title_abstract",
+    "label_origin": "published_human_screening",
+    "source_url": "https://raw.githubusercontent.com/asreview/systematic-review-datasets/metadata-v1-final/datasets/Appenzeller-Herzog_2020/output/Appenzeller-Herzog_2020.csv",
+    "reference": "https://doi.org/10.1111/liv.14179",
+    "license": "CC-BY-4.0; Appenzeller-Herzog et al., via ASReview SYNERGY",
+    "source_sha256": "456f9306b0ce1aee840ac0244f11df3b2a168aa46007a92f5dcf59916d309a69",
+    "raw_records": 3453,
+    "unique_groups": 3193,
+    "conflicting_rows_quarantined": 91,
+    "missing_abstract_groups_manual_only": 1025,
+    "missing_title_groups_quarantined": 1,
+    "known_study_ids_available": false
+  },
+  "dataset_sha256": "c863f8f0962edaf796c34a970d0e2ac350fcfab71ed920729c1e6e83c35563e5",
+  "hardware": "macOS-26.6.1-arm64-arm-64bit",
+  "python": "3.12.13",
+  "sklearn": "1.9.1",
+  "created_at": "2026-10-29T07:36:19.202165+00:00"
+}

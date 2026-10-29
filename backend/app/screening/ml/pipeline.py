@@ -84,8 +84,11 @@ def train_ranking_model(
     for r in train_records:
         txt = extract_record_text(r)
         texts.append(txt)
-        # 1 for INCLUDE, 0 for EXCLUDE / other
-        lbl_str = (r.label or "EXCLUDE").upper()
+        # Only explicit human binary labels are admissible ground truth.
+        lbl_str = (r.label or "").upper()
+        if lbl_str not in {"INCLUDE", "EXCLUDE"}:
+            return (None, MLRankingStatus.UNAVAILABLE_INVALID_LABEL,
+                    "Explicit INCLUDE/EXCLUDE labels required; MAYBE and unlabelled are not negative.", None)
         if lbl_str == "INCLUDE":
             labels.append(1)
             pos_count += 1

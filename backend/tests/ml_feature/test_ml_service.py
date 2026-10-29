@@ -1,6 +1,7 @@
 """Comprehensive unit, integration, and security tests for ML ranking service and API routes (C-ML02)."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from uuid import uuid4
 
@@ -30,6 +31,96 @@ from app.db.models import (
 from app.ml_feature.service import execute_ml_ranking
 from app.ml_feature.trainer import train_ranker
 from app.ml_feature.types import RecordInput, TrainConfig
+
+
+def test_scope_cannot_be_overridden_by_request(db_session, seeded_workspace, test_artifact_dir):
+    ws_id, rev_id = seeded_workspace
+    criteria = db_session.query(CriteriaVersionModel).filter_by(workspace_id=ws_id).one()
+    original_question = criteria.question
+    criteria.question = "A different review about pediatric asthma"
+    db_session.commit()
+    result = execute_ml_ranking(
+        db_session, ws_id, rev_id,
+        MLRankingRequest(review_question=original_question), test_artifact_dir,
+    )
+    assert result.scored_count == 0
+    assert result.status == "UNAVAILABLE"
+
+
+def test_model_digest_invalidates_cached_ranking(db_session, seeded_workspace, test_artifact_dir):
+    ws_id, rev_id = seeded_workspace
+    first = execute_ml_ranking(db_session, ws_id, rev_id, artifact_dir=test_artifact_dir)
+    assert first.status == "COMPLETED"
+    # A same-version bundle can change preprocessing/policy, not just estimator bytes.
+    manifest_path = test_artifact_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["config"]["priority_policy"] = "updated-policy"
+    manifest_path.write_text(json.dumps(manifest))
+    result = execute_ml_ranking(db_session, ws_id, rev_id, artifact_dir=test_artifact_dir)
+    assert result.status == "COMPLETED"
+
+
+def test_cached_rankings_refresh_human_status(db_session, seeded_workspace, test_artifact_dir):
+    ws_id, rev_id = seeded_workspace
+    execute_ml_ranking(db_session, ws_id, rev_id, artifact_dir=test_artifact_dir)
+    db_session.add(ReviewEventModel(
+        workspace_id=ws_id, group_id="grp-clinical-1", sequence=1,
+        event_type="screen_decision", payload_json='{"decision":"exclude"}',
+        actor_id="test-user", reason="Verified outside protocol",
+    ))
+    db_session.commit()
+    result = execute_ml_ranking(db_session, ws_id, rev_id, artifact_dir=test_artifact_dir)
+    item = next(it for it in result.items if it.group_id == "grp-clinical-1")
+    assert result.status == "CACHED"
+    assert item.effective_status == "exclude"
+
+
+def test_criteria_constraint_is_enforced(db_session, seeded_workspace, test_artifact_dir):
+    ws_id, rev_id = seeded_workspace
+    with pytest.raises(HTTPException) as error:
+        execute_ml_ranking(db_session, ws_id, rev_id,
+                           MLRankingRequest(criteria_version_id="different"), test_artifact_dir)
+    assert error.value.status_code == 409
+
+
+def test_old_ranking_api_service_handles_real_record_schema(db_session, seeded_workspace, tmp_path):
+    from app.contracts.models import ScreeningRankRequest
+    from app.services.screening_rank import rank_screening_groups
+    ws_id, rev_id = seeded_workspace
+    result = rank_screening_groups(db_session, ws_id, ScreeningRankRequest(revision_id=rev_id), tmp_path)
+    assert result.status == "unavailable_corrupt_artifact"
+
+
+def test_corrupt_artifact_cannot_reuse_prior_cache(db_session, seeded_workspace, test_artifact_dir):
+    ws_id, rev_id = seeded_workspace
+    execute_ml_ranking(db_session, ws_id, rev_id, artifact_dir=test_artifact_dir)
+    (test_artifact_dir / "model.joblib").write_bytes(b"not a trusted artifact")
+    response = execute_ml_ranking(db_session, ws_id, rev_id, artifact_dir=test_artifact_dir)
+    assert response.status == "UNAVAILABLE" and response.scored_count == 0
+
+
+def test_model_swap_preserves_prior_machine_evidence(db_session, seeded_workspace, test_artifact_dir):
+    ws_id, rev_id = seeded_workspace
+    execute_ml_ranking(db_session, ws_id, rev_id, artifact_dir=test_artifact_dir)
+    original_ids = {row.id for row in db_session.query(MachineResultModel).all()}
+    manifest = test_artifact_dir / "manifest.json"
+    payload = json.loads(manifest.read_text())
+    payload["config"]["priority_policy"] = "new-policy"
+    manifest.write_text(json.dumps(payload))
+    execute_ml_ranking(db_session, ws_id, rev_id, artifact_dir=test_artifact_dir)
+    rows = db_session.query(MachineResultModel).all()
+    assert len(rows) == 6 and original_ids <= {row.id for row in rows}
+
+
+def test_public_ranking_adapters_use_same_scoped_model(db_session, seeded_workspace, test_artifact_dir, monkeypatch):
+    from app.contracts.models import ScreeningRankRequest
+    from app.services.screening_rank import rank_screening_groups
+    monkeypatch.setenv("EVIDRA_ML_ARTIFACT_DIR", str(test_artifact_dir))
+    ws_id, rev_id = seeded_workspace
+    canonical = execute_ml_ranking(db_session, ws_id, rev_id)
+    legacy = rank_screening_groups(db_session, ws_id, ScreeningRankRequest(revision_id=rev_id))
+    assert legacy.status == "available"
+    assert [r.group_id for r in legacy.ranked_groups] == [r.group_id for r in canonical.items if r.state == "SCORED"]
 
 
 @pytest.fixture

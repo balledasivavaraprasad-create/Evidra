@@ -13,6 +13,7 @@ class MLRankingStatus(str, Enum):
     UNAVAILABLE_EMPTY_VOCAB = "unavailable_empty_vocab"
     UNAVAILABLE_CORRUPT_ARTIFACT = "unavailable_corrupt_artifact"
     UNAVAILABLE_DISABLED = "unavailable_disabled"
+    UNAVAILABLE_INVALID_LABEL = "unavailable_invalid_label"
 
 
 @dataclass(frozen=True)
