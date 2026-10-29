@@ -301,3 +301,42 @@ class TestSuggestEndpoint:
     def test_bad_bodies_are_rejected(self, client, body):
         ws = client.post("/api/v1/workspaces", json={"title": "Review"}).json()
         assert client.post(f"/api/v1/workspaces/{ws['id']}/criteria/suggest", json=body).status_code == 422
+
+
+class SlowGateway:
+    """A model that takes 0.4 s per call, to show the fields are asked for at the same time."""
+
+    def __init__(self):
+        self.started: list[float] = []
+
+    def is_enabled(self) -> bool:
+        return True
+
+    def invoke(self, request: GatewayRequest) -> GatewayResponse:
+        import time
+
+        self.started.append(time.perf_counter())
+        time.sleep(0.4)
+        return GatewayResponse(success=True, data={"synonyms": [f"{request.prompt_context['field']}-synonym"]})
+
+
+def test_synonyms_for_population_and_intervention_are_fetched_in_parallel():
+    import time
+
+    from app.gateway.synonyms import prefetch_synonyms
+
+    gateway = SlowGateway()
+    provider = SynonymProvider(gateway=gateway, model_alias="gemini-3.8-flash")
+    started = time.perf_counter()
+    fetched = prefetch_synonyms(provider, {"Population": ["type 2 diabetes"], "Intervention": ["empagliflozin"], "Comparator": []})
+    elapsed = time.perf_counter() - started
+
+    assert elapsed < 0.7, f"two 0.4 s calls took {elapsed:.2f}s: they ran one after the other"
+    assert len(gateway.started) == 2  # nothing is asked for an empty field
+    rules = {r.id: r for r in rules_from_pico("t", "q", PICO_FOR_PARALLEL, synonyms=fetched)}
+    assert rules["pico_population"].ai_suggested_keywords == ["Population-synonym"]
+    assert rules["pico_intervention"].ai_suggested_keywords == ["Intervention-synonym"]
+    assert rules["pico_outcome"].ai_suggested_keywords == []
+
+
+PICO_FOR_PARALLEL = {"population": "type 2 diabetes", "intervention": "empagliflozin", "outcome": "mortality"}

@@ -16,15 +16,21 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.auth import (
+    LOCAL_USER_ID,
+    SessionAuthMiddleware,
+    accounts_enabled,
+    auth_router,
+    current_user_id,
+    get_or_create_local_user,
+)
 from app.contracts.enums import (
     CorpusRevisionState,
-    JobKind,
     EffectiveDecisionState,
+    JobKind,
     SourceNamespace,
 )
 from app.contracts.models import (
-    DashboardReviewSummary,
-    SearchExecutionSelectionUpdate,
     ArticleRadarResponse,
     AssistantProposal,
     AssistantRequest,
@@ -37,8 +43,18 @@ from app.contracts.models import (
     CriteriaVersionCreate,
     CriteriaVersionResponse,
     CriterionDefinition,
+    DashboardReviewSummary,
     DecisionCommand,
     DedupOverrideRequest,
+    DevilsAdvocateChallengeResponse,
+    DevilsAdvocateDashboardResponse,
+    DevilsAdvocateDispositionRequest,
+    DevilsAdvocateGenerateRequest,
+    DuplicateGroupGenealogyResponse,
+    DuplicateReconcileRequest,
+    DuplicateReverseMergeRequest,
+    DuplicateSplitRequest,
+    DuplicateWorkspaceSummaryResponse,
     ErrorDetail,
     ErrorEnvelope,
     EvidenceCorrectionRequest,
@@ -61,15 +77,6 @@ from app.contracts.models import (
     QueryVersionResponse,
     RadarConfirmRequest,
     RadarCorrectRequest,
-    DevilsAdvocateChallengeResponse,
-    DevilsAdvocateDashboardResponse,
-    DevilsAdvocateDispositionRequest,
-    DevilsAdvocateGenerateRequest,
-    DuplicateGroupGenealogyResponse,
-    DuplicateReconcileRequest,
-    DuplicateReverseMergeRequest,
-    DuplicateSplitRequest,
-    DuplicateWorkspaceSummaryResponse,
     RadarFlagConflictRequest,
     RadarFlagUncertainRequest,
     ReviewEventResponse,
@@ -80,6 +87,7 @@ from app.contracts.models import (
     SearchEvolutionVersionSummary,
     SearchExecutionCreate,
     SearchExecutionResponse,
+    SearchExecutionSelectionUpdate,
     SearchRestoreRequest,
     SearchRestoreResponse,
     WorkspaceCreate,
@@ -95,16 +103,15 @@ from app.db.models import (
 )
 from app.db.session import get_db
 from app.ml_feature.service import execute_ml_ranking
-from app.services.workspace_state import (
-    dashboard_summaries,
-    latest_query_version,
-    list_executions,
-    list_jobs,
-    set_execution_selection,
-)
+from app.services.access import enforce_review_access
 from app.services.corpus import (
     get_paper_group_detail,
     list_paper_groups_in_revision,
+)
+from app.services.devils_advocate import (
+    get_or_generate_challenge,
+    get_workspace_challenge_dashboard,
+    record_challenge_disposition,
 )
 from app.services.evidence_passport import (
     apply_reviewer_correction,
@@ -115,15 +122,6 @@ from app.services.evidence_passport import (
     revalidate_group_evidence,
 )
 from app.services.exports import export_corpus_studies
-from app.services.imports import trigger_import
-from app.services.jobs import (
-    cancel_job,
-    get_job_by_id,
-    queue_corpus_processing,
-    recover_stuck_jobs,
-    to_job_response,
-)
-from app.worker import _get_worker_session, run_worker_daemon
 from app.services.genealogy import (
     get_duplicate_group_genealogy,
     get_workspace_duplicate_overview,
@@ -131,10 +129,13 @@ from app.services.genealogy import (
     reverse_merge_event,
     split_duplicate_group,
 )
-from app.services.devils_advocate import (
-    get_or_generate_challenge,
-    get_workspace_challenge_dashboard,
-    record_challenge_disposition,
+from app.services.imports import trigger_import
+from app.services.jobs import (
+    cancel_job,
+    get_job_by_id,
+    queue_corpus_processing,
+    recover_stuck_jobs,
+    to_job_response,
 )
 from app.services.radar import (
     confirm_radar_field,
@@ -164,20 +165,19 @@ from app.services.snapshots import (
 from app.services.snapshots import (
     restore_corpus_snapshot as svc_restore_corpus_snapshot,
 )
-from app.auth import (
-    LOCAL_USER_ID,
-    SessionAuthMiddleware,
-    accounts_enabled,
-    auth_router,
-    current_user_id,
-    get_or_create_local_user,
+from app.services.workspace_state import (
+    dashboard_summaries,
+    latest_query_version,
+    list_executions,
+    list_jobs,
+    set_execution_selection,
 )
-from app.services.access import enforce_review_access
 from app.settings import settings
 from app.sources.errors import SourceUnavailableError, describe_source_error
 from app.sources.europepmc import EuropePMCAdapter
 from app.sources.pubmed import PubMedAdapter
 from app.sources.translator import translate_query
+from app.worker import _get_worker_session, run_worker_daemon
 
 logger = logging.getLogger(__name__)
 
@@ -662,11 +662,21 @@ def suggest_criteria(
             detail=f"Workspace '{workspace_id}' not found",
         )
 
-    from app.gateway.synonyms import build_synonym_provider
-    from app.screening.generate import rules_from_pico
+    from app.gateway.synonyms import build_synonym_provider, prefetch_synonyms
+    from app.screening.generate import normalise_pico, rules_from_pico, split_keywords
 
     provider, _ = build_synonym_provider()
-    rules = rules_from_pico(ws.title, payload.question, payload.pico, synonyms=provider)
+    synonyms = None
+    if provider is not None:
+        fields = normalise_pico(payload.pico)
+        synonyms = prefetch_synonyms(
+            provider,
+            {
+                "Population": split_keywords(fields["population"], population=True),
+                "Intervention": split_keywords(fields["intervention"]),
+            },
+        )
+    rules = rules_from_pico(ws.title, payload.question, payload.pico, synonyms=synonyms)
     used = any(r.ai_suggested_keywords for r in rules)
     notice = None
     if provider is not None and not used and provider.problems:

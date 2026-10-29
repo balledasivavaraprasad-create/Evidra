@@ -24,7 +24,7 @@ import {
 } from "../features/search/executions";
 import { splitPicoTerms, termsFromPico } from "../features/search/searchTerms";
 import { loadSetupData, newestJob } from "../features/search/setupData";
-import { importPhase, isProcessingDone, processingLine } from "../features/runs/processing";
+import { importPhase, isProcessingDone, processingLine, processingLookupDone } from "../features/runs/processing";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -477,6 +477,22 @@ describe("import flows into processing", () => {
     expect(importPhase(imp({ state: "succeeded" }), null, true)).toBe("ready");
     expect(importPhase(imp({ state: "running" }), null, false)).toBe("importing");
     expect(importPhase(imp({ state: "failed" }), null, false)).toBe("import-failed");
+  });
+
+  it("an import that finishes while the page is open is not 'known' until it has looked again", () => {
+    // Regression: announcing the completion used to mark it "finished before load", skipping the lookup
+    const base = { loaded: true, importId: "imp", lookedUpFor: null, finishedBeforeLoadId: null };
+    expect(processingLookupDone(base)).toBe(false);
+    expect(processingLookupDone({ ...base, lookedUpFor: "imp" })).toBe(true);
+    expect(processingLookupDone({ ...base, lookedUpFor: "an-older-import" })).toBe(false);
+  });
+
+  it("an import that was already finished when the page opened is known after the first lookup", () => {
+    const base = { loaded: false, importId: "imp", lookedUpFor: null, finishedBeforeLoadId: "imp" };
+    expect(processingLookupDone(base)).toBe(false); // first lookup not back yet
+    expect(processingLookupDone({ ...base, loaded: true })).toBe(true);
+    expect(processingLookupDone({ ...base, loaded: true, finishedBeforeLoadId: "another" })).toBe(false);
+    expect(processingLookupDone({ ...base, loaded: true, importId: undefined })).toBe(false);
   });
 
   it("ignores a processing job that is older than the import", () => {

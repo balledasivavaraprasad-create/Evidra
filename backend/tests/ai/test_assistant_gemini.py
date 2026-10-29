@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from typing import ClassVar
 
 import httpx
 import pytest
@@ -154,6 +155,18 @@ class TestAdapterSettings:
             mock.post(GEMINI_URL).mock(return_value=reply({"ok": True}))
             assert adapter.invoke(self.REQUEST).success
 
+    def test_blank_ai_settings_mean_unset_not_empty(self, monkeypatch):
+        """An empty LLM_BASE_URL= line copied from .env.example must not blank out the default endpoint."""
+        from app.settings import Settings
+
+        monkeypatch.setenv("LLM_BASE_URL", "")
+        monkeypatch.setenv("LLM_MODEL_ALIAS", "  ")
+        monkeypatch.setenv("LLM_API_KEY", "")
+        loaded = Settings()
+        assert loaded.llm_base_url == "https://generativelanguage.googleapis.com/v1beta/openai/"
+        assert loaded.llm_model_alias == "gemini-3.8-flash"
+        assert loaded.llm_api_key is None
+
     def test_no_key_means_disabled(self, ai_on, monkeypatch):
         monkeypatch.setattr(settings, "llm_api_key", None)
         adapter = HTTPXModelAdapter(default_model="gemini-2.5-flash")
@@ -175,7 +188,7 @@ class TestAdapterSettings:
 
 
 class TestAiSynonymsThroughTheRoute:
-    PICO = {"population": "adults with type 2 diabetes", "intervention": "SGLT2 inhibitor"}
+    PICO: ClassVar[dict[str, str]] = {"population": "adults with type 2 diabetes", "intervention": "SGLT2 inhibitor"}
 
     def test_synonyms_are_added_and_marked_when_ai_is_on(self, client, ai_on):
         ws = client.post("/api/v1/workspaces", json={"title": "SGLT2i"}).json()

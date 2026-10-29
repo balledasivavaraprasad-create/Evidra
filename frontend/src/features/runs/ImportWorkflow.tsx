@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Download, CheckCircle2, AlertTriangle, XCircle, RotateCcw, Clock, Ban, ArrowRight, Loader2 } from "lucide-react";
 import { api, type JobResponse } from "../../api/client";
 import { loadLatestImportJob } from "../search/setupData";
-import { importPhase, PHASE_LABELS, processingLine, type ImportPhase } from "./processing";
+import { importPhase, PHASE_LABELS, processingLine, processingLookupDone, type ImportPhase } from "./processing";
 import { useProcessingJob } from "./useProcessingJob";
 
 const TERMINAL_STATES = ["succeeded", "partial", "failed", "cancelled"];
@@ -81,10 +81,13 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
 
   const pollTimerRef = useRef<number | null>(null);
   const backoffDelayRef = useRef<number>(1000);
-  // A job that was already finished when it was loaded must not fire the "just finished" callback
-  const alreadyFinishedRef = useRef<string | null>(
+  // An import already finished when the page opened: it must not announce "just finished", and its
+  // processing job can be looked up once. (Kept apart from `notifiedRef`: announcing a completion
+  // that happened in this session does not make it "finished before load".)
+  const [finishedBeforeLoadId, setFinishedBeforeLoadId] = useState<string | null>(
     initialJob && TERMINAL_STATES.includes(initialJob.state) ? initialJob.id : null,
   );
+  const notifiedRef = useRef<string | null>(null);
 
   // Resume the latest import from the server, so a reload shows it (and keeps polling if still running)
   useEffect(() => {
@@ -93,7 +96,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
     loadLatestImportJob(workspaceId)
       .then((job) => {
         if (!mounted || !job) return;
-        if (TERMINAL_STATES.includes(job.state)) alreadyFinishedRef.current = job.id;
+        if (TERMINAL_STATES.includes(job.state)) setFinishedBeforeLoadId(job.id);
         setActiveJob(job);
       })
       .catch((err: unknown) => {
@@ -123,10 +126,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importState, importId]);
 
-  // Known once the lookup after this import finished is done (or, for an import that was already
-  // finished when the page opened, once the first lookup is done)
-  const finishedBeforeLoad = alreadyFinishedRef.current === importId && lookedUpFor !== importId;
-  const processingKnown = processing.loaded && (lookedUpFor === importId || finishedBeforeLoad);
+  const processingKnown = processingLookupDone({ loaded: processing.loaded, importId, lookedUpFor, finishedBeforeLoadId });
   const phase = activeJob ? importPhase(activeJob, processing.job, processingKnown) : null;
 
   const retryProcessing = async () => {
@@ -144,8 +144,13 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({
     const isTerminal = TERMINAL_STATES.includes(activeJob.state);
     if (isTerminal) {
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
-      if (onImportComplete && activeJob.state === "succeeded" && alreadyFinishedRef.current !== activeJob.id) {
-        alreadyFinishedRef.current = activeJob.id;
+      if (
+        onImportComplete &&
+        activeJob.state === "succeeded" &&
+        finishedBeforeLoadId !== activeJob.id &&
+        notifiedRef.current !== activeJob.id
+      ) {
+        notifiedRef.current = activeJob.id;
         onImportComplete(activeJob);
       }
       return;

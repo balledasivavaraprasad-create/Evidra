@@ -7,6 +7,8 @@ gets no synonyms and the rules stay fully deterministic.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 from app.gateway.adapter import HTTPXModelAdapter
@@ -68,6 +70,28 @@ class SynonymProvider:
             if len(out) >= MAX_SYNONYMS:
                 break
         return out
+
+
+def prefetch_synonyms(
+    provider: SynonymProvider,
+    wanted: dict[str, list[str]],
+) -> Callable[[str, list[str]], list[str]]:
+    """Ask for every field's synonyms at once (they are independent) instead of one after another.
+
+    Returns a callable with the same shape as the provider, answering from what was fetched.
+    """
+    todo = {label: keywords for label, keywords in wanted.items() if keywords}
+    results: dict[str, list[str]] = {}
+    if todo:
+        with ThreadPoolExecutor(max_workers=len(todo)) as pool:
+            futures = {label: pool.submit(provider, label, keywords) for label, keywords in todo.items()}
+            for label, future in futures.items():
+                try:
+                    results[label] = future.result()
+                except Exception as exc:  # noqa: BLE001 - AI is optional: a failure here must not block the rules
+                    provider.problems.append(f"The AI step failed ({type(exc).__name__}).")
+                    results[label] = []
+    return lambda label, _keywords: results.get(label, [])
 
 
 def build_synonym_provider() -> tuple[SynonymProvider | None, str | None]:

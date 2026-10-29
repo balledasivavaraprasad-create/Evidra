@@ -43,6 +43,23 @@ export function importPhase(
   return "ready";
 }
 
+/**
+ * Whether we know which processing job (if any) belongs to this import.
+ *
+ * - An import that was already finished when the page opened: known once the first lookup is done.
+ * - An import that finished while the page was open: known only once the lookup made *after* it
+ *   finished is done. Before that, "no processing job yet" just means we haven't asked.
+ */
+export function processingLookupDone(state: {
+  loaded: boolean;
+  importId: string | undefined;
+  lookedUpFor: string | null;
+  finishedBeforeLoadId: string | null;
+}): boolean {
+  if (!state.loaded || !state.importId) return false;
+  return state.lookedUpFor === state.importId || state.finishedBeforeLoadId === state.importId;
+}
+
 export const PHASE_LABELS: Record<ImportPhase, string> = {
   importing: "Importing",
   processing: "Processing",

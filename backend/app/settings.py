@@ -6,7 +6,6 @@ from typing import Literal
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 # Neon env vars are pulled by `neon checkout` / `neon deploy` into the repo root. Tests never
 # read them, so a test run cannot reach the hosted database.
 _ENV_FILES: tuple[Path, ...] = (
@@ -102,6 +101,14 @@ class Settings(BaseSettings):
                 )
         if self.google_client_id is not None and not self.google_client_id.strip():
             self.google_client_id = None
+        # A blank AI setting (an empty line copied from .env.example) means "not set", not "empty"
+        defaults = type(self).model_fields
+        if not self.llm_base_url.strip():
+            self.llm_base_url = defaults["llm_base_url"].default
+        if not self.llm_model_alias.strip():
+            self.llm_model_alias = defaults["llm_model_alias"].default
+        if self.llm_api_key is not None and not self.llm_api_key.strip():
+            self.llm_api_key = None
         if self.run_worker_in_process is None:
             self.run_worker_in_process = (self.app_env == "production")
         return self
