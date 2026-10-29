@@ -32,6 +32,7 @@ ALLOWLISTED_MODELS: set[str] = {
     "gemini-1.5-pro",
     "gemini-2.5-flash",
     "gemini-3.8-flash",
+    "gemini-3.5-flash",
     "gpt-4o-mini",
     "mock-research-model",
 }

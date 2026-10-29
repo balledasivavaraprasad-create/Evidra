@@ -43,7 +43,7 @@ class SynonymProvider:
                     "terms": keywords[:12],
                 },
                 max_tokens=1500,
-                timeout_seconds=25.0,
+                timeout_seconds=10.0,
             )
         )
         if not response.success or not isinstance(response.data, dict):

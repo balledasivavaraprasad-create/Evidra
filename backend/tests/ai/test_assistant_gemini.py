@@ -56,9 +56,13 @@ class TestAssistantRoute:
         with respx.mock(assert_all_called=True) as mock:
             def answer(request: httpx.Request) -> httpx.Response:
                 body = json.loads(request.content)
-                chunks = json.loads(body["messages"][1]["content"])["evidence_chunks"]
+                context = json.loads(body["messages"][1]["content"])
+                chunks = context["evidence_chunks"]
                 nonlocal handle
                 handle = chunks[0]["citation_handle"]  # the paper the question is about comes first
+                # ...and the model is told that it is the one "this paper" means
+                assert context["target_citation_handle"] == handle
+                assert "target_citation_handle" in context["instructions"]
                 return reply({"proposal_text": f"Include it: it studies the review's topic {handle}.", "cited_handles": [handle], "confidence_rationale": "The abstract matches."})
 
             route = mock.post(GEMINI_URL).mock(side_effect=answer)

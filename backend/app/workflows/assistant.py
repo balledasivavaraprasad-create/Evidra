@@ -71,7 +71,7 @@ class BoundedEvidenceAssistant(AssistantPort):
         # 2. Retrieve authorized evidence chunks
         query_text = f"{request.target_id} {request.user_prompt}".strip()
         chunks = self._retrieve_chunks(workspace_id, corpus_revision_id, query_text)
-        chunks = self._with_target_first(workspace_id, corpus_revision_id, request.target_id, chunks)
+        chunks, target_handle = self._with_target_first(workspace_id, corpus_revision_id, request.target_id, chunks)
 
         # 3. Controlled reformulation follow-up if 0 chunks found
         if not chunks:
@@ -132,8 +132,12 @@ class BoundedEvidenceAssistant(AssistantPort):
                 "task": request.task,
                 "target_id": request.target_id,
                 "user_prompt": request.user_prompt,
+                # "This paper" in the question is this chunk; the others are only background
+                "target_citation_handle": target_handle,
                 "evidence_chunks": evidence_payload,
                 "instructions": (
+                    "The question is about the paper whose citation_handle equals target_citation_handle "
+                    "(when it is not null); treat the other chunks as background only. "
                     "Formulate a factual recommendation strictly based on provided evidence_chunks. "
                     "Every assertion must include citation_handles matching the evidence. "
                     "If evidence does not support an answer, set proposal_text to 'ABSTAIN: Insufficient evidence'. "
@@ -214,15 +218,16 @@ class BoundedEvidenceAssistant(AssistantPort):
         corpus_revision_id: str,
         target_id: str,
         chunks: list[RetrievalChunk],
-    ) -> list[RetrievalChunk]:
-        """Put the paper the question is about first, so the answer is about it and not a neighbour."""
+    ) -> tuple[list[RetrievalChunk], str | None]:
+        """Put the paper the question is about first, and say which it is (its citation handle)."""
         find = getattr(self.retrieval_repo, "chunk_for_target", None)
         if not callable(find):
-            return chunks
+            return chunks, None
         target = find(workspace_id=workspace_id, corpus_revision_id=corpus_revision_id, target_id=target_id)
         if target is None:
-            return chunks
-        return [target, *[c for c in chunks if c.record_revision_id != target.record_revision_id]][:6]
+            return chunks, None
+        ordered = [target, *[c for c in chunks if c.record_revision_id != target.record_revision_id]][:6]
+        return ordered, target.citation_handle
 
     def _retrieve_chunks(
         self,
