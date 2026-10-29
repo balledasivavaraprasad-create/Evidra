@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import random
 
 from app.ml_feature.types import RecordInput
@@ -18,13 +19,8 @@ def prepare_text(title: str, abstract_text: str | None) -> str:
 
 def compute_records_hash(records: list[RecordInput]) -> str:
     """Calculate deterministic SHA-256 fingerprint for a split of records."""
-    hasher = hashlib.sha256()
-    for rec in sorted(records, key=lambda r: r.id):
-        hasher.update(rec.id.encode("utf-8"))
-        hasher.update(str(rec.label).encode("utf-8"))
-        hasher.update((rec.title or "").encode("utf-8"))
-        hasher.update((rec.abstract_text or "").encode("utf-8"))
-    return hasher.hexdigest()
+    payload = [rec.model_dump() for rec in sorted(records, key=lambda r: r.id)]
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def validate_dataset(records: list[RecordInput]) -> tuple[bool, list[str]]:
@@ -70,7 +66,11 @@ def create_leakage_free_split(
 
     # 1. Cluster records by group identity (fallback to record ID)
     group_to_records: dict[str, list[RecordInput]] = {}
-    for r in records:
+    if not 0 < val_ratio < 1 or not 0 < test_ratio < 1 or val_ratio + test_ratio >= 1:
+        raise ValueError("Validation and test ratios must be positive and sum to less than one")
+    if len({r.id for r in records}) != len(records):
+        raise ValueError("Duplicate record IDs are not admissible training units")
+    for r in sorted(records, key=lambda r: r.id):
         gid = r.group_id if r.group_id else f"solo_{r.id}"
         group_to_records.setdefault(gid, []).append(r)
 
@@ -109,9 +109,9 @@ def create_leakage_free_split(
     val_groups = set(pos_val + neg_val)
     test_groups = set(pos_test + neg_test)
 
-    train_records = [r for gid in train_groups for r in group_to_records[gid]]
-    val_records = [r for gid in val_groups for r in group_to_records[gid]]
-    test_records = [r for gid in test_groups for r in group_to_records[gid]]
+    train_records = [r for gid in sorted(train_groups) for r in group_to_records[gid]]
+    val_records = [r for gid in sorted(val_groups) for r in group_to_records[gid]]
+    test_records = [r for gid in sorted(test_groups) for r in group_to_records[gid]]
 
     # Ensure train split contains both classes
     train_labels = {r.label for r in train_records}

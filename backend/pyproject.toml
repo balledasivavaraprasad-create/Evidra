@@ -29,6 +29,11 @@ dev = [
   "ruff==0.17.2",
   "pip-audit==2.10.1",
 ]
+ml-benchmark = [
+    "catboost==1.2.10",
+    "xgboost==3.4.1 ; sys_platform != 'linux'",
+    "xgboost-cpu==3.4.1 ; sys_platform == 'linux'",
+]
 
 [tool.uv]
 package = false

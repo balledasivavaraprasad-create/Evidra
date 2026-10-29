@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.contracts.enums import CorpusRevisionState
 from app.contracts.models import (
+    MLRankingRequest,
     RankedGroupItem,
     ScreeningRankRequest,
     ScreeningRankResponse,
@@ -17,9 +18,9 @@ from app.db.models import (
     RecordRevisionModel,
     WorkspaceModel,
 )
+from app.ml_feature.service import execute_ml_ranking
 from app.screening.ml.ranker import MLScreeningRanker
 from app.screening.ml.types import MLRankingStatus, MLRecordInput
-from app.settings import settings
 
 
 def rank_screening_groups(
@@ -71,6 +72,20 @@ def rank_screening_groups(
             reason="No corpus revision found in workspace",
         )
 
+    if artifact_dir is None:
+        # The public legacy endpoint is an adapter to the same scoped scoring/cache
+        # implementation as the ML screen. Explicit legacy artifact callers remain supported.
+        result = execute_ml_ranking(db, workspace_id, revision.id,
+                                    MLRankingRequest(limit=request.limit))
+        return ScreeningRankResponse(
+            workspace_id=workspace_id, revision_id=revision.id,
+            status=MLRankingStatus.AVAILABLE.value if result.status in {"COMPLETED", "CACHED"}
+            else MLRankingStatus.UNAVAILABLE_CORRUPT_ARTIFACT.value,
+            model_version=result.model_version, reason=result.reason,
+            ranked_groups=[RankedGroupItem(group_id=item.group_id, score=item.score, rank=item.rank)
+                           for item in result.items if item.state == "SCORED" and item.group_id],
+        )
+
     # Query group snapshots in revision
     snapshots = (
         db.query(GroupSnapshotModel)
@@ -94,13 +109,12 @@ def rank_screening_groups(
             .first()
         )
         title = rec.title or "" if rec else ""
-        abstract = rec.abstract or "" if rec else ""
+        abstract = rec.abstract_text or "" if rec else ""
         inputs.append(MLRecordInput(id=snap.group_id, title=title, abstract=abstract))
 
     # Initialize ML ranker
-    models_dir = artifact_dir or (settings.data_dir / "models")
-    ranker = MLScreeningRanker(artifact_dir=models_dir)
-    ml_result = ranker.rank_records(inputs)
+    ranker = MLScreeningRanker(artifact_dir=artifact_dir)
+    ml_result = ranker.rank(inputs)
 
     # Convert to API response
     ranked_items: list[RankedGroupItem] = [

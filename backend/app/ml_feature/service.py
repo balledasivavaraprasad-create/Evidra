@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -27,9 +28,9 @@ from app.db.models import (
     RunLogModel,
     WorkspaceModel,
 )
-from app.ml_feature.ranker import MLRanker, load_ranker
+from app.ml_feature.ranker import load_ranker
 from app.ml_feature.types import RankingContext, RecordInput
-from app.services.corpus import project_effective_group_decision
+from app.services.corpus import project_group_decisions_bulk
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,10 @@ def resolve_artifact_directory(override_dir: Path | str | None = None) -> Path:
     """Resolve directory containing verified model.joblib and manifest.json."""
     if override_dir is not None:
         return Path(override_dir)
+    # Deployment configuration only; never taken from an HTTP request.
+    configured = os.environ.get("EVIDRA_ML_ARTIFACT_DIR")
+    if configured:
+        return Path(configured)
 
     candidates = [
         Path("evals/ml_c/artifact"),
@@ -94,7 +99,9 @@ def execute_ml_ranking(
 
     # 3. Criteria & Question resolution
     criteria = db.query(CriteriaVersionModel).filter_by(id=corpus_rev.criteria_version_id).first()
-    review_question = req.review_question or (criteria.question if criteria else "")
+    review_question = criteria.question if criteria else ""
+    if req.criteria_version_id and req.criteria_version_id != corpus_rev.criteria_version_id:
+        raise HTTPException(status_code=409, detail="Criteria version does not match this corpus revision")
 
     # 4. Retrieve group snapshots and primary records
     snapshots = (
@@ -125,9 +132,46 @@ def execute_ml_ranking(
             detail="Corpus revision exceeds 50,000 record threshold for synchronous ranking",
         )
 
-    # 5. Compute stable input fingerprint for caching
-    fingerprint_seed = f"{workspace_id}:{revision_id}:{criteria.content_hash if criteria else 'none'}:{len(snapshots)}"
-    input_fingerprint = hashlib.sha256(fingerprint_seed.encode("utf-8")).hexdigest()
+    # Verify the artifact and its *server-owned* scope before considering any cache hit.
+    art_path = resolve_artifact_directory(artifact_dir)
+    try:
+        ranker = load_ranker(art_path, expected_scope=review_question)
+    except (ValueError, OSError, RuntimeError, ImportError) as exc:
+        logger.warning("ML ranking unavailable: %s", type(exc).__name__)
+        db.add(RunLogModel(workspace_id=workspace_id, stage="ml_ranking", status="UNAVAILABLE",
+                           error_code=type(exc).__name__, trace_id=str(uuid4()), duration_ms=0))
+        db.commit()
+        return MLRankingResponse(
+            workspace_id=workspace_id, revision_id=revision_id,
+            criteria_version_id=corpus_rev.criteria_version_id,
+            model_version="unavailable", scope=review_question, status="UNAVAILABLE",
+            reason="Verified model unavailable or incompatible with this review; use manual screening.",
+            total_records=len(snapshots), scored_count=0, items=[],
+            computed_at=datetime.now(UTC).isoformat(), duration_ms=0,
+        )
+    # Fetch representatives in one query. Full text and manifest digests invalidate model swaps.
+    representative_ids = {s.representative_revision_id for s in snapshots}
+    representatives = {}
+    ids = sorted(representative_ids)
+    for start in range(0, len(ids), 500):
+        representatives.update({r.id: r for r in db.query(RecordRevisionModel).filter(
+            RecordRevisionModel.id.in_(ids[start:start + 500])).all()})
+    fingerprint_seed = json.dumps({
+        "policy": "ranking-v2", "workspace": workspace_id, "revision": revision_id,
+        "criteria": criteria.content_hash if criteria else None, "question": review_question,
+        "manifest": ranker.manifest.model_dump(),
+        "records": [(s.group_id, s.representative_revision_id,
+                     representatives[s.representative_revision_id].content_hash,
+                     representatives[s.representative_revision_id].title,
+                     representatives[s.representative_revision_id].abstract_text)
+                    for s in sorted(snapshots, key=lambda s: s.group_id)
+                    if s.representative_revision_id in representatives],
+    }, sort_keys=True)
+    input_fingerprint = hashlib.sha256(fingerprint_seed.encode()).hexdigest()
+    current_decisions = project_group_decisions_bulk(db, [s.group_id for s in snapshots], revision_id)
+    def item_fingerprint(record_id: str) -> str:
+        return hashlib.sha256(f"{input_fingerprint}:{record_id}".encode()).hexdigest()
+    expected_fingerprints = {item_fingerprint(rid) for rid in representative_ids}
 
     # 6. Check MachineResultModel cache (unless force_recompute=True)
     if not req.force_recompute:
@@ -139,19 +183,23 @@ def execute_ml_ranking(
             )
             .all()
         )
-        # Verify matching count and matching fingerprint prefix
-        if len(cached_results) == len(snapshots) and all(
-            cr.input_fingerprint.startswith(input_fingerprint[:16]) for cr in cached_results
-        ):
+        cached_results = [cr for cr in cached_results if cr.input_fingerprint in expected_fingerprints]
+        if len(cached_results) == len(snapshots):
             # Cache hit: parse stored JSON payloads and apply pagination
             cached_items: list[MLRankedItem] = []
             for cr in cached_results:
                 try:
                     payload = json.loads(cr.output_json)
-                    cached_items.append(MLRankedItem(**payload))
+                    item = MLRankedItem(**payload)
+                    state, _, _, _ = current_decisions[item.group_id]
+                    cached_items.append(item.model_copy(update={"effective_status": state.value}))
                 except (json.JSONDecodeError, TypeError, ValueError) as ex:
                     logger.warning("Failed parsing cached ML item %s: %s", cr.id, ex)
 
+            if len(cached_items) != len(snapshots):
+                # A corrupt row must not make a partial cache look complete.
+                return execute_ml_ranking(db, workspace_id, revision_id,
+                                          req.model_copy(update={"force_recompute": True}), art_path)
             # Sort by rank
             cached_items.sort(key=lambda it: it.rank)
             paginated_items = cached_items[req.offset : req.offset + req.limit]
@@ -171,42 +219,6 @@ def execute_ml_ranking(
                 duration_ms=1,
             )
 
-    # 7. Load verified ML ranker artifact
-    art_path = resolve_artifact_directory(artifact_dir)
-    ranker: MLRanker | None = None
-    try:
-        ranker = load_ranker(art_path)
-    except (FileNotFoundError, ValueError, OSError, RuntimeError) as exc:
-        logger.error("ML ranker artifact failed verification at %s: %s", art_path, exc)
-        # Log failure into run logs
-        trace_id = str(uuid4())
-        run_log = RunLogModel(
-            workspace_id=workspace_id,
-            stage="ml_ranking",
-            status="UNAVAILABLE",
-            error_code=exc.__class__.__name__,
-            input_hash=input_fingerprint,
-            trace_id=trace_id,
-            duration_ms=0,
-        )
-        db.add(run_log)
-        db.commit()
-
-        return MLRankingResponse(
-            workspace_id=workspace_id,
-            revision_id=revision_id,
-            criteria_version_id=corpus_rev.criteria_version_id,
-            model_version="unavailable",
-            scope=review_question,
-            status="UNAVAILABLE",
-            reason=f"Model artifact unavailable or integrity verification failed: {exc}",
-            total_records=len(snapshots),
-            scored_count=0,
-            items=[],
-            computed_at=datetime.now(UTC).isoformat(),
-            duration_ms=0,
-        )
-
     # 8. Assemble records for ML processing
     t0 = time.perf_counter()
     record_inputs: list[RecordInput] = []
@@ -215,12 +227,12 @@ def execute_ml_ranking(
 
     for snap in snapshots:
         group_id = snap.group_id
-        rep_rev = db.query(RecordRevisionModel).filter_by(id=snap.representative_revision_id).first()
+        rep_rev = representatives.get(snap.representative_revision_id)
         if not rep_rev:
             continue
 
         group_map[rep_rev.id] = group_id
-        eff_state, _, _, _ = project_effective_group_decision(db, group_id=group_id, revision_id=revision_id)
+        eff_state, _, _, _ = current_decisions[group_id]
         effective_status_map[group_id] = eff_state.value
 
         record_inputs.append(
@@ -233,9 +245,8 @@ def execute_ml_ranking(
         )
 
     # 9. Perform pure CPU model inference
-    target_scope = ranker.manifest.scope
     ranking_ctx = RankingContext(
-        review_question=target_scope,  # Bind to verified artifact scope
+        review_question=review_question,
         criteria_version_id=corpus_rev.criteria_version_id,
     )
     ranking_batch = ranker.rank_records(record_inputs, ranking_ctx)
@@ -276,14 +287,13 @@ def execute_ml_ranking(
 
     # 11. Atomic persistence into MachineResultModel and RunLogModel
     try:
-        # Clear prior results for this revision stage
-        db.query(MachineResultModel).filter_by(
-            corpus_revision_id=revision_id,
-            stage="ml_ranking",
-        ).delete()
-
+        # Preserve prior model outputs for historical provenance; same-input recomputation is idempotent.
+        existing_fps = {r.input_fingerprint for r in db.query(MachineResultModel).filter_by(
+            corpus_revision_id=revision_id, stage="ml_ranking").all()}
         for it in items_to_persist:
-            item_fp = f"{input_fingerprint[:16]}:{hashlib.sha256(it.record_id.encode()).hexdigest()[:47]}"
+            item_fp = item_fingerprint(it.record_id)
+            if item_fp in existing_fps:
+                continue
             mr = MachineResultModel(
                 corpus_revision_id=revision_id,
                 group_id=it.group_id or it.record_id,
@@ -321,7 +331,8 @@ def execute_ml_ranking(
         model_version=ranker.manifest.artifact_version,
         scope=ranker.manifest.scope,
         status="COMPLETED",
-        reason="Prioritization computed via verified scikit-learn pipeline",
+        reason=f"Ranking score via {ranker.manifest.model_type}; not an eligibility probability. "
+               "Unscored records require manual review.",
         total_records=len(items_to_persist),
         scored_count=ranking_batch.scored_count,
         items=paginated_items,
