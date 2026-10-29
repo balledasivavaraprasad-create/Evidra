@@ -16,6 +16,7 @@ const reviewLinks = (ws: string): NavLink[] => [
   { to: `${ws}/history`, label: "Lineage", title: "Audit lineage" },
   { to: `${ws}/radar`, label: "PICO radar", title: "Missing-evidence radar" },
   { to: `${ws}/devils-advocate`, label: "Devil's advocate", title: "Devil's advocate reviewer" },
+  { to: `${ws}/prisma`, label: "PRISMA", title: "PRISMA 2020 flow & reporting" },
   { to: `${ws}/search-evolution`, label: "Evolution", title: "Search evolution" },
 ];
 

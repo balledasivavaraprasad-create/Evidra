@@ -19,6 +19,7 @@ import { HistoryPage } from "./features/history/HistoryPage";
 import { MLReviewPage } from "./features/ml-review/MLReviewPage";
 import { ReviewRadarDashboard } from "./features/pico-radar/ReviewRadarDashboard";
 import { DevilsAdvocateDashboard } from "./features/devils-advocate/DevilsAdvocateDashboard";
+import { PrismaFlowPage } from "./features/prisma/PrismaFlowPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +73,7 @@ export const App: React.FC = () => {
                       <Route path="history" element={<HistoryPage />} />
                       <Route path="radar" element={<ReviewRadarDashboard />} />
                       <Route path="devils-advocate" element={<DevilsAdvocateDashboard />} />
+                      <Route path="prisma" element={<PrismaFlowPage />} />
                       <Route path="search-evolution" element={<HistoryPage initialTab="search_evolution" />} />
                     </Route>
                     <Route path="/radar" element={protectedRoute(<RememberedReviewRedirect section="radar" />)} />
@@ -79,6 +81,7 @@ export const App: React.FC = () => {
                       path="/devils-advocate"
                       element={protectedRoute(<RememberedReviewRedirect section="devils-advocate" />)}
                     />
+                    <Route path="/prisma" element={protectedRoute(<RememberedReviewRedirect section="prisma" />)} />
                     <Route path="/review-queue" element={protectedRoute(<RememberedReviewRedirect section="records" />)} />
                     <Route path="/ml-ranking" element={protectedRoute(<RememberedReviewRedirect section="ml-ranking" />)} />
                     <Route path="/duplicates" element={protectedRoute(<RememberedReviewRedirect section="duplicates" />)} />

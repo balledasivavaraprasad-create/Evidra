@@ -68,6 +68,7 @@ class WorkspaceModel(Base):
     evidence_passports = relationship("EvidencePassportModel", back_populates="workspace", cascade="all, delete-orphan")
     devils_advocate_challenges = relationship("DevilsAdvocateChallengeModel", backref="workspace", cascade="all, delete-orphan")
     duplicate_merge_events = relationship("DuplicateMergeEventModel", backref="workspace", cascade="all, delete-orphan")
+    prisma_snapshots = relationship("PrismaSnapshotModel", backref="workspace", cascade="all, delete-orphan")
 
 
 class CriteriaVersionModel(Base):
@@ -568,3 +569,22 @@ class DuplicateMergeEventModel(Base):
     reversal_event_id = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
+
+
+class PrismaSnapshotModel(Base):
+    """Persistent snapshot of calculated PRISMA 2020 flow report."""
+
+    __tablename__ = "prisma_snapshots"
+
+    id = Column(String(64), primary_key=True, default=generate_uuid)
+    workspace_id = Column(String(64), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    corpus_revision_id = Column(String(64), nullable=True, index=True)
+    query_version_id = Column(String(64), nullable=True)
+    name = Column(String(256), nullable=True)
+    notes = Column(Text, nullable=True)
+    schema_version = Column(String(32), default="2020.1", nullable=False)
+    counts_json = Column(Text, nullable=False)
+    exclusion_reasons_json = Column(Text, default="[]", nullable=False)
+    validation_issues_json = Column(Text, default="[]", nullable=False)
+    created_by = Column(String(128), default="reviewer", nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
